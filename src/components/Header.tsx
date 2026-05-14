@@ -2,7 +2,7 @@ import { PiggyBank, UserSearch } from 'lucide-react';
 
 export default function HeaderApp(){
     return (
-        <header className="bg-header-app justify-between absolute top-0 bg-purple-900 w-full p-3 flex-row rounded-md flex md:h-20 lg:h-24 items-center">
+        <header className="border-b border-yellow-200 hover:border-yellow-100 bg-header-app justify-between absolute top-0 bg-purple-900 w-full p-3 flex-row rounded-md flex md:h-20 lg:h-24 items-center">
             
             <div className="flex flex-col">
                 <h1 className="antialiased text-3xl font-bold nameApp flex flex-row items-center gap-10">
