@@ -6,9 +6,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import jakarta.validation.constraints.Positive;
 
 import java.util.List;
 
@@ -24,7 +24,17 @@ public class BrasilApiController {
             "isbp, name, code, fullName")
     @ApiResponse(responseCode = "502", description = "Erro desconhecido na comunicação com a API BrasilAPI")
     @GetMapping
-    public ResponseEntity<List<BankDTO>> returnBanks(){
+    public ResponseEntity<List<BankDTO>> getAllBanks(){
         return ResponseEntity.ok(brasilAPIService.returnAllBanks());
+    }
+
+
+    @Operation(summary = "Buscar banco por código", description = "Retorna um banco pelo código COMPE")
+    @ApiResponse(responseCode = "200", description = "Banco encontrado")
+    @ApiResponse(responseCode = "404", description = "Banco não encontrado")
+    @ApiResponse(responseCode = "502", description = "Erro na comunicação com a API BrasilAPI")
+    @GetMapping("/{code}")
+    public ResponseEntity<BankDTO> getBankByCode(@PathVariable @Positive int code){
+        return ResponseEntity.ok(brasilAPIService.getBankByCode(code));
     }
 }

@@ -5,7 +5,7 @@ import com.brasilpanel.backend.dto.user.LoginRequestDTO;
 import com.brasilpanel.backend.dto.user.UserRequestDTO;
 
 import com.brasilpanel.backend.config.jwt.JwtService;
-import com.brasilpanel.backend.dto.user.UserResponseDTO;
+import com.brasilpanel.backend.dto.user.AuthResponseDTO;
 import com.brasilpanel.backend.model.UserEntity;
 import com.brasilpanel.backend.repository.user.UserRepository;
 import com.brasilpanel.backend.service.auth.AuthService;
@@ -76,9 +76,9 @@ class AuthServiceTest {
         when(jwtService.generateToken(any(UserEntity.class)))
                 .thenReturn("token.jwt.aqui");
 
-        String token = authService.registerUser(requestDTO);
+        AuthResponseDTO response = authService.registerUser(requestDTO);
 
-        assertEquals("token.jwt.aqui", token);
+        assertEquals("token.jwt.aqui", response.token());
         verify(userRepository).save(any(UserEntity.class));
     }
 
@@ -92,9 +92,9 @@ class AuthServiceTest {
         when(jwtService.generateToken(any(UserEntity.class)))
                 .thenReturn("token.recebido");
 
-        String token = authService.loginUser(loginDTO);
+        AuthResponseDTO response = authService.loginUser(loginDTO);
 
-        assertEquals("token.recebido", token);
+        assertEquals("token.recebido", response.token());
         verify(userRepository).findByEmail(loginDTO.email());
 
     }

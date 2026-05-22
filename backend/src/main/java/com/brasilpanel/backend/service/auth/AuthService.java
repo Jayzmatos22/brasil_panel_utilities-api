@@ -1,6 +1,7 @@
 package com.brasilpanel.backend.service.auth;
 
 import com.brasilpanel.backend.config.jwt.JwtService;
+import com.brasilpanel.backend.dto.user.AuthResponseDTO;
 import com.brasilpanel.backend.dto.user.LoginRequestDTO;
 import com.brasilpanel.backend.dto.user.UserRequestDTO;
 import com.brasilpanel.backend.mappers.UserMapper;
@@ -24,31 +25,29 @@ public class AuthService {
     private final UserMapper userMapper;
 
 
-    public String registerUser(UserRequestDTO dto) {
+    public AuthResponseDTO registerUser(UserRequestDTO dto) {
         if (userRepository.findByEmail(dto.email()).isPresent()) {
             throw new IllegalArgumentException("Email já cadastrado");
         }
 
-        String encodedPassword = passwordEncoder.encode(dto.password());
-
         UserEntity newUser = UserEntity.builder()
                 .name(dto.name())
                 .email(dto.email())
-                .password(encodedPassword)
+                .password(passwordEncoder.encode(dto.password()))
                 .build();
 
         userRepository.save(newUser);
 
-        return jwtService.generateToken(newUser);
+        return new AuthResponseDTO(jwtService.generateToken(newUser));
     }
 
 
-    public String loginUser(LoginRequestDTO dto) {
+    public AuthResponseDTO loginUser(LoginRequestDTO dto) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(dto.email(), dto.password())
         );
         UserEntity user = userRepository.findByEmail(dto.email())
                 .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado"));
-        return jwtService.generateToken(user);
+        return new AuthResponseDTO(jwtService.generateToken(user));
     }
 }

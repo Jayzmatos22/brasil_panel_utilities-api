@@ -42,4 +42,18 @@ public class BrasilAPIService {
     }
 
 
+    public BankDTO getBankByCode(int code) {
+        try {
+            return restClient.get()
+                    .uri("https://brasilapi.com.br/api/banks/v1/{code}", code)
+                    .retrieve()
+                    .body(BankDTO.class);
+        } catch (BrasilApiException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new BrasilApiException("Banco com código " + code + " não encontrado");
+        }
+    }
+
+
 }
