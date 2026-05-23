@@ -1,7 +1,6 @@
 package com.brasilpanel.backend.exception.global;
 
-import com.brasilpanel.backend.exception.customized.BcbApiException;
-import com.brasilpanel.backend.exception.customized.ViaCepException;
+import com.brasilpanel.backend.exception.customized.*;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.context.MessageSourceResolvable;
 import org.springframework.http.ResponseEntity;
@@ -70,5 +69,44 @@ public class GlobalExceptionHandler {
     public ResponseEntity<String> handleViaCep(ViaCepException ex){
         return ResponseEntity.status(502).body(ex.getMessage());
     }
+
+    // Atende BrasilAPI
+    @ExceptionHandler(BrasilApiException.class)
+    public ResponseEntity<String> handleBrasilApi(BrasilApiException ex){
+        return ResponseEntity.status(502).body(ex.getMessage());
+    }
+
+    // Banco não encontrado pelo código
+    @ExceptionHandler(BrasilApiNotFoundException.class)
+    public ResponseEntity<String> handleBrasilApiNotFound(BrasilApiNotFoundException ex) {
+        return ResponseEntity.status(404).body(ex.getMessage());
+    }
+
+
+    // Crypto não retornada - erro na api
+    @ExceptionHandler(CryptoCoinGeckoException.class)
+    public ResponseEntity<String> handleCryptoCoinGeckoException(CryptoCoinGeckoException ex) {
+        return ResponseEntity.status(502).body(ex.getMessage());
+    }
+
+    // Nome inválido de crypto
+    @ExceptionHandler(CoinGeckoException.class)
+    public ResponseEntity<String> handleCoinGeckoException(CoinGeckoException ex) {
+        return ResponseEntity.status(404).body(ex.getMessage());
+    }
+
+
+    // Moeda inválida ou erro na api - Frankfurter
+    @ExceptionHandler(FrankfurterRateException.class)
+    public ResponseEntity<String> handleFrankfurterRateException(FrankfurterRateException ex) {
+        return ResponseEntity.status(ex.getStatus()).body(ex.getMessage());
+    }
+
+    // Moeda não encontrada - Frankfurter
+    @ExceptionHandler(FrankfurterNotFoundException.class)
+    public ResponseEntity<String> handleFrankfurterNotFound(FrankfurterNotFoundException ex) {
+        return ResponseEntity.status(404).body(ex.getMessage());
+    }
+
 
 }

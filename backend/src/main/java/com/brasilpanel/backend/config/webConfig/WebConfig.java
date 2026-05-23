@@ -31,7 +31,7 @@ public class WebConfig {
         return RestClient.builder()
                 .requestFactory(new JdkClientHttpRequestFactory(httpClient))
                 .messageConverters(converters -> {
-                    converters.removeIf(c -> c instanceof MappingJackson2HttpMessageConverter);
+                    converters.removeIf(MappingJackson2HttpMessageConverter.class::isInstance);
                     converters.add(converter);
                 })
                 .defaultHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")

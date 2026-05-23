@@ -41,6 +41,8 @@ public class SecurityConfig {
                                 "/api/coingecko/**",
                                 "/api/cep/**",
                                 "/api/bcb/**",
+                                "/api/frankfurter",
+                                "/api/frankfurter/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs",
