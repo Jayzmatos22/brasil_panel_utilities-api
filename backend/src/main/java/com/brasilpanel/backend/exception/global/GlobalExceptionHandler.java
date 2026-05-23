@@ -9,6 +9,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -107,6 +108,41 @@ public class GlobalExceptionHandler {
     public ResponseEntity<String> handleFrankfurterNotFound(FrankfurterNotFoundException ex) {
         return ResponseEntity.status(404).body(ex.getMessage());
     }
+
+
+    // Erro na api do worldabnk
+    // Ano inválido
+    @ExceptionHandler(WorldBankException.class)
+    public ResponseEntity<String> handleWorldBank(WorldBankException ex) {
+        return ResponseEntity.status(ex.getStatus()).body(ex.getMessage());
+    }
+
+    // Parâmetros inadequados
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<String> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        return ResponseEntity.badRequest().body("Parâmetro inválido: '" + ex.getValue() + "' não é um número válido");
+    }
+
+
+    // Exception genérica
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<String> handleGeneral(Exception ex) {
+        return ResponseEntity.status(500).body("Erro interno do servidor: " + ex.getMessage());
+    }
+
+
+    @ExceptionHandler(ClassCastException.class)
+    public ResponseEntity<String> handleClassCast(ClassCastException ex) {
+        return ResponseEntity.status(500).body(ex.getMessage());
+    }
+
+
+    // Erro ibge - api e busca
+    @ExceptionHandler(IbgeException.class)
+    public ResponseEntity<String> handleIbgeException(IbgeException ex) {
+        return ResponseEntity.status(ex.getStatus()).body(ex.getMessage());
+    }
+
 
 
 }
