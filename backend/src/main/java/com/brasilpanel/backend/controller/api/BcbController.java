@@ -7,9 +7,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -63,5 +61,26 @@ public class BcbController {
     public ResponseEntity<List<SelicHistoryDTO>> getSelicLast12Months() {
         return ResponseEntity.ok(bcbService.getSelicHistory());
     }
+
+
+    @Operation(summary = "Buscar salário mínimo vigente", description = "Busca apenas o atual")
+    @ApiResponse(responseCode = "200", description = "Dados retornam em array de objeto MinimumWage - dto")
+    @ApiResponse(responseCode = "502", description = "Erro desconhecido na comunicação com a API")
+    @GetMapping("/minimum-wage")
+    public ResponseEntity<List<MinimumWageDTO>> getMinimumWage(
+            @RequestParam(defaultValue = "1") int intervalo) {
+        return ResponseEntity.ok(bcbService.getMinimumWage(intervalo));
+    }
+
+
+
+    @Operation(summary = "Busca o histórico do salário mínimo em 20 meses", description = "Limite do bc é 20 meses")
+    @ApiResponse(responseCode = "200", description = "Dados retornam em array com 20 objetos")
+    @ApiResponse(responseCode = "502", description = "Erro desconhecido na comunicação com a API")
+    @GetMapping("/minimum-wage/history")
+    public ResponseEntity<List<MinimumWageDTO>> getMinimumWageAll() {
+        return ResponseEntity.ok(bcbService.getMinimumWageAll());
+    }
+
 
 }

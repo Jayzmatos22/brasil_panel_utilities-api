@@ -2,14 +2,17 @@ package com.brasilpanel.backend.service.api.bcb;
 
 import com.brasilpanel.backend.dto.api.bcb.*;
 import com.brasilpanel.backend.exception.customized.BcbApiException;
+import com.brasilpanel.backend.validators.api.BcbValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
 
 
 
@@ -19,6 +22,7 @@ public class BcbService implements BcbImplementations{
     private final RestClient restClient;
     private static final String VALOR = "valor";
     private static final String DATA = "data";
+    private final BcbValidator bcbValidator;
 
 
 
@@ -172,35 +176,85 @@ public class BcbService implements BcbImplementations{
 
 
 
-    // Evitar cast manual. Uso de @JsonProperty
-    private List<SelicHistoryDTO> fetchSelic(String series, int ultimos) {
-        String url = "https://api.bcb.gov.br/dados/serie/bcdata.sgs." + series + "/dados/ultimos/" + ultimos + "?formato=json";
-
-        List<Map<String, String>> raw = restClient.get()
-                .uri(url)
-                .retrieve()
-                .body(new ParameterizedTypeReference<List<Map<String, String>>>() {});
-
-        if (raw == null || raw.isEmpty()) throw new BcbApiException("Série " + series + " sem dados");
-
-        return raw.stream()
-                .map(e -> new SelicHistoryDTO(e.get(DATA), Double.parseDouble(e.get(VALOR))))
-                .toList();
+    @Cacheable("salario-minimo")
+    public List<MinimumWageDTO> getMinimumWageAll() {
+        try {
+            String url = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.1619/dados/ultimos/20?formato=json";
+            List<MinimumWageDTO> data = restClient.get()
+                    .uri(url)
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<List<MinimumWageDTO>>() {
+                    });
+            if (data == null || data.isEmpty()){
+                throw new BcbApiException("Dados de salário mínimo vigente vazios.");
+            }
+            return data;
+        } catch (BcbApiException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new BcbApiException("Erro no servidor - API Banco Central");
+        }
     }
 
-    // Auxiliar req acima (getIpca) de 3 simultâneas
-    private List<IpcaHistoryDTO> fetchIpca(String series, int ultimos) {
-        String url = "https://api.bcb.gov.br/dados/serie/bcdata.sgs." + series + "/dados/ultimos/" + ultimos + "?formato=json";
-        List<Map<String, String>> raw = restClient.get()
-                .uri(url)
-                .retrieve()
-                .body(new ParameterizedTypeReference<List<Map<String, String>>>() {});
 
-        if (raw == null || raw.isEmpty()){throw new BcbApiException("Série " + series + " sem dados");}
+    @Override
+    public List<MinimumWageDTO> getMinimumWage(int intervaloMeses) {
+        // Verifica intervalo dos meses.
+        bcbValidator.validIntervalFilterMonth(intervaloMeses);
 
-        return raw.stream()
-                .map(e -> new IpcaHistoryDTO(e.get(DATA), Double.parseDouble(e.get(VALOR))))
-                .toList();
+        try {
+            List<MinimumWageDTO> all = getMinimumWageAll();
+            Collections.reverse(all);
+            return all.stream()
+                    .limit(intervaloMeses)
+                    .toList();
+
+        } catch (BcbApiException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new BcbApiException("Erro no servidor - API Banco Central.");
+        }
+
+    }
+
+
+    // Auxiliam chamada na API e filtro
+    private List<SelicHistoryDTO> fetchSelic(String codigo, int quantidade) {
+        try {
+            List<SelicHistoryDTO> data = restClient.get()
+                    .uri("https://api.bcb.gov.br/dados/serie/bcdata.sgs.{codigo}/dados/ultimos/{quantidade}?formato=json", codigo, quantidade)
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<List<SelicHistoryDTO>>() {});
+
+            if (data == null || data.isEmpty()) {
+                throw new BcbApiException("Dados Selic indisponíveis");
+            }
+            return data;
+
+        } catch (BcbApiException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new BcbApiException("Erro ao buscar Selic: " + e.getMessage());
+        }
+    }
+
+    private List<IpcaHistoryDTO> fetchIpca(String codigo, int quantidade) {
+        try {
+            List<IpcaHistoryDTO> data = restClient.get()
+                    .uri("https://api.bcb.gov.br/dados/serie/bcdata.sgs.{codigo}/dados/ultimos/{quantidade}?formato=json", codigo, quantidade)
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<List<IpcaHistoryDTO>>() {});
+
+            if (data == null || data.isEmpty()) {
+                throw new BcbApiException("Dados IPCA indisponíveis");
+            }
+            return data;
+
+        } catch (BcbApiException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new BcbApiException("Erro ao buscar IPCA: " + e.getMessage());
+        }
     }
 
 }

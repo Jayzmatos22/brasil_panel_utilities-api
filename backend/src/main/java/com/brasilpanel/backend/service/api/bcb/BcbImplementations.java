@@ -6,15 +6,12 @@ import java.util.List;
 
 public interface BcbImplementations {
 
-    public SelicDataDTO getSelic();
-
-    public IpcaDataDTO getIpca();
-
+    SelicDataDTO getSelic();
+    IpcaDataDTO getIpca();
     DollarPtaxDTO getDollarPtax();
-
-    public CdiDataDTO getCdiRate();
-
-    public List<SelicHistoryDTO> getSelicHistory();
-
+    CdiDataDTO getCdiRate();
+    List<SelicHistoryDTO> getSelicHistory();
     FinancialDataDTO getFinancialData();
+    List<MinimumWageDTO> getMinimumWage(int intervaloMeses);
+    List<MinimumWageDTO> getMinimumWageAll();
 }

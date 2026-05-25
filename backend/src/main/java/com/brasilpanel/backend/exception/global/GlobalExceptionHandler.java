@@ -144,5 +144,11 @@ public class GlobalExceptionHandler {
     }
 
 
+    @ExceptionHandler(MinimumWageException.class)
+    public ResponseEntity<String> handleMinimumWage(MinimumWageException ex) {
+        return ResponseEntity.status(ex.getStatus()).body(ex.getMessage());
+    }
+
+
 
 }
