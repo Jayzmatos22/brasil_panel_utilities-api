@@ -21,9 +21,10 @@ public class CacheConfig {
         manager.setCaches(List.of(
 
                 // ── Quase estáticos ──────────────────────────────────────────────
-                // Estados e cidades do IBGE praticamente não mudam
+                // Estados: 27 entradas fixas, praticamente nunca mudam
                 build("ibge-states",              7,  TimeUnit.DAYS,    10),
-                build("ibge-cities",              7,  TimeUnit.DAYS,    10),
+                // Cidades: chave = estado+filtro → até N combinações por estado
+                build("ibge-cities",              7,  TimeUnit.DAYS,   200),
 
                 // Lista de bancos raramente muda
                 build("banks",                   12,  TimeUnit.HOURS,   10),
@@ -38,6 +39,20 @@ public class CacheConfig {
                 build("ipea-macro",              24,  TimeUnit.HOURS,   10),
                 build("ipea-precos",             24,  TimeUnit.HOURS,   10),
                 build("ipea-populacao",          24,  TimeUnit.HOURS,   10),
+
+                // ── World Bank ───────────────────────────────────────────────────
+                // PIB atualizado anualmente; 24h evita chamadas repetidas
+                build("worldbank-pib-current",   24,  TimeUnit.HOURS,    5),
+                // Histórico por ano: dado passado é imutável; ano corrente pode ser
+                // revisado raramente — 24h é conservador e suficiente
+                build("worldbank-pib-year",      24,  TimeUnit.HOURS,   50),
+
+                // ── ViaCep ───────────────────────────────────────────────────────
+                // CEP → endereço é praticamente imutável (base CORREIOS muda raramente)
+                build("viacep",                  24,  TimeUnit.HOURS,  500),
+
+                // ── BrasilAPI — banco por código ─────────────────────────────────
+                build("bank-by-code",            12,  TimeUnit.HOURS,  300),
 
                 // ── Histórico Frankfurter (dados passados nunca mudam) ───────────
                 build("frank-furter-history",    24,  TimeUnit.HOURS,   50),
@@ -65,7 +80,9 @@ public class CacheConfig {
                 build("stocks",                  15,  TimeUnit.MINUTES, 200),
 
                 // Crypto: CoinGecko free tier — 5 min é o mínimo razoável
-                build("crypto-list",              5,  TimeUnit.MINUTES, 20)
+                build("crypto-list",              5,  TimeUnit.MINUTES,  20),
+                // Preço por nome: cache separado e keyed por moeda
+                build("crypto-by-name",           5,  TimeUnit.MINUTES, 100)
         ));
         return manager;
     }

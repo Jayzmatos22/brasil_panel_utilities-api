@@ -42,6 +42,9 @@ public class BrasilAPIService {
     }
 
 
+    // Dados de banco por código mudam raramente (nome, ISPB).
+    // Mesmo TTL da lista completa: 12h.
+    @Cacheable(value = "bank-by-code", key = "#code")
     public BankDTO getBankByCode(int code) {
         try {
             return restClient.get()

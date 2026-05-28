@@ -44,7 +44,9 @@ public class CoinGeckoService {
     }
 
 
-    @Cacheable("crypto-list")
+    // Cache separado da lista completa: cada moeda tem sua própria entrada.
+    // Mesmo TTL (5 min) — preços crypto são voláteis.
+    @Cacheable(value = "crypto-by-name", key = "#cryptoName")
     public CryptoCoinGeckoByNameDTO returnCryptoByName(String cryptoName){
         cryptoCoinGecko.validNameCoin(cryptoName);
         String url = "https://api.coingecko.com/api/v3/simple/price?ids=" + cryptoName + "&vs_currencies=brl";
