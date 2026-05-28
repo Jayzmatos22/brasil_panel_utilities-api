@@ -12,8 +12,6 @@ spring:
 
   cache:
     type: caffeine
-    caffeine:
-      spec: maximumSize=50,expireAfterWrite=60m
 
 alpha-vantage:
   keys: ${ALPHA_KEYS}
