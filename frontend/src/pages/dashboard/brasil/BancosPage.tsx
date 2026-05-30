@@ -1,3 +1,8 @@
+// API: BrasilAPI
+// Endpoints consumidos:
+//   GET /banks        → useAllBanks()
+//   GET /banks/{code} → useBankByCode(code)
+
 export default function BancosPage() {
   return (
     <main>
