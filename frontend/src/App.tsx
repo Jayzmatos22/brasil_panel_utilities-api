@@ -1,15 +1,14 @@
-//import { useState } from 'react'
 import HeaderApp from "./components/Header";
-import RegisterData from "./components/RegisterData";
-import { BrowserRouter, Routes, Route, useLocation  } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import LoginData from "./components/LoginDataUser";
-import { CircleDollarSign  } from 'lucide-react';
+import { CircleDollarSign } from 'lucide-react';
 import ExchangeInterface from "./components/Exchange";
 import CriptosInterface from "./components/Criptos";
 import Dashboard from "./components/Dashboard";
-import AddressUserData from "./components/AdressData";
-import BankForm from "./components/BankData";
+import RegisterPage from "./pages/auth/RegisterPage";
+import LoginPage from "./pages/auth/LoginPage";
+import AddressPage from "./pages/onboarding/AddressPage";
+import BankPage from "./pages/onboarding/BankPage";
 
 // bg-app
 import './App.css'
@@ -17,7 +16,10 @@ import './App.css'
 
 function AppLayout() {
   const location = useLocation();
-  const showMoneyIcon = location.pathname === '/registro-usuario' || location.pathname === '/login-usuario' || location.pathname === '/';
+  const showMoneyIcon =
+    location.pathname === '/registro-usuario' ||
+    location.pathname === '/login-usuario' ||
+    location.pathname === '/';
 
   return (
     <div className="min-h-screen w-full bg-app flex flex-col overflow-x-hidden">
@@ -30,14 +32,14 @@ function AppLayout() {
 
       <div className="flex-1 w-full flex justify-center items-start mt-20 p-4 py-8">
         <Routes>
-          <Route path="/" element={<RegisterData />} />
-          <Route path="/registro-usuario" element={<RegisterData />} />
-          <Route path="/login-usuario" element={<LoginData />} />
+          <Route path="/"                   element={<RegisterPage />} />
+          <Route path="/registro-usuario"  element={<RegisterPage />} />
+          <Route path="/login-usuario"     element={<LoginPage />} />
+          <Route path="/dados-endereco"    element={<AddressPage />} />
+          <Route path="/dados-bancarios"   element={<BankPage />} />
           <Route path="/cotacao-criptomoedas" element={<CriptosInterface />} />
-          <Route path="/cotacao-moedas" element={<ExchangeInterface />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/dados-endereco" element={<AddressUserData />} />
-          <Route path="/dados-bancarios" element={<BankForm />} />
+          <Route path="/cotacao-moedas"    element={<ExchangeInterface />} />
+          <Route path="/dashboard"         element={<Dashboard />} />
         </Routes>
       </div>
     </div>

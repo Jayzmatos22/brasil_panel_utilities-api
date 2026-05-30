@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ibgeService } from '../api/services/Ibge';
 import { STATIC } from '../constants/queryTimes';
 
+
 export function useStates() {
   return useQuery({
     queryKey: ['ibge', 'states'],
@@ -9,6 +10,7 @@ export function useStates() {
     ...STATIC,
   });
 }
+
 
 export function useCitiesByState(state: string, filtro?: string) {
   return useQuery({
