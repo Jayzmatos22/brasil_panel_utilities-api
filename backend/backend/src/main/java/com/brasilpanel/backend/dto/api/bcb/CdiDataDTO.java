@@ -1,8 +1,9 @@
 package com.brasilpanel.backend.dto.api.bcb;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
-
+// dailyRate  → taxa diária (%) retornada pela BCB — série 12
+// annualRate → taxa anual (%) calculada: (1 + diária/100)^252 − 1
 public record CdiDataDTO(
-        @JsonAlias("data") String date,
-        @JsonAlias("valor") Double value
+        String date,
+        Double dailyRate,
+        Double annualRate
 ) {}

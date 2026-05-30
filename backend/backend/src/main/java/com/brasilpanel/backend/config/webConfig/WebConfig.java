@@ -26,6 +26,7 @@ public class WebConfig {
 
         HttpClient httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(5))
+                .version(HttpClient.Version.HTTP_1_1)
                 .build();
 
         return RestClient.builder()

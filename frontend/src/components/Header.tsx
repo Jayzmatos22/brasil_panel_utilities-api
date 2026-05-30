@@ -1,25 +1,11 @@
-import { PiggyBank, UserSearch } from 'lucide-react';
+import { BrandLogo } from './brand/BrandLogo';
 
-export default function HeaderApp(){
-    return (
-        <header className="border-b border-yellow-200 hover:border-yellow-100 bg-header-app justify-between absolute top-0 bg-purple-900 w-full p-3 flex-row rounded-md flex md:h-20 lg:h-24 items-center">
-            
-            <div className="flex flex-col">
-                <h1 className="antialiased text-3xl font-bold nameApp flex flex-row items-center gap-10">
-                    <PiggyBank size={60} className="piggy-bank cursor-pointer hover:scale-110" />
-                    Finnance API Utils 
-                </h1>
-                <h2 className="text-sm text-yellow-50 font-semibold antialised mt-1  flex ml-20"> 
-                    Financial utilities API
-                </h2>
-            </div>
-
-            <div className="flex relative text-white">
-                <span className="items-center gap-3 flex">
-                    Usuário <UserSearch size={30} className="user-icon cursor-pointer hover:scale-110" />
-                </span>
-            </div>
-
-        </header>
-    )
+export default function HeaderApp() {
+  return (
+    <header className="absolute top-0 left-0 right-0 z-10 h-16
+                       bg-slate-900/90 backdrop-blur-sm border-b border-slate-800
+                       flex items-center px-6">
+      <BrandLogo textSize="text-sm" iconSize={22} />
+    </header>
+  );
 }

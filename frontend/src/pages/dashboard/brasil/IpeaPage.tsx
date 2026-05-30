@@ -12,12 +12,20 @@ import { LoaderCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import { useMacro, useEmprego, useRenda, useDesigualdade, usePrecos, usePopulacao } from '../../../hooks/UseIpea';
 import type { IpeaSerie } from '../../../types/IpeaType';
 
-const TABS = ['Macro', 'Emprego', 'Renda', 'Desigualdade', 'Preços', 'População'] as const;
-type Tab = typeof TABS[number];
+// ─── Tipos ───────────────────────────────────────────────────────────────────
+
+type Tab = 'Macro' | 'Emprego' | 'Renda' | 'Desigualdade' | 'Preços' | 'População';
+
+const TABS: Tab[] = ['Macro', 'Emprego', 'Renda', 'Desigualdade', 'Preços', 'População'];
+
+// ─── SerieCard ────────────────────────────────────────────────────────────────
 
 function SerieCard({ serie }: { serie: IpeaSerie }) {
   const [open, setOpen] = useState(false);
-  const latest = serie.dados.filter(d => d.valor !== null).at(-1);
+
+  const dados = serie.dados ?? [];
+  const valid = dados.filter(d => d.valor !== null);
+  const latest = valid.length > 0 ? valid[valid.length - 1] : null;
 
   return (
     <div className="bg-slate-800 rounded-lg overflow-hidden">
@@ -34,11 +42,14 @@ function SerieCard({ serie }: { serie: IpeaSerie }) {
             <span className="text-yellow-400 font-mono text-sm">
               {latest.valor?.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}
               <span className="text-slate-500 text-xs ml-1">
-                ({latest.data.slice(0, 10)})
+                ({String(latest.data).slice(0, 10)})
               </span>
             </span>
           )}
-          {open ? <ChevronDown size={14} className="text-slate-400" /> : <ChevronRight size={14} className="text-slate-400" />}
+          {open
+            ? <ChevronDown  size={14} className="text-slate-400" />
+            : <ChevronRight size={14} className="text-slate-400" />
+          }
         </div>
       </button>
 
@@ -52,9 +63,9 @@ function SerieCard({ serie }: { serie: IpeaSerie }) {
               </tr>
             </thead>
             <tbody>
-              {[...serie.dados].reverse().filter(d => d.valor !== null).map((item, i) => (
+              {[...valid].reverse().map((item, i) => (
                 <tr key={i} className="border-b border-slate-700/50 hover:bg-slate-700 transition-colors">
-                  <td className="py-1.5 px-4 text-slate-300">{item.data.slice(0, 10)}</td>
+                  <td className="py-1.5 px-4 text-slate-300">{String(item.data).slice(0, 10)}</td>
                   <td className="py-1.5 px-4 text-right font-mono text-white">
                     {item.valor?.toLocaleString('pt-BR', { maximumFractionDigits: 4 })}
                   </td>
@@ -68,14 +79,25 @@ function SerieCard({ serie }: { serie: IpeaSerie }) {
   );
 }
 
-function TabContent({ data, isLoading, error }: { data: IpeaSerie[] | undefined; isLoading: boolean; error: Error | null }) {
+// ─── TabContent ───────────────────────────────────────────────────────────────
+
+function TabContent({
+  data,
+  isLoading,
+  error,
+}: {
+  data:      IpeaSerie[] | undefined;
+  isLoading: boolean;
+  error:     unknown;
+}) {
   if (isLoading) return (
     <div className="flex items-center gap-2 text-slate-400 text-sm py-4">
       <LoaderCircle size={16} className="animate-spin" /> Carregando séries...
     </div>
   );
-  if (error) return <p className="text-red-400 text-sm py-4">Erro ao carregar dados.</p>;
-  if (!data) return null;
+  if (error)  return <p className="text-red-400 text-sm py-4">Erro ao carregar dados.</p>;
+  if (!data)  return null;
+  if (data.length === 0) return <p className="text-slate-500 text-sm py-4">Nenhuma série disponível.</p>;
 
   return (
     <div className="flex flex-col gap-2">
@@ -84,33 +106,36 @@ function TabContent({ data, isLoading, error }: { data: IpeaSerie[] | undefined;
   );
 }
 
+// ─── IpeaPage ─────────────────────────────────────────────────────────────────
+
 export default function IpeaPage() {
   const [activeTab, setActiveTab] = useState<Tab>('Macro');
 
-  const macro       = useMacro();
-  const emprego     = useEmprego();
-  const renda       = useRenda();
-  const desig       = useDesigualdade();
-  const precos      = usePrecos();
-  const populacao   = usePopulacao();
+  const macro     = useMacro();
+  const emprego   = useEmprego();
+  const renda     = useRenda();
+  const desig     = useDesigualdade();
+  const precos    = usePrecos();
+  const populacao = usePopulacao();
 
-  const tabData: Record<Tab, typeof macro> = {
-    Macro:        macro,
-    Emprego:      emprego,
-    Renda:        renda,
-    Desigualdade: desig,
-    'Preços':     precos,
-    'População':  populacao,
-  };
-
-  const active = tabData[activeTab];
+  // Switch simples em vez de Record indexado
+  const active = (() => {
+    switch (activeTab) {
+      case 'Macro':        return macro;
+      case 'Emprego':      return emprego;
+      case 'Renda':        return renda;
+      case 'Desigualdade': return desig;
+      case 'Preços':       return precos;
+      case 'População':    return populacao;
+    }
+  })();
 
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-bold text-white">IPEA — Indicadores Socioeconômicos</h1>
 
       {/* Tabs */}
-      <div className="flex gap-1 flex-wrap border-b border-slate-700 pb-0">
+      <div className="flex gap-1 flex-wrap border-b border-slate-700">
         {TABS.map(tab => (
           <button
             key={tab}
@@ -127,11 +152,11 @@ export default function IpeaPage() {
         ))}
       </div>
 
-      {/* Conteúdo da tab ativa */}
+      {/* Conteúdo */}
       <TabContent
         data={active.data}
         isLoading={active.isLoading}
-        error={active.error as Error | null}
+        error={active.error}
       />
     </div>
   );

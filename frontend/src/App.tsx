@@ -38,8 +38,7 @@ function AuthLayout() {
   const location = useLocation();
   const showMoneyIcon =
     location.pathname === '/' ||
-    location.pathname === '/registro-usuario' ||
-    location.pathname === '/login-usuario';
+    location.pathname === '/registro-usuario';
 
   return (
     <div className="min-h-screen w-full bg-app flex flex-col overflow-x-hidden">
@@ -57,7 +56,6 @@ function AuthLayout() {
         <Routes>
           <Route path="/"                  element={<RegisterPage />} />
           <Route path="/registro-usuario"  element={<RegisterPage />} />
-          <Route path="/login-usuario"     element={<LoginPage />} />
           <Route path="/dados-endereco"    element={<AddressPage />} />
           <Route path="/dados-bancarios"   element={<BankPage />} />
         </Routes>
@@ -88,7 +86,7 @@ export default function App() {
 
       <Routes>
 
-        {/* ── Rotas com DashboardLayout (sidebar) ── */}
+        {/* ── Dashboard (com sidebar) ── */}
         <Route path="/dashboard" element={<DashboardLayout />}>
           <Route path="economia"         element={<EconomiaPage />} />
           <Route path="economia/salario" element={<SalarioPage />} />
@@ -102,7 +100,10 @@ export default function App() {
           <Route path="brasil/bancos"    element={<BancosPage />} />
         </Route>
 
-        {/* ── Rotas com AuthLayout (header + fundo escuro) ── */}
+        {/* ── Login — layout próprio (split screen) ── */}
+        <Route path="/login-usuario" element={<LoginPage />} />
+
+        {/* ── Onboarding (header + fundo) ── */}
         <Route path="/*" element={<AuthLayout />} />
 
       </Routes>

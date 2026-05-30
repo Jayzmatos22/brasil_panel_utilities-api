@@ -29,7 +29,8 @@ export interface DollarPtax {
 // Banco Central — GET /api/bcb/cdi
 export interface CdiData {
   date: string;
-  value: number;
+  dailyRate: number;   // taxa diária (%) — série 12 BCB
+  annualRate: number;  // anualizada: (1 + diária/100)^252 − 1
 }
 
 // Banco Central — GET /api/bcb/salario-minimo

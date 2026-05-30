@@ -140,10 +140,11 @@ public class BcbService implements BcbImplementations{
                 throw new BcbApiException("Dados CDI incompletos");
             }
 
-            return new CdiDataDTO(
-                    entry.get(DATA),
-                    Double.parseDouble(entry.get(VALOR))
-            );
+            double daily  = Double.parseDouble(entry.get(VALOR));
+            // BCB usa 252 dias úteis como convenção para anualização
+            double annual = (Math.pow(1.0 + daily / 100.0, 252) - 1.0) * 100.0;
+
+            return new CdiDataDTO(entry.get(DATA), daily, annual);
 
         } catch (BcbApiException e) {
             throw e;
