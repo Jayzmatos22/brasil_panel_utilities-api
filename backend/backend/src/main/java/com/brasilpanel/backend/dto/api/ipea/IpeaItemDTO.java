@@ -1,11 +1,11 @@
 package com.brasilpanel.backend.dto.api.ipea;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonAlias;
 
 import java.time.OffsetDateTime;
 
 
 public record IpeaItemDTO(
-        @JsonProperty("VALDATA") OffsetDateTime data,
-        @JsonProperty("VALVALOR") Double valor
+        @JsonAlias("VALDATA") OffsetDateTime data,
+        @JsonAlias("VALVALOR") Double valor
 ) {}
