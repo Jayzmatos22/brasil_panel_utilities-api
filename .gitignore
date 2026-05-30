@@ -9,14 +9,16 @@
 .DS_Store
 Thumbs.db
 
-# Build & Maven
-target/
+# Backend — build & Maven
+backend/target/
+backend/backend/target/
 HELP.md
+backend/HELP.md
 
-# Secrets
-backend/src/main/resources/application-dev.yml
+# Backend — secrets
+backend/backend/src/main/resources/application-dev.yml
 
-# Frontend
+# Frontend — dependencies & build
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/

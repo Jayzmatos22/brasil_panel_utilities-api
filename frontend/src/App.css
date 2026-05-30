@@ -1,0 +1,163 @@
+.bg-header-app{
+    background-image: linear-gradient(to right, #5b4503, #705101c7, #876101c7 80%);
+}
+
+.nameApp{
+    text-decoration:overline;
+    color: rgb(221, 249, 251);
+}
+
+.piggy-bank{
+    color: rgb(253, 253, 255);
+    background: rgb(47, 27, 1);
+    border-radius: 1cap;
+    filter: drop-shadow(12px 5px 1px rgba(1, 1, 60, 0.595)) drop-shadow(0 3px 15px rgba(135, 194, 7, 0.996));
+}
+
+.user-icon{
+    color: rgb(253, 253, 255);
+    background: rgb(85, 0, 243);
+    border-radius: 1cap;
+    padding: 1%;
+}
+
+
+.database-icon{
+    color: rgba(248, 240, 6, 0.976);
+    filter: drop-shadow(12px 5px 1px rgba(169, 85, 1, 0.185)) drop-shadow(0 3px 15px rgba(255, 191, 1, 0.996));
+
+}
+
+.bg-app {
+  background-color: #090c0c;
+  background-image: radial-gradient(#8e00fa6d 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.bg-data-input{
+    background-color: rgba(82, 62, 2, 0.196);
+    &:focus{
+        background-color: rgba(24, 24, 37, 0.893);
+    }
+}
+
+::placeholder{
+    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+}
+
+.register-font{
+    font-family:Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+}
+
+.money-icon-bg{
+    color: #090c0cd5;
+    filter: drop-shadow(10px 3px 5px rgba(2, 181, 2, 0.59)) 
+    drop-shadow(0 5px 20px rgb(255, 213, 0)) 
+    drop-shadow(0 3px 50px rgb(255, 192, 1))
+}
+
+@keyframes perspective-money-animated {
+    0% {
+        transform: perspective(1000px) rotateY(0deg);
+    }
+    100% {
+        transform: perspective(1000px) rotateY(360deg); 
+    }
+}
+
+.money-animated{
+    animation: perspective-money-animated 7s linear infinite;
+}
+
+.bitcoin-iccon{
+    transform:
+    rotateX(170deg)
+    rotateZ(3deg);
+  transform-style: preserve-3d;
+  border-radius: 32px;
+  box-shadow:
+    1px 1px 0 1px #f9f9fb,
+    -1px 0 28px 0 rgba(34, 33, 81, 0.01),
+    28px 28px 28px 0 rgba(34, 33, 81, 0.25);
+  transition:
+    .4s ease-in-out transform,
+    .4s ease-in-out box-shadow;
+
+  &:hover {
+    transform:
+      translate3d(0px, -10px, 0px)
+      rotateX(170deg)
+      rotateZ(3deg);
+    box-shadow:
+      1px 1px 0 1px #f9f9fb,
+      -1px 0 28px 0 rgba(34, 33, 81, 0.01),
+      54px 54px 28px -10px rgba(34, 33, 81, 0.15);
+  }
+}
+
+.cripto-brl{
+    color: rgb(255, 255, 255);
+    background: rgba(16, 20, 26, 0.956);
+    padding: 1%;
+    filter: drop-shadow(2px 1px 100px rgb(8, 9, 10)) drop-shadow(0 2px 10px rgba(122, 122, 174, 0.563));
+}
+
+.address-icon {
+    color: rgb(255, 255, 255);
+    padding: 1%;
+    filter: drop-shadow(2px 1px 10px rgb(9, 121, 233)) 
+            drop-shadow(0 2px 10px rgba(128, 128, 243, 0.958));
+    
+
+    transition: transform 1s ease-in-out, 
+                color 0.5s ease-in-out, 
+                filter 0.5s ease-in-out;
+    
+    transform: rotateY(0deg);
+    
+    &:hover {
+        color: rgb(105, 210, 7);
+        transform: rotateY(180deg);
+        filter: drop-shadow(2px 1px 10px rgb(125, 233, 9)) 
+                drop-shadow(0 2px 10px rgba(128, 243, 174, 0.958)) 
+                drop-shadow(0 30px 50px rgb(9, 233, 143));
+    }
+}
+
+.handcoins-icon{
+    color: rgb(255, 255, 255);
+    padding: 1%;
+    filter: drop-shadow(2px 1px 15px rgb(255, 221, 1)) drop-shadow(0 2px 10px rgb(250, 208, 0));
+    transform: rotateY(0deg);
+    transition: transform 1s ease-in-out, 
+                color 0.5s ease-in-out, 
+                filter 0.5s ease-in-out;
+    &:hover {
+        color: rgb(255, 255, 255);
+        transform: rotateY(20deg);
+        transform: translate3d(0px, -10px, 0px);
+        filter: drop-shadow(2px 1px 10px rgb(125, 233, 9)) 
+                drop-shadow(0 2px 15px rgba(128, 243, 174, 0.958)) 
+                drop-shadow(0 30px 50px rgb(9, 233, 143));
+    }
+}
+
+
+.bank-data-form-icons{
+    color: rgb(255, 255, 255);
+    padding: 1%;
+    filter: drop-shadow(2px 1px 15px rgb(255, 221, 1)) drop-shadow(0 2px 10px rgb(250, 208, 0));
+    transform: rotateY(0deg);
+    cursor: pointer;
+    transition: transform 1s ease-in-out, 
+                color 0.5s ease-in-out, 
+                filter 0.5s ease-in-out;
+    &:hover {
+        color: rgb(255, 255, 255);
+        transform: rotateY(20deg);
+        transform: translate3d(0px, -10px, 0px);
+        filter: drop-shadow(2px 1px 10px rgb(125, 233, 9)) 
+                drop-shadow(0 2px 15px rgba(128, 243, 174, 0.958)) 
+                drop-shadow(0 30px 50px rgb(9, 233, 143));
+    }
+}
