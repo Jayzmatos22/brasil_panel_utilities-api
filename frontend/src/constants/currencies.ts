@@ -1,10 +1,3 @@
-import type { ExchangeData } from "../types/ExchangeDataType";
-
-
-
-// ExchangeData: Modelo dos dados de câmbio
-// todas as moedas e seus nomes que a api suporta
-
 export const CURRENCIES = [
   { code: 'USD', name: 'Dólar Americano', flag: '🇺🇸' },
   { code: 'AED', name: 'Dirham dos Emirados', flag: '🇦🇪' },
@@ -175,28 +168,3 @@ export const CURRENCIES = [
 ] as const;
 
 export type CurrencyCode = typeof CURRENCIES[number]['code'];
-
-// Api
-// Busca a taxa de câmbio entre duas moedas
-export async function getExchangeRate(base: CurrencyCode, target: CurrencyCode): Promise<ExchangeData> {
-  const response = await fetch(
-    `https://api.exchangerate-api.com/v4/latest/${base}`
-  );
-
-  if (!response.ok) throw new Error('Erro ao buscar câmbio');
-
-  const data = await response.json();
-
-  if (!data.rates[target]) throw new Error(`Moeda "${target}" não encontrada`);
-
-  const rate = data.rates[target];
-
-  return {
-    base,
-    target,
-    rate,
-    formattedRate: rate.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
-  };
-}
-
-

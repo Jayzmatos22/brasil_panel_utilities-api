@@ -80,6 +80,7 @@ export default function RegisterData() {
         gia: "",
         ddd: "",
         siafi: "",
+        numero: "",
       },
       bank: {
         idAccount: crypto.randomUUID(),

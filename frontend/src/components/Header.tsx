@@ -7,10 +7,10 @@ export default function HeaderApp(){
             <div className="flex flex-col">
                 <h1 className="antialiased text-3xl font-bold nameApp flex flex-row items-center gap-10">
                     <PiggyBank size={60} className="piggy-bank cursor-pointer hover:scale-110" />
-                    Bank Viewer 
+                    Finnance API Utils 
                 </h1>
                 <h2 className="text-sm text-yellow-50 font-semibold antialised mt-1  flex ml-20"> 
-                    Access your data in a simple way 
+                    Financial utilities API
                 </h2>
             </div>
 

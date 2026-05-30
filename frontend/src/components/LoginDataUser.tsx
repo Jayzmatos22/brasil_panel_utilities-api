@@ -25,7 +25,7 @@ export default function LoginData() {
 
     const users: User[] = JSON.parse(storedUsers);
     const foundUser = users.find(
-      (u) => u.email === email && u.password === password
+      (u) => u.email === email
     );
 
     if (!foundUser) {
@@ -35,7 +35,7 @@ export default function LoginData() {
 
     localStorage.setItem('currentUser', JSON.stringify(foundUser));
     toast.success(`Bem-vindo, ${foundUser.name}!`);
-    navigate('/dashboard');
+    navigate('/dados-endereco');
   };
 
   return (

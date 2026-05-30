@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-@RequestMapping("/api/cep")
+@RequestMapping("/api/viacep")
 @RestController
 @RequiredArgsConstructor
 public class ViaCepController {

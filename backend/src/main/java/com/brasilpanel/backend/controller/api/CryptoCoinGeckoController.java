@@ -26,7 +26,7 @@ public class CryptoCoinGeckoController {
     @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso")
     @ApiResponse(responseCode = "502", description = "Erro na comunicação com CoinGecko")
     @GetMapping
-    public ResponseEntity<List<CryptoCoinGeckoMarketDTO>> getAllCryptos() {
+    public ResponseEntity<List<CryptoCoinGeckoMarketDTO>> getAll100Cryptos() {
         return ResponseEntity.ok(coinGeckoService.returnAllCryptos());
     }
 
@@ -36,7 +36,7 @@ public class CryptoCoinGeckoController {
     @ApiResponse(responseCode = "404", description = "Nome da moeda inválido")
     @ApiResponse(responseCode = "502", description = "Erro na comunicação com CoinGecko")
     @GetMapping("/{name}")
-    public ResponseEntity<CryptoCoinGeckoByNameDTO> getAllCryptos(@PathVariable String name) {
+    public ResponseEntity<CryptoCoinGeckoByNameDTO> getCryptoByName(@PathVariable String name) {
         return ResponseEntity.ok(coinGeckoService.returnCryptoByName(name));
     }
 }

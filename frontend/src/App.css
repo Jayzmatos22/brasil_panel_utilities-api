@@ -28,13 +28,17 @@
 
 }
 
-.bg-app{
-    background-image: linear-gradient(to right, #010010, #080400, #060010 80%);
-
+.bg-app {
+  background-color: #090c0c;
+  background-image: radial-gradient(#8e00fa6d 1px, transparent 1px);
+  background-size: 24px 24px;
 }
 
 .bg-data-input{
-    background: rgba(82, 62, 2, 0.196);
+    background-color: rgba(82, 62, 2, 0.196);
+    &:focus{
+        background-color: rgba(24, 24, 37, 0.893);
+    }
 }
 
 ::placeholder{
@@ -46,11 +50,10 @@
 }
 
 .money-icon-bg{
-    color: rgba(31, 13, 1, 0.898);
-    filter: drop-shadow(10px 10px 3px rgb(80, 234, 80)) 
-    drop-shadow(0 20px 15px rgba(255, 213, 0, 0.971)) 
-    drop-shadow(0 3px 100px rgb(255, 192, 1))
-    drop-shadow(0 3px 100px rgb(255, 1, 132));
+    color: #090c0cd5;
+    filter: drop-shadow(10px 3px 5px rgba(2, 181, 2, 0.59)) 
+    drop-shadow(0 5px 20px rgb(255, 213, 0)) 
+    drop-shadow(0 3px 50px rgb(255, 192, 1))
 }
 
 @keyframes perspective-money-animated {
@@ -97,4 +100,64 @@
     background: rgba(16, 20, 26, 0.956);
     padding: 1%;
     filter: drop-shadow(2px 1px 100px rgb(8, 9, 10)) drop-shadow(0 2px 10px rgba(122, 122, 174, 0.563));
+}
+
+.address-icon {
+    color: rgb(255, 255, 255);
+    padding: 1%;
+    filter: drop-shadow(2px 1px 10px rgb(9, 121, 233)) 
+            drop-shadow(0 2px 10px rgba(128, 128, 243, 0.958));
+    
+
+    transition: transform 1s ease-in-out, 
+                color 0.5s ease-in-out, 
+                filter 0.5s ease-in-out;
+    
+    transform: rotateY(0deg);
+    
+    &:hover {
+        color: rgb(105, 210, 7);
+        transform: rotateY(180deg);
+        filter: drop-shadow(2px 1px 10px rgb(125, 233, 9)) 
+                drop-shadow(0 2px 10px rgba(128, 243, 174, 0.958)) 
+                drop-shadow(0 30px 50px rgb(9, 233, 143));
+    }
+}
+
+.handcoins-icon{
+    color: rgb(255, 255, 255);
+    padding: 1%;
+    filter: drop-shadow(2px 1px 15px rgb(255, 221, 1)) drop-shadow(0 2px 10px rgb(250, 208, 0));
+    transform: rotateY(0deg);
+    transition: transform 1s ease-in-out, 
+                color 0.5s ease-in-out, 
+                filter 0.5s ease-in-out;
+    &:hover {
+        color: rgb(255, 255, 255);
+        transform: rotateY(20deg);
+        transform: translate3d(0px, -10px, 0px);
+        filter: drop-shadow(2px 1px 10px rgb(125, 233, 9)) 
+                drop-shadow(0 2px 15px rgba(128, 243, 174, 0.958)) 
+                drop-shadow(0 30px 50px rgb(9, 233, 143));
+    }
+}
+
+
+.bank-data-form-icons{
+    color: rgb(255, 255, 255);
+    padding: 1%;
+    filter: drop-shadow(2px 1px 15px rgb(255, 221, 1)) drop-shadow(0 2px 10px rgb(250, 208, 0));
+    transform: rotateY(0deg);
+    cursor: pointer;
+    transition: transform 1s ease-in-out, 
+                color 0.5s ease-in-out, 
+                filter 0.5s ease-in-out;
+    &:hover {
+        color: rgb(255, 255, 255);
+        transform: rotateY(20deg);
+        transform: translate3d(0px, -10px, 0px);
+        filter: drop-shadow(2px 1px 10px rgb(125, 233, 9)) 
+                drop-shadow(0 2px 15px rgba(128, 243, 174, 0.958)) 
+                drop-shadow(0 30px 50px rgb(9, 233, 143));
+    }
 }

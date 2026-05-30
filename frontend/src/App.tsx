@@ -7,6 +7,9 @@ import LoginData from "./components/LoginDataUser";
 import { CircleDollarSign  } from 'lucide-react';
 import ExchangeInterface from "./components/Exchange";
 import CriptosInterface from "./components/Criptos";
+import Dashboard from "./components/Dashboard";
+import AddressUserData from "./components/AdressData";
+import BankForm from "./components/BankData";
 
 // bg-app
 import './App.css'
@@ -14,23 +17,27 @@ import './App.css'
 
 function AppLayout() {
   const location = useLocation();
-  const showMoneyIcon = location.pathname === '/registro-usuario' || location.pathname === '/login-usuario';
+  const showMoneyIcon = location.pathname === '/registro-usuario' || location.pathname === '/login-usuario' || location.pathname === '/';
 
   return (
-    <div className="w-full h-screen bg-app flex items-center justify-center">
+    <div className="min-h-screen w-full bg-app flex flex-col overflow-x-hidden">
       <HeaderApp />
       
       {showMoneyIcon && (
-        <CircleDollarSign size={200} className="money-icon-bg left-2 fixed filter drop-shadow-lg money-animated" />
+        <CircleDollarSign size={120} className="money-icon-bg fixed filter drop-shadow-lg money-animated
+               left-3/4 top-1/2 -translate-x-1/2 -translate-y-1/5" />
       )}
 
-      <div className="flex-1 w-full flex items-center justify-center mt-20">
+      <div className="flex-1 w-full flex justify-center items-start mt-20 p-4 py-8">
         <Routes>
           <Route path="/" element={<RegisterData />} />
           <Route path="/registro-usuario" element={<RegisterData />} />
           <Route path="/login-usuario" element={<LoginData />} />
           <Route path="/cotacao-criptomoedas" element={<CriptosInterface />} />
           <Route path="/cotacao-moedas" element={<ExchangeInterface />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/dados-endereco" element={<AddressUserData />} />
+          <Route path="/dados-bancarios" element={<BankForm />} />
         </Routes>
       </div>
     </div>
