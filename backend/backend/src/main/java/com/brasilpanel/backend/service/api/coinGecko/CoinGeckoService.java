@@ -4,6 +4,7 @@ import com.brasilpanel.backend.dto.api.coinGecko.CryptoCoinGeckoByNameDTO;
 import com.brasilpanel.backend.dto.api.coinGecko.CryptoCoinGeckoMarketDTO;
 import com.brasilpanel.backend.exception.customized.CoinGeckoException;
 import com.brasilpanel.backend.exception.customized.CryptoCoinGeckoException;
+import com.brasilpanel.backend.service.financial.SnapshotService;
 import com.brasilpanel.backend.validators.api.CryptoCoinGecko;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
@@ -19,6 +20,7 @@ import java.util.Map;
 public class CoinGeckoService {
     private final RestClient restClient;
     private final CryptoCoinGecko cryptoCoinGecko;
+    private final SnapshotService snapshotService;
     private static final String BRL_COIN_PRICE = "brl";
 
 
@@ -34,6 +36,7 @@ public class CoinGeckoService {
                 throw new CryptoCoinGeckoException("Nenhuma criptomoeda encontrada");
             }
 
+            snapshotService.saveCryptoList(data, BRL_COIN_PRICE);
             return data;
 
         } catch (CryptoCoinGeckoException e){

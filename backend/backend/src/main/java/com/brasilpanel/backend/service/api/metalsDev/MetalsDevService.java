@@ -4,6 +4,7 @@ package com.brasilpanel.backend.service.api.metalsDev;
 import com.brasilpanel.backend.dto.api.metalsDev.MetalsDataDTO;
 import com.brasilpanel.backend.dto.api.metalsDev.MetalsResponseDTO;
 import com.brasilpanel.backend.exception.customized.MetalsException;
+import com.brasilpanel.backend.service.financial.SnapshotService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,6 +17,7 @@ import org.springframework.web.client.RestClient;
 @RequiredArgsConstructor
 public class MetalsDevService {
     private final RestClient restClient;
+    private final SnapshotService snapshotService;
 
     @Value("${metals.api-key}")
     private String apiKey;
@@ -38,7 +40,7 @@ public class MetalsDevService {
                 throw new MetalsException("Erro na API de metais", 502);
             }
 
-            return new MetalsDataDTO(
+            MetalsDataDTO metalsData = new MetalsDataDTO(
                     response.metals().gold(),
                     response.metals().silver(),
                     response.metals().platinum(),
@@ -49,6 +51,9 @@ public class MetalsDevService {
                     response.metals().zinc(),
                     response.timestamps().metal()
             );
+
+            snapshotService.saveMetals(metalsData, response.currency(), response.timestamps().metal());
+            return metalsData;
 
         } catch (MetalsException e) {
             throw e;

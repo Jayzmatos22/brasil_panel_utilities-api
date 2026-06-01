@@ -3,11 +3,10 @@ package com.brasilpanel.backend.service.api.alphaVantage;
 import com.brasilpanel.backend.dto.api.alphaVantage.GlobalQuoteWrapper;
 import com.brasilpanel.backend.dto.api.alphaVantage.StockQuoteDTO;
 import com.brasilpanel.backend.exception.customized.AlphaVantageException;
+import com.brasilpanel.backend.service.financial.SnapshotService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-
-
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
@@ -24,6 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class AlphaVantageService {
     private final RestClient restClient;
     private final ObjectMapper mapper;
+    private final SnapshotService snapshotService;
 
     @Value("${alpha-vantage.keys}")
     private List<String> apiKeys;
@@ -86,6 +86,7 @@ public class AlphaVantageService {
             }
 
             log.info("Cotação obtida: {}", stockQuote.symbol());
+            snapshotService.saveStock(stockQuote);
             return stockQuote;
 
         } catch (AlphaVantageException e) {
