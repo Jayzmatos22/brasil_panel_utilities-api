@@ -17,7 +17,7 @@ export function AuthBrandPanel() {
     <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12
                     bg-slate-900 border-r border-slate-800">
 
-      <BrandLogo variant="full" />
+      <BrandLogo variant="framed" />
 
       <div className="flex flex-col gap-6 max-w-sm">
         <div className="flex flex-col gap-3">

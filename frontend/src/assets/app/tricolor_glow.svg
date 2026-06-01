@@ -1,0 +1,30 @@
+<svg width="320" height="80" viewBox="0 0 320 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="gG" x="-40%" y="-80%" width="180%" height="260%">
+      <feGaussianBlur stdDeviation="3.5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="gB" x="-40%" y="-80%" width="180%" height="260%">
+      <feGaussianBlur stdDeviation="3.5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="gA" x="-40%" y="-80%" width="180%" height="260%">
+      <feGaussianBlur stdDeviation="3.5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="320" height="80" fill="#0f172a"/>
+  <!-- green: left arc + left segments -->
+  <path d="M 38 1.25 H 105.60000000000001" stroke="#10b981" stroke-width="3.5" stroke-linecap="round" filter="url(#gG)"/>
+  <path d="M 1.25 38 A 38 38 0 0 1 38 1.25" stroke="#10b981" stroke-width="3.5" stroke-linecap="round" filter="url(#gG)"/>
+  <path d="M 1.25 42 A 38 38 0 0 0 38 78.75" stroke="#10b981" stroke-width="3.5" stroke-linecap="round" filter="url(#gG)"/>
+  <path d="M 38 78.75 H 105.60000000000001" stroke="#10b981" stroke-width="3.5" stroke-linecap="round" filter="url(#gG)"/>
+  <!-- blue: middle segments -->
+  <path d="M 105.60000000000001 1.25 H 211.20000000000002" stroke="#3b82f6" stroke-width="3.5" filter="url(#gB)"/>
+  <path d="M 105.60000000000001 78.75 H 211.20000000000002" stroke="#3b82f6" stroke-width="3.5" filter="url(#gB)"/>
+  <!-- amber: right arc + right segments -->
+  <path d="M 211.20000000000002 1.25 H 282" stroke="#f59e0b" stroke-width="3.5" stroke-linecap="round" filter="url(#gA)"/>
+  <path d="M 318.75 38 A 38 38 0 0 1 282 1.25" stroke="#f59e0b" stroke-width="3.5" stroke-linecap="round" filter="url(#gA)"/>
+  <path d="M 318.75 42 A 38 38 0 0 0 282 78.75" stroke="#f59e0b" stroke-width="3.5" stroke-linecap="round" filter="url(#gA)"/>
+  <path d="M 211.20000000000002 78.75 H 282" stroke="#f59e0b" stroke-width="3.5" stroke-linecap="round" filter="url(#gA)"/>
+</svg>
