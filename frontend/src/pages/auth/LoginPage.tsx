@@ -46,7 +46,7 @@ export default function LoginPage() {
 
           {/* Logo no mobile */}
           <div className="flex justify-center lg:hidden">
-            <BrandLogo textSize="text-xl" iconSize={30} />
+            <BrandLogo variant="sidebar" />
           </div>
 
           <div className="flex flex-col gap-1">

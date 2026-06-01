@@ -126,7 +126,7 @@ export default function DashboardLayout() {
                          flex items-center justify-between px-5 z-20">
 
         {/* Logo */}
-        <BrandLogo textSize="text-sm" iconSize={22} />
+        <BrandLogo variant="sidebar" />
 
         {/* Título da página atual */}
         <span className="hidden md:block text-slate-500 text-xs font-medium tracking-wide">
