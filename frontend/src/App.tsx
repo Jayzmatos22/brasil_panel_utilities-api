@@ -1,16 +1,17 @@
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { CircleDollarSign } from 'lucide-react';
 
 // Layouts
 import HeaderApp from './components/Header';
 import DashboardLayout from './layouts/DashboardLayout';
 
-// Auth & Onboarding
-import RegisterPage  from './pages/auth/RegisterPage';
-import LoginPage     from './pages/auth/LoginPage';
-import AddressPage   from './pages/onboarding/AddressPage';
-import BankPage      from './pages/onboarding/BankPage';
+// Auth (standalone — split-screen)
+import RegisterPage from './pages/auth/RegisterPage';
+import LoginPage    from './pages/auth/LoginPage';
+
+// Onboarding (com header)
+import AddressPage from './pages/onboarding/AddressPage';
+import BankPage    from './pages/onboarding/BankPage';
 
 // Dashboard — Economia
 import EconomiaPage from './pages/dashboard/economia/EconomiaPage';
@@ -32,40 +33,22 @@ import BancosPage from './pages/dashboard/brasil/BancosPage';
 
 import './App.css';
 
-// ─── Layout para rotas de auth / onboarding ──────────────────────────────────
-
-function AuthLayout() {
-  const location = useLocation();
-  const showMoneyIcon =
-    location.pathname === '/' ||
-    location.pathname === '/registro-usuario';
-
+// ─── Onboarding layout (header + fundo) ──────────────────────────────────────
+function OnboardingLayout() {
   return (
     <div className="min-h-screen w-full bg-app flex flex-col overflow-x-hidden">
       <HeaderApp />
-
-      {showMoneyIcon && (
-        <CircleDollarSign
-          size={120}
-          className="money-icon-bg fixed filter drop-shadow-lg money-animated
-                     left-3/4 top-1/2 -translate-x-1/2 -translate-y-1/5"
-        />
-      )}
-
       <div className="flex-1 w-full flex justify-center items-start mt-20 p-4 py-8">
         <Routes>
-          <Route path="/"                  element={<RegisterPage />} />
-          <Route path="/registro-usuario"  element={<RegisterPage />} />
-          <Route path="/dados-endereco"    element={<AddressPage />} />
-          <Route path="/dados-bancarios"   element={<BankPage />} />
+          <Route path="/dados-endereco"  element={<AddressPage />} />
+          <Route path="/dados-bancarios" element={<BankPage />} />
         </Routes>
       </div>
     </div>
   );
 }
 
-// ─── App root ────────────────────────────────────────────────────────────────
-
+// ─── Root ────────────────────────────────────────────────────────────────────
 export default function App() {
   return (
     <BrowserRouter>
@@ -86,7 +69,7 @@ export default function App() {
 
       <Routes>
 
-        {/* ── Dashboard (com sidebar) ── */}
+        {/* ── Dashboard (sidebar) ── */}
         <Route path="/dashboard" element={<DashboardLayout />}>
           <Route path="economia"         element={<EconomiaPage />} />
           <Route path="economia/salario" element={<SalarioPage />} />
@@ -100,11 +83,13 @@ export default function App() {
           <Route path="brasil/bancos"    element={<BancosPage />} />
         </Route>
 
-        {/* ── Login — layout próprio (split screen) ── */}
-        <Route path="/login-usuario" element={<LoginPage />} />
+        {/* ── Auth — split-screen standalone ── */}
+        <Route path="/"                 element={<RegisterPage />} />
+        <Route path="/registro-usuario" element={<RegisterPage />} />
+        <Route path="/login-usuario"    element={<LoginPage />} />
 
-        {/* ── Onboarding (header + fundo) ── */}
-        <Route path="/*" element={<AuthLayout />} />
+        {/* ── Onboarding (com header Brasil Panel) ── */}
+        <Route path="/*" element={<OnboardingLayout />} />
 
       </Routes>
     </BrowserRouter>
