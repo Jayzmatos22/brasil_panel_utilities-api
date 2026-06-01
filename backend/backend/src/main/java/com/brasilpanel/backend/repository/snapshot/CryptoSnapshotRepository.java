@@ -6,12 +6,19 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface CryptoSnapshotRepository extends JpaRepository<CryptoSnapshot, Long> {
 
     /** Snapshots mais recentes de todas as moedas (último batch) */
     List<CryptoSnapshot> findByFetchedAtOrderByCoinIdAsc(LocalDateTime fetchedAt);
+
+    /** Snapshot mais recente de todo o banco — usado para descobrir o último batch */
+    Optional<CryptoSnapshot> findTopByOrderByFetchedAtDesc();
+
+    /** Batch de um fetch específico, ordenado por market cap desc (como a API do CoinGecko) */
+    List<CryptoSnapshot> findByFetchedAtOrderByMarketCapDesc(LocalDateTime fetchedAt);
 
     /** Último snapshot de uma moeda específica */
     CryptoSnapshot findTopByCoinIdOrderByFetchedAtDesc(String coinId);

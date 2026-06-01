@@ -2,6 +2,7 @@ package com.brasilpanel.backend.service.api.bcb;
 
 import com.brasilpanel.backend.dto.api.bcb.*;
 import com.brasilpanel.backend.exception.customized.BcbApiException;
+import com.brasilpanel.backend.model.FinancialDataPoint;
 import com.brasilpanel.backend.service.financial.FinancialDataService;
 import com.brasilpanel.backend.validators.api.BcbValidator;
 import lombok.RequiredArgsConstructor;
@@ -10,9 +11,12 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 
 
@@ -24,6 +28,7 @@ public class BcbService implements BcbImplementations{
     private static final String VALOR = "valor";
     private static final String DATA = "data";
     private static final String SOURCE = "BCB";
+    private static final DateTimeFormatter BCB_DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private final BcbValidator bcbValidator;
     private final FinancialDataService financialDataService;
 
@@ -31,23 +36,44 @@ public class BcbService implements BcbImplementations{
 
     @Cacheable("selic")
     public SelicDataDTO getSelic() {
+        // DB-first: reconstrói o DTO a partir dos pontos salvos (séries 432/1178/4189).
+        // O acumulado 12m é recomputado a partir dos últimos 12 pontos diários (série 432).
+        Optional<FinancialDataPoint> current = financialDataService.getLastPoint("432", SOURCE);
+        Optional<FinancialDataPoint> month   = financialDataService.getLastPoint("1178", SOURCE);
+        Optional<FinancialDataPoint> year    = financialDataService.getLastPoint("4189", SOURCE);
+        if (current.isPresent() && month.isPresent() && year.isPresent()) {
+            List<FinancialDataPoint> history = financialDataService.getRecentPoints("432", SOURCE, 12);
+            return new SelicDataDTO(
+                    current.get().getValue().doubleValue(),
+                    month.get().getValue().doubleValue(),
+                    year.get().getValue().doubleValue(),
+                    compoundPercent(history)
+            );
+        }
+
+        // fallback — API externa (persiste para próximas leituras)
         try {
-            List<SelicHistoryDTO> current = fetchSelic("432", 1);
+            List<SelicHistoryDTO> currentApi = fetchSelic("432", 1);
             Thread.sleep(1200);
-            List<SelicHistoryDTO> month   = fetchSelic("1178", 1);
+            List<SelicHistoryDTO> monthApi   = fetchSelic("1178", 1);
             Thread.sleep(1200);
-            List<SelicHistoryDTO> year    = fetchSelic("4189", 1);
+            List<SelicHistoryDTO> yearApi    = fetchSelic("4189", 1);
             Thread.sleep(1200);
             List<SelicHistoryDTO> history = fetchSelic("432", 12);
+
+            // persiste cada ponto (idempotente)
+            history.forEach(h -> financialDataService.savePoint("432", SOURCE, h.date(), h.value(), null));
+            monthApi.forEach(h -> financialDataService.savePoint("1178", SOURCE, h.date(), h.value(), null));
+            yearApi.forEach(h -> financialDataService.savePoint("4189", SOURCE, h.date(), h.value(), null));
 
             double last12Compound = (history.stream()
                     .mapToDouble(SelicHistoryDTO::value)
                     .reduce(1.0, (acc, v) -> acc * (1 + v / 100)) - 1) * 100;
 
             return new SelicDataDTO(
-                    current.getFirst().value(),
-                    month.getFirst().value(),
-                    year.getFirst().value(),
+                    currentApi.getFirst().value(),
+                    monthApi.getFirst().value(),
+                    yearApi.getFirst().value(),
                     Math.round(last12Compound * 100.0) / 100.0
             );
 
@@ -65,6 +91,21 @@ public class BcbService implements BcbImplementations{
     @Cacheable("bcb-ipca")
     @Override
     public IpcaDataDTO getIpca () {
+        // DB-first: reconstrói o DTO a partir dos pontos salvos (séries 433/13522).
+        // Acumulado e composição 12m recomputados a partir dos últimos 12 pontos mensais (série 433).
+        Optional<FinancialDataPoint> currentMonthDb = financialDataService.getLastPoint("433", SOURCE);
+        Optional<FinancialDataPoint> accumulatedYearDb = financialDataService.getLastPoint("13522", SOURCE);
+        if (currentMonthDb.isPresent() && accumulatedYearDb.isPresent()) {
+            List<FinancialDataPoint> history = financialDataService.getRecentPoints("433", SOURCE, 12);
+            return new IpcaDataDTO(
+                    currentMonthDb.get().getValue().doubleValue(),
+                    accumulatedYearDb.get().getValue().doubleValue(),
+                    sumPercent(history),
+                    compoundPercent(history)
+            );
+        }
+
+        // fallback — API externa (persiste para próximas leituras)
         try {
                 List<IpcaHistoryDTO> currentMonth = fetchIpca("433", 1);
                 List<IpcaHistoryDTO> accumulatedYear = fetchIpca("13522", 1);
@@ -73,6 +114,10 @@ public class BcbService implements BcbImplementations{
                 if (currentMonth.isEmpty() || accumulatedYear.isEmpty() || history.isEmpty()) {
                     throw new BcbApiException("Dados IPCA incompletos");
                 }
+
+                // persiste cada ponto (idempotente)
+                history.forEach(h -> financialDataService.savePoint("433", SOURCE, h.date(), h.value(), null));
+                accumulatedYear.forEach(h -> financialDataService.savePoint("13522", SOURCE, h.date(), h.value(), null));
 
                 double last12Sum = Math.round(
                         history.stream().mapToDouble(IpcaHistoryDTO::value).sum() * 100.0
@@ -104,6 +149,14 @@ public class BcbService implements BcbImplementations{
     // ptax
     @Cacheable("bcb-ptax")
     public DollarPtaxDTO getDollarPtax() {
+        // DB-first: serve o último ponto salvo; só chama a API se o banco estiver vazio
+        Optional<FinancialDataPoint> last = financialDataService.getLastPoint("1", SOURCE);
+        if (last.isPresent()) {
+            FinancialDataPoint p = last.get();
+            return new DollarPtaxDTO(p.getReferenceDate().format(BCB_DATE), p.getValue().doubleValue());
+        }
+
+        // fallback — API externa (persiste para próximas leituras)
         try {
             List<DollarPtaxDTO> data = restClient.get()
                     .uri("https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados/ultimos/1?formato=json")
@@ -132,6 +185,18 @@ public class BcbService implements BcbImplementations{
     @Cacheable("bcb-cdi")
     @Override
     public CdiDataDTO getCdiRate() {
+        // DB-first: serve o último ponto salvo; só chama a API se o banco estiver vazio
+        Optional<FinancialDataPoint> last = financialDataService.getLastPoint("12", SOURCE);
+        if (last.isPresent()) {
+            FinancialDataPoint p = last.get();
+            return new CdiDataDTO(
+                    p.getReferenceDate().format(BCB_DATE),
+                    p.getValue().doubleValue(),
+                    p.getSecondaryValue() != null ? p.getSecondaryValue().doubleValue() : null
+            );
+        }
+
+        // fallback — API externa (persiste para próximas leituras)
         try {
             List<Map<String, String>> data = restClient.get()
                     .uri("https://api.bcb.gov.br/dados/serie/bcdata.sgs.12/dados/ultimos/1?formato=json")
@@ -168,8 +233,19 @@ public class BcbService implements BcbImplementations{
     @Cacheable("selic-history")
     @Override
     public List<SelicHistoryDTO> getSelicHistory () {
+        // DB-first: serve os 12 pontos mais recentes da meta SELIC (série 4390) em ordem cronológica
+        List<FinancialDataPoint> points = financialDataService.getRecentPoints("4390", SOURCE, 12);
+        if (!points.isEmpty()) {
+            return points.stream()
+                    .map(p -> new SelicHistoryDTO(p.getReferenceDate().format(BCB_DATE), p.getValue().doubleValue()))
+                    .toList();
+        }
+
+        // fallback — API externa (persiste para próximas leituras)
         try {
-            return fetchSelic("4390", 12);
+            List<SelicHistoryDTO> data = fetchSelic("4390", 12);
+            data.forEach(h -> financialDataService.savePoint("4390", SOURCE, h.date(), h.value(), null));
+            return data;
         } catch (BcbApiException e) {
             throw e;
         } catch (Exception e) {
@@ -193,6 +269,15 @@ public class BcbService implements BcbImplementations{
 
     @Cacheable("salario-minimo")
     public List<MinimumWageDTO> getMinimumWageAll() {
+        // DB-first: serve os pontos salvos (ordem cronológica); só chama a API se o banco estiver vazio
+        List<FinancialDataPoint> points = financialDataService.getAllPoints("1619", SOURCE);
+        if (!points.isEmpty()) {
+            return points.stream()
+                    .map(p -> new MinimumWageDTO(p.getReferenceDate().format(BCB_DATE), p.getValue().doubleValue()))
+                    .toList();
+        }
+
+        // fallback — API externa (persiste para próximas leituras)
         try {
             String url = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.1619/dados/ultimos/20?formato=json";
             List<MinimumWageDTO> data = restClient.get()
@@ -221,7 +306,9 @@ public class BcbService implements BcbImplementations{
         bcbValidator.validIntervalFilterMonth(intervaloMeses);
 
         try {
-            List<MinimumWageDTO> all = getMinimumWageAll();
+            // cópia mutável: getMinimumWageAll() pode retornar lista imutável (DB-first)
+            // e/ou cacheada — reverter no lugar quebraria ou corromperia o cache
+            List<MinimumWageDTO> all = new ArrayList<>(getMinimumWageAll());
             Collections.reverse(all);
             return all.stream()
                     .limit(intervaloMeses)
@@ -235,6 +322,23 @@ public class BcbService implements BcbImplementations{
 
     }
 
+
+    // ── Agregados reconstruídos a partir dos pontos do banco ───────────────
+
+    /** Composição (juros sobre juros) de uma lista de pontos %, arredondada a 2 casas. */
+    private double compoundPercent(List<FinancialDataPoint> points) {
+        double compound = (points.stream()
+                .mapToDouble(p -> p.getValue().doubleValue())
+                .reduce(1.0, (acc, v) -> acc * (1 + v / 100)) - 1) * 100;
+        return Math.round(compound * 100.0) / 100.0;
+    }
+
+    /** Soma simples de uma lista de pontos %, arredondada a 2 casas. */
+    private double sumPercent(List<FinancialDataPoint> points) {
+        return Math.round(
+                points.stream().mapToDouble(p -> p.getValue().doubleValue()).sum() * 100.0
+        ) / 100.0;
+    }
 
     // Auxiliam chamada na API e filtro
     private List<SelicHistoryDTO> fetchSelic(String codigo, int quantidade) {

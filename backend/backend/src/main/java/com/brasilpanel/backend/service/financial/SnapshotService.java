@@ -20,6 +20,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Persiste snapshots de ações, metais e criptomoedas.
@@ -39,20 +40,21 @@ public class SnapshotService {
     // ── Ações ─────────────────────────────────────────────────────────────
 
     /**
-     * Persiste cotação de uma ação retornada pelo Alpha Vantage.
-     * Idempotente: ignora se já existe um snapshot para símbolo + pregão.
+     * Persiste (upsert) cotação de uma ação retornada pelo Alpha Vantage.
+     * Se já existe snapshot do mesmo símbolo + pregão, atualiza os valores intraday
+     * e o fetchedAt — necessário para o controle de frescor do DB-first de ações.
      */
     @Transactional
     public void saveStock(StockQuoteDTO dto) {
         try {
             LocalDate tradingDay = LocalDate.parse(dto.latestTradingDay(), ALPHA_DATE);
 
-            if (stockRepository.existsBySymbolAndTradingDay(dto.symbol(), tradingDay)) {
-                log.debug("Stock snapshot já existe: {} {}", dto.symbol(), tradingDay);
-                return;
-            }
+            Long existingId = stockRepository.findBySymbolAndTradingDay(dto.symbol(), tradingDay)
+                    .map(StockSnapshot::getId)
+                    .orElse(null);
 
             StockSnapshot snapshot = StockSnapshot.builder()
+                    .id(existingId)               // null → insert; preenchido → update (merge)
                     .symbol(dto.symbol())
                     .tradingDay(tradingDay)
                     .open(toBD(dto.open()))
@@ -66,11 +68,18 @@ public class SnapshotService {
                     .build();
 
             stockRepository.save(snapshot);
-            log.debug("Stock snapshot salvo: {} pregão={}", dto.symbol(), tradingDay);
+            log.debug("Stock snapshot salvo ({}): {} pregão={}",
+                    existingId == null ? "insert" : "update", dto.symbol(), tradingDay);
 
         } catch (Exception e) {
             log.warn("Falha ao persistir stock snapshot {}: {}", dto.symbol(), e.getMessage());
         }
+    }
+
+    /** Último snapshot de uma ação (para leitura DB-first por símbolo). */
+    @Transactional(readOnly = true)
+    public Optional<StockSnapshot> getLatestStock(String symbol) {
+        return stockRepository.findTopBySymbolOrderByTradingDayDesc(symbol);
     }
 
     // ── Metais ────────────────────────────────────────────────────────────
@@ -112,6 +121,12 @@ public class SnapshotService {
         }
     }
 
+    /** Snapshot de metais mais recente salvo no banco (para leitura DB-first). */
+    @Transactional(readOnly = true)
+    public Optional<MetalSnapshot> getLatestMetals() {
+        return metalRepository.findTopByOrderByReferenceTsDesc();
+    }
+
     // ── Criptomoedas ──────────────────────────────────────────────────────
 
     /**
@@ -146,6 +161,23 @@ public class SnapshotService {
         } catch (Exception e) {
             log.warn("Falha ao persistir crypto snapshots: {}", e.getMessage());
         }
+    }
+
+    /**
+     * Último batch de criptomoedas salvo (todas as moedas do fetch mais recente),
+     * ordenado por market cap desc — mesma ordem da API. Vazio se não houver snapshot.
+     */
+    @Transactional(readOnly = true)
+    public List<CryptoSnapshot> getLatestCryptoBatch() {
+        return cryptoRepository.findTopByOrderByFetchedAtDesc()
+                .map(s -> cryptoRepository.findByFetchedAtOrderByMarketCapDesc(s.getFetchedAt()))
+                .orElseGet(List::of);
+    }
+
+    /** Último snapshot de uma moeda específica (para leitura DB-first por nome). */
+    @Transactional(readOnly = true)
+    public Optional<CryptoSnapshot> getLatestCrypto(String coinId) {
+        return Optional.ofNullable(cryptoRepository.findTopByCoinIdOrderByFetchedAtDesc(coinId));
     }
 
     // ── Utilitários ───────────────────────────────────────────────────────

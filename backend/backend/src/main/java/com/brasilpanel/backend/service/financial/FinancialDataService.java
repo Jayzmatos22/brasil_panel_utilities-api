@@ -12,6 +12,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -74,6 +77,36 @@ public class FinancialDataService {
     public Optional<FinancialDataPoint> getLastPoint(String seriesCode, String source) {
         return seriesRepository.findByCodeAndSource(seriesCode, source)
                 .flatMap(dataPointRepository::findTopBySeriesOrderByReferenceDateDesc);
+    }
+
+    /**
+     * Retorna todos os pontos de uma série em ordem cronológica (mais antigo → mais recente).
+     * Vazio se a série não existir ou não tiver pontos.
+     */
+    @Transactional(readOnly = true)
+    public List<FinancialDataPoint> getAllPoints(String seriesCode, String source) {
+        return seriesRepository.findByCodeAndSource(seriesCode, source)
+                .map(dataPointRepository::findBySeriesOrderByReferenceDateAsc)
+                .orElseGet(List::of);
+    }
+
+    /**
+     * Retorna os N pontos mais recentes de uma série em ordem cronológica (mais antigo → mais recente),
+     * como a API da BCB devolve em /ultimos/N. Usado para reconstruir agregados (acumulado/composição).
+     * Vazio se a série não existir ou não tiver pontos.
+     */
+    @Transactional(readOnly = true)
+    public List<FinancialDataPoint> getRecentPoints(String seriesCode, String source, int n) {
+        List<FinancialDataPoint> recentDesc = seriesRepository.findByCodeAndSource(seriesCode, source)
+                .map(dataPointRepository::findBySeriesOrderByReferenceDateDesc)
+                .orElseGet(List::of)
+                .stream()
+                .limit(n)
+                .toList();
+
+        List<FinancialDataPoint> chronological = new ArrayList<>(recentDesc);
+        Collections.reverse(chronological);
+        return chronological;
     }
 
     // ── privado ──────────────────────────────────────────────────────────

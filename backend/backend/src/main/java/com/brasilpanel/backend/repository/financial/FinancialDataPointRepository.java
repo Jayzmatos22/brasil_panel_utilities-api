@@ -21,6 +21,9 @@ public interface FinancialDataPointRepository extends JpaRepository<FinancialDat
     /** Histórico de N meses de uma série, do mais recente ao mais antigo */
     List<FinancialDataPoint> findBySeriesOrderByReferenceDateDesc(FinancialSeries series);
 
+    /** Histórico completo de uma série, do mais antigo ao mais recente (ordem cronológica da BCB) */
+    List<FinancialDataPoint> findBySeriesOrderByReferenceDateAsc(FinancialSeries series);
+
     /** Verifica se já existe o ponto para evitar duplicatas */
     boolean existsBySeriesAndReferenceDate(FinancialSeries series, LocalDate referenceDate);
 }

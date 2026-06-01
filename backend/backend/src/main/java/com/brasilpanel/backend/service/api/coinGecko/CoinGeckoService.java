@@ -4,6 +4,7 @@ import com.brasilpanel.backend.dto.api.coinGecko.CryptoCoinGeckoByNameDTO;
 import com.brasilpanel.backend.dto.api.coinGecko.CryptoCoinGeckoMarketDTO;
 import com.brasilpanel.backend.exception.customized.CoinGeckoException;
 import com.brasilpanel.backend.exception.customized.CryptoCoinGeckoException;
+import com.brasilpanel.backend.model.CryptoSnapshot;
 import com.brasilpanel.backend.service.financial.SnapshotService;
 import com.brasilpanel.backend.validators.api.CryptoCoinGecko;
 import lombok.RequiredArgsConstructor;
@@ -12,8 +13,10 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +29,13 @@ public class CoinGeckoService {
 
     @Cacheable("crypto-list")
     public List<CryptoCoinGeckoMarketDTO> returnAllCryptos(){
+        // DB-first: serve o último batch salvo; só chama a API se o banco estiver vazio
+        List<CryptoSnapshot> latest = snapshotService.getLatestCryptoBatch();
+        if (!latest.isEmpty()) {
+            return latest.stream().map(this::toMarketDTO).toList();
+        }
+
+        // fallback — API externa (persiste para próximas leituras)
         try {
             List<CryptoCoinGeckoMarketDTO> data = restClient.get()
                     .uri("https://api.coingecko.com/api/v3/coins/markets?vs_currency=brl&order=market_cap_desc&per_page=100&page=1")
@@ -52,6 +62,14 @@ public class CoinGeckoService {
     @Cacheable(value = "crypto-by-name", key = "#cryptoName")
     public CryptoCoinGeckoByNameDTO returnCryptoByName(String cryptoName){
         cryptoCoinGecko.validNameCoin(cryptoName);
+
+        // DB-first: se a moeda está no último batch (top 100), serve o preço do banco
+        Optional<CryptoSnapshot> snapshot = snapshotService.getLatestCrypto(cryptoName);
+        if (snapshot.isPresent()) {
+            return new CryptoCoinGeckoByNameDTO(cryptoName, bd(snapshot.get().getCurrentPrice()));
+        }
+
+        // fallback — API externa (moeda fora do top 100 ou banco vazio)
         String url = "https://api.coingecko.com/api/v3/simple/price?ids=" + cryptoName + "&vs_currencies=brl";
         try {
             Map<String, Map<String, Double>> data = restClient.get()
@@ -71,6 +89,24 @@ public class CoinGeckoService {
         } catch (Exception e) {
             throw new CoinGeckoException("Erro ao buscar crypto: " + e.getMessage());
         }
+    }
+
+    // ── Reconstrução DB → DTO ──────────────────────────────────────────────
+
+    private CryptoCoinGeckoMarketDTO toMarketDTO(CryptoSnapshot s) {
+        return new CryptoCoinGeckoMarketDTO(
+                s.getCoinId(),
+                s.getSymbol(),
+                s.getName(),
+                bd(s.getCurrentPrice()),
+                s.getMarketCap() != null ? s.getMarketCap().longValue() : null,
+                bd(s.getPriceChange24h()),
+                s.getImageUrl()
+        );
+    }
+
+    private static Double bd(BigDecimal v) {
+        return v != null ? v.doubleValue() : null;
     }
 
 }

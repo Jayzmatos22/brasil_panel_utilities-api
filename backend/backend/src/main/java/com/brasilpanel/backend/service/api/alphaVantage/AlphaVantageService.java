@@ -3,6 +3,7 @@ package com.brasilpanel.backend.service.api.alphaVantage;
 import com.brasilpanel.backend.dto.api.alphaVantage.GlobalQuoteWrapper;
 import com.brasilpanel.backend.dto.api.alphaVantage.StockQuoteDTO;
 import com.brasilpanel.backend.exception.customized.AlphaVantageException;
+import com.brasilpanel.backend.model.StockSnapshot;
 import com.brasilpanel.backend.service.financial.SnapshotService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -13,7 +14,12 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
@@ -27,6 +33,13 @@ public class AlphaVantageService {
 
     @Value("${alpha-vantage.keys}")
     private List<String> apiKeys;
+
+    private static final DateTimeFormatter ALPHA_DATE = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+    // Janela de frescor do DB-first de ações. Ações não têm scheduler e o free tier
+    // do Alpha Vantage tem limite diário (~25 req/dia), então só re-buscamos um símbolo
+    // na API após esta janela; entre uma busca e outra, servimos do banco.
+    private static final Duration STOCK_FRESHNESS = Duration.ofHours(4);
 
     private final AtomicInteger currentIndex = new AtomicInteger(0);
 
@@ -43,12 +56,20 @@ public class AlphaVantageService {
 
     @Cacheable(value = "stocks", key = "#symbol")
     public StockQuoteDTO getStockQuote(String symbol) {
+        String sym = symbol.trim().toUpperCase();
+
+        // DB-first: serve do banco se o snapshot for recente (dentro da janela de frescor)
+        Optional<StockSnapshot> latest = snapshotService.getLatestStock(sym);
+        if (latest.isPresent() && isFresh(latest.get())) {
+            return toDTO(latest.get());
+        }
+
         String apiKey = getNextApiKey();
         String url = "https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol="
-                + symbol.trim().toUpperCase()
+                + sym
                 + "&apikey=" + apiKey;
 
-        log.info("Buscando cotação | símbolo: {} | chave: {}", symbol, maskApiKey(apiKey));
+        log.info("Buscando cotação | símbolo: {} | chave: {}", sym, maskApiKey(apiKey));
 
         try {
             String response = restClient.get()
@@ -90,10 +111,45 @@ public class AlphaVantageService {
             return stockQuote;
 
         } catch (AlphaVantageException e) {
+            // Fallback: API indisponível ou limite estourado → serve o último snapshot do banco
+            if (latest.isPresent()) {
+                log.warn("AlphaVantage falhou ({}); servindo último snapshot do banco para {}", e.getMessage(), sym);
+                return toDTO(latest.get());
+            }
             throw e;
         } catch (Exception e) {
             log.error("Erro na comunicação com AlphaVantage usando {}", maskApiKey(apiKey), e);
+            if (latest.isPresent()) {
+                log.warn("Servindo último snapshot do banco para {} após erro de comunicação", sym);
+                return toDTO(latest.get());
+            }
             throw new AlphaVantageException("Erro na comunicação com AlphaVantage", 502);
         }
+    }
+
+    // ── Frescor e reconstrução DB → DTO ────────────────────────────────────
+
+    private boolean isFresh(StockSnapshot s) {
+        return s.getFetchedAt() != null
+                && s.getFetchedAt().isAfter(LocalDateTime.now().minus(STOCK_FRESHNESS));
+    }
+
+    private StockQuoteDTO toDTO(StockSnapshot s) {
+        return new StockQuoteDTO(
+                s.getSymbol(),
+                bd(s.getOpen()),
+                bd(s.getHigh()),
+                bd(s.getLow()),
+                bd(s.getPrice()),
+                s.getVolume(),
+                s.getTradingDay().format(ALPHA_DATE),
+                bd(s.getPreviousClose()),
+                bd(s.getChange()),
+                s.getChangePercent() != null ? s.getChangePercent().toPlainString() + "%" : null
+        );
+    }
+
+    private static Double bd(BigDecimal v) {
+        return v != null ? v.doubleValue() : null;
     }
 }
