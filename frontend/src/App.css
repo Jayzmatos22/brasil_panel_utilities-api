@@ -1,3 +1,5 @@
+
+
 .bg-header-app{
     background-image: linear-gradient(to right, #5b4503, #705101c7, #876101c7 80%);
 }
@@ -161,3 +163,45 @@
                 drop-shadow(0 30px 50px rgb(9, 233, 143));
     }
 }
+
+
+
+@keyframes tricolor-glow {
+  /* ── VERDE: sobe e desce ── */
+  0%   { filter: drop-shadow(0  4px  3px rgba(16, 185, 129, 0.15)) drop-shadow(0 0 0 rgba(59, 130, 246, 0)) drop-shadow(0 0 0 rgba(245, 158, 11, 0)); }
+  14%  { filter: drop-shadow(0 18px 1px rgba(16, 185, 129, 0.203)) drop-shadow(0 0 0 rgba(59, 130, 246, 0)) drop-shadow(0 0 0 rgba(245, 158, 11, 0)); }
+  28%  { filter: drop-shadow(0  4px  3px rgba(16, 185, 129, 0.10)) drop-shadow(0 0 0 rgba(59, 130, 246, 0)) drop-shadow(0 0 0 rgba(245, 158, 11, 0)); }
+
+  /* ── AZUL: sobe e desce ── */
+  33%  { filter: drop-shadow(0 0 0 rgba(16, 185, 129, 0)) drop-shadow(0  4px  3px rgba(59, 130, 246, 0.15)) drop-shadow(0 0 0 rgba(245, 158, 11, 0)); }
+  47%  { filter: drop-shadow(0 0 0 rgba(16, 185, 129, 0)) drop-shadow(0 18px 1px rgba(59, 131, 246, 0.308)) drop-shadow(0 0 0 rgba(245, 158, 11, 0)); }
+  61%  { filter: drop-shadow(0 0 0 rgba(16, 185, 129, 0)) drop-shadow(0  4px  3px rgba(59, 130, 246, 0.10)) drop-shadow(0 0 0 rgba(245, 158, 11, 0)); }
+
+  /* ── ÂMBAR: sobe e desce ── */
+  66%  { filter: drop-shadow(0 0 0 rgba(16, 185, 129, 0)) drop-shadow(0 0 0 rgba(59, 130, 246, 0)) drop-shadow(0  4px  3px rgba(245, 158, 11, 0.15)); }
+  80%  { filter: drop-shadow(0 0 0 rgba(16, 185, 129, 0)) drop-shadow(0 0 0 rgba(59, 130, 246, 0)) drop-shadow(0 18px 1px    rgba(245, 159, 11, 0.333)); }
+  94%, 100% { filter: drop-shadow(0 0 0 rgba(16, 185, 129, 0)) drop-shadow(0 0 0 rgba(59, 130, 246, 0)) drop-shadow(0  4px  2px rgba(245, 158, 11, 0.10)); }
+}
+
+.hv-tricolor-glow {
+  animation: tricolor-glow 10s ease-in-out infinite;
+}
+
+
+.vertical-icon{
+    box-shadow: 0 0 10px rgb(1, 34, 44),
+                -1px 0 30px rgb(237, 2, 245), 
+                -20px 0 30px rgb(76, 0, 255);
+    transition: transform 1s ease-in-out,
+                box-shadow 0.5s ease-in-out;
+    transform: translateY(0px);
+    &:hover {
+        transform: translateY(100px);
+        cursor: pointer;
+        box-shadow: 0 0 10px rgb(1, 34, 44),
+                    -1px 0 30px rgb(237, 2, 245),
+                    -20px 0 30px rgb(76, 0, 255),
+                    -40px 0 50px rgb(76, 0, 255);
+    }
+}
+

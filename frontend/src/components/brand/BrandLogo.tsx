@@ -75,22 +75,21 @@ export function BrandLogo({ variant = 'sidebar', className = '' }: BrandLogoProp
       aria-label="Brasil Panel"
     >
       <defs>
-        <filter id="bp-gG" x="-40%" y="-80%" width="180%" height="260%">
-          <feGaussianBlur stdDeviation="3.5" result="blur"/>
+        <filter id="bp-gG" x="-60%" y="-120%" width="220%" height="340%">
+          <feGaussianBlur stdDeviation="4" result="blur"/>
           <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
         </filter>
-        <filter id="bp-gB" x="-40%" y="-80%" width="180%" height="260%">
-          <feGaussianBlur stdDeviation="3.5" result="blur"/>
+        <filter id="bp-gB" x="-60%" y="-120%" width="220%" height="340%">
+          <feGaussianBlur stdDeviation="4" result="blur"/>
           <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
         </filter>
-        <filter id="bp-gA" x="-40%" y="-80%" width="180%" height="260%">
-          <feGaussianBlur stdDeviation="3.5" result="blur"/>
+        <filter id="bp-gA" x="-60%" y="-120%" width="220%" height="340%">
+          <feGaussianBlur stdDeviation="4" result="blur"/>
           <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
         </filter>
       </defs>
 
-      {/* Fundo */}
-      <rect width="320" height="80" rx="10" fill="#0f172a"/>
+      {/* sem fundo — transparente para fundir com o bg do painel */}
 
       {/* Frame tricolor glow */}
       {/* verde: arco esquerdo + segmentos */}

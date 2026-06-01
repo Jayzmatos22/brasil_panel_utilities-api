@@ -2,6 +2,7 @@ package com.brasilpanel.backend.service.api.bcb;
 
 import com.brasilpanel.backend.dto.api.bcb.*;
 import com.brasilpanel.backend.exception.customized.BcbApiException;
+import com.brasilpanel.backend.service.financial.FinancialDataService;
 import com.brasilpanel.backend.validators.api.BcbValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
@@ -22,7 +23,9 @@ public class BcbService implements BcbImplementations{
     private final RestClient restClient;
     private static final String VALOR = "valor";
     private static final String DATA = "data";
+    private static final String SOURCE = "BCB";
     private final BcbValidator bcbValidator;
+    private final FinancialDataService financialDataService;
 
 
 
@@ -111,7 +114,11 @@ public class BcbService implements BcbImplementations{
                 throw new BcbApiException("Dados do dólar PTAX indisponíveis");
             }
 
-            return data.getFirst();
+            DollarPtaxDTO ptax = data.getFirst();
+            // persiste no banco
+            financialDataService.savePoint("1", SOURCE, ptax.date(), ptax.value(), null);
+
+            return ptax;
 
         } catch (BcbApiException e) {
             throw e;
@@ -143,6 +150,9 @@ public class BcbService implements BcbImplementations{
             double daily  = Double.parseDouble(entry.get(VALOR));
             // BCB usa 252 dias úteis como convenção para anualização
             double annual = (Math.pow(1.0 + daily / 100.0, 252) - 1.0) * 100.0;
+
+            // persiste no banco (idempotente — ignora se já existe)
+            financialDataService.savePoint("12", SOURCE, entry.get(DATA), daily, annual);
 
             return new CdiDataDTO(entry.get(DATA), daily, annual);
 
@@ -193,6 +203,9 @@ public class BcbService implements BcbImplementations{
             if (data == null || data.isEmpty()){
                 throw new BcbApiException("Dados de salário mínimo vigente vazios.");
             }
+            // persiste cada ponto (idempotente)
+            data.forEach(w -> financialDataService.savePoint(
+                    "1619", SOURCE, w.data(), w.valor(), null));
             return data;
         } catch (BcbApiException e) {
             throw e;
