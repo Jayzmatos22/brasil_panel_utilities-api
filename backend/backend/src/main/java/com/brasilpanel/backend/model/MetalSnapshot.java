@@ -25,6 +25,7 @@ import java.time.LocalDateTime;
 @Builder
 public class MetalSnapshot {
 
+    // Campos
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
