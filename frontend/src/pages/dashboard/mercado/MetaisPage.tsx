@@ -1,9 +1,13 @@
 // API: Metals.dev
 // Endpoints consumidos:
-//   GET /metals → useMetals()
+//   GET /metals         → useMetals()
+//   GET /metals/history → useMetalHistory()
 
+import { useMemo, useState } from 'react';
 import { LoaderCircle } from 'lucide-react';
-import { useMetals } from '../../../hooks/UseMetals';
+import { useMetals, useMetalHistory } from '../../../hooks/UseMetals';
+import { LineChartSvg } from '../../../components/charts/LineChartSvg';
+import type { MetalKey } from '../../../types/MetalsType';
 
 const METALS = [
   { key: 'gold',      label: 'Ouro',      emoji: '🥇' },
@@ -18,6 +22,29 @@ const METALS = [
 
 export default function MetaisPage() {
   const { data: metals, isLoading, error } = useMetals();
+  const { data: history, isLoading: loadingHistory } = useMetalHistory();
+
+  const [selected, setSelected] = useState<MetalKey>('gold');
+
+  // Só os metais que o timeseries realmente fornece (o industrial costuma não vir).
+  const availableMetals = useMemo(
+    () => METALS.filter(({ key }) => history?.data.some((p) => p[key] != null)),
+    [history],
+  );
+
+  // Se o metal selecionado não tem dados, cai no primeiro disponível.
+  const effectiveMetal: MetalKey =
+    availableMetals.some((m) => m.key === selected)
+      ? selected
+      : availableMetals[0]?.key ?? selected;
+
+  // Pontos do metal selecionado (descarta dias sem valor para aquele metal)
+  const chartPoints = useMemo(() => {
+    if (!history) return [];
+    return history.data
+      .filter((p) => p[effectiveMetal] != null)
+      .map((p) => ({ date: p.date, value: p[effectiveMetal] as number }));
+  }, [history, effectiveMetal]);
 
   const brl = (v: number) =>
     v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 });
@@ -62,6 +89,40 @@ export default function MetaisPage() {
           ))}
         </div>
       )}
+
+      {/* Histórico — últimos 30 dias (USD/toz) */}
+      <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 flex flex-col gap-4">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <h2 className="text-yellow-500 font-semibold text-sm uppercase tracking-wider">
+            Histórico — 30 dias
+          </h2>
+          <div className="flex items-center gap-2">
+            <select
+              value={effectiveMetal}
+              onChange={(e) => setSelected(e.target.value as MetalKey)}
+              disabled={availableMetals.length === 0}
+              className="h-9 px-3 rounded-md bg-slate-800 text-white border border-slate-600 outline-none focus:ring-2 focus:ring-yellow-500 transition-all text-sm disabled:opacity-50"
+            >
+              {availableMetals.map(({ key, label, emoji }) => (
+                <option key={key} value={key}>{emoji} {label}</option>
+              ))}
+            </select>
+            <span className="text-slate-500 text-xs">USD / toz</span>
+          </div>
+        </div>
+
+        {loadingHistory ? (
+          <div className="flex items-center gap-2 text-slate-400 text-sm">
+            <LoaderCircle size={16} className="animate-spin" /> Carregando histórico...
+          </div>
+        ) : chartPoints.length > 0 ? (
+          <LineChartSvg points={chartPoints} />
+        ) : (
+          <p className="text-slate-500 text-sm">
+            Sem histórico disponível para este metal.
+          </p>
+        )}
+      </div>
     </div>
   );
 }

@@ -50,6 +50,7 @@ public class SecurityConfig {
                                 "/api/quote",
                                 "/api/quote/**",
                                 "/api/metals",
+                                "/api/metals/**",
                                 "/api/ipea",
                                 "/api/ipea/**",
                                 "/swagger-ui/**",

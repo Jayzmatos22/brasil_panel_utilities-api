@@ -1,5 +1,6 @@
 package com.brasilpanel.backend.controller.api;
 
+import com.brasilpanel.backend.dto.api.metalsDev.MetalHistoryDTO;
 import com.brasilpanel.backend.dto.api.metalsDev.MetalsDataDTO;
 import com.brasilpanel.backend.service.api.metalsDev.MetalsDevService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -23,6 +24,14 @@ public class MetalsController {
     @GetMapping
     public ResponseEntity<MetalsDataDTO> getMetals() {
         return ResponseEntity.ok(metalsDevService.getMetals());
+    }
+
+    @Operation(summary = "Histórico de metais", description = "Série diária dos últimos 30 dias (todos os metais) em USD/toz, via Metals Dev timeseries. Persistido e servido DB-first.")
+    @ApiResponse(responseCode = "200", description = "Histórico retornado com sucesso")
+    @ApiResponse(responseCode = "502", description = "Erro na comunicação com a API")
+    @GetMapping("/history")
+    public ResponseEntity<MetalHistoryDTO> getMetalHistory() {
+        return ResponseEntity.ok(metalsDevService.getMetalHistory());
     }
 
 }

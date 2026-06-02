@@ -3,12 +3,15 @@ package com.brasilpanel.backend.service.financial;
 import com.brasilpanel.backend.dto.api.alphaVantage.StockHistoryPointDTO;
 import com.brasilpanel.backend.dto.api.alphaVantage.StockQuoteDTO;
 import com.brasilpanel.backend.dto.api.coinGecko.CryptoCoinGeckoMarketDTO;
+import com.brasilpanel.backend.dto.api.metalsDev.MetalHistoryPointDTO;
 import com.brasilpanel.backend.dto.api.metalsDev.MetalsDataDTO;
 import com.brasilpanel.backend.model.CryptoSnapshot;
+import com.brasilpanel.backend.model.MetalHistorySnapshot;
 import com.brasilpanel.backend.model.MetalSnapshot;
 import com.brasilpanel.backend.model.PibSnapshot;
 import com.brasilpanel.backend.model.StockSnapshot;
 import com.brasilpanel.backend.repository.snapshot.CryptoSnapshotRepository;
+import com.brasilpanel.backend.repository.snapshot.MetalHistoryRepository;
 import com.brasilpanel.backend.repository.snapshot.MetalSnapshotRepository;
 import com.brasilpanel.backend.repository.snapshot.PibSnapshotRepository;
 import com.brasilpanel.backend.repository.snapshot.StockSnapshotRepository;
@@ -38,6 +41,7 @@ public class SnapshotService {
 
     private final StockSnapshotRepository stockRepository;
     private final MetalSnapshotRepository metalRepository;
+    private final MetalHistoryRepository metalHistoryRepository;
     private final CryptoSnapshotRepository cryptoRepository;
     private final PibSnapshotRepository pibRepository;
 
@@ -184,6 +188,64 @@ public class SnapshotService {
     @Transactional(readOnly = true)
     public Optional<MetalSnapshot> getLatestMetals() {
         return metalRepository.findTopByOrderByReferenceTsDesc();
+    }
+
+    // ── Histórico de metais (Metals Dev /v1/timeseries) ─────────────────────
+
+    /**
+     * Persiste (upsert em lote) a série diária de metais.
+     * Chave natural = priceDate; se o dia já existe, atualiza os valores e o fetchedAt.
+     */
+    @Transactional
+    public void saveMetalHistory(List<MetalHistoryPointDTO> points, String currency, String unit) {
+        try {
+            if (points.isEmpty()) return;
+
+            LocalDate start = LocalDate.parse(points.get(0).date(), ALPHA_DATE);
+            LocalDate end = LocalDate.parse(points.get(points.size() - 1).date(), ALPHA_DATE);
+
+            var existingIds = metalHistoryRepository
+                    .findByPriceDateBetweenOrderByPriceDateAsc(start, end).stream()
+                    .collect(java.util.stream.Collectors.toMap(
+                            MetalHistorySnapshot::getPriceDate, MetalHistorySnapshot::getId, (a, b) -> a));
+
+            List<MetalHistorySnapshot> batch = new java.util.ArrayList<>(points.size());
+            for (MetalHistoryPointDTO p : points) {
+                LocalDate day = LocalDate.parse(p.date(), ALPHA_DATE);
+                batch.add(MetalHistorySnapshot.builder()
+                        .id(existingIds.get(day))     // null → insert; preenchido → update
+                        .priceDate(day)
+                        .currency(currency)
+                        .unit(unit)
+                        .gold(toBD(p.gold()))
+                        .silver(toBD(p.silver()))
+                        .platinum(toBD(p.platinum()))
+                        .palladium(toBD(p.palladium()))
+                        .copper(toBD(p.copper()))
+                        .aluminum(toBD(p.aluminum()))
+                        .nickel(toBD(p.nickel()))
+                        .zinc(toBD(p.zinc()))
+                        .build());
+            }
+
+            metalHistoryRepository.saveAll(batch);
+            log.debug("Metal history salvo: {} dias ({} a {})", batch.size(), start, end);
+
+        } catch (Exception e) {
+            log.warn("Falha ao persistir metal history: {}", e.getMessage());
+        }
+    }
+
+    /** Série histórica de metais num intervalo, em ordem crescente de data. */
+    @Transactional(readOnly = true)
+    public List<MetalHistorySnapshot> getMetalHistorySeries(LocalDate start, LocalDate end) {
+        return metalHistoryRepository.findByPriceDateBetweenOrderByPriceDateAsc(start, end);
+    }
+
+    /** Ponto mais recente da série histórica (para o controle de frescor do DB-first). */
+    @Transactional(readOnly = true)
+    public Optional<MetalHistorySnapshot> getLatestMetalHistory() {
+        return metalHistoryRepository.findTopByOrderByPriceDateDesc();
     }
 
     // ── Criptomoedas ──────────────────────────────────────────────────────

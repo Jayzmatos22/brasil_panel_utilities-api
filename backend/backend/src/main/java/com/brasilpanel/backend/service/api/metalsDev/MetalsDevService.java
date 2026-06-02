@@ -1,9 +1,13 @@
 package com.brasilpanel.backend.service.api.metalsDev;
 
 
+import com.brasilpanel.backend.dto.api.metalsDev.MetalHistoryDTO;
+import com.brasilpanel.backend.dto.api.metalsDev.MetalHistoryPointDTO;
 import com.brasilpanel.backend.dto.api.metalsDev.MetalsDataDTO;
 import com.brasilpanel.backend.dto.api.metalsDev.MetalsResponseDTO;
+import com.brasilpanel.backend.dto.api.metalsDev.MetalsTimeseriesResponseDTO;
 import com.brasilpanel.backend.exception.customized.MetalsException;
+import com.brasilpanel.backend.model.MetalHistorySnapshot;
 import com.brasilpanel.backend.model.MetalSnapshot;
 import com.brasilpanel.backend.service.financial.SnapshotService;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +18,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
 import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -79,6 +91,96 @@ public class MetalsDevService {
             log.error("Erro ao buscar metais: {}", e.getMessage());
             throw new MetalsException("Erro na comunicação com a API de metais", 502);
         }
+    }
+
+    // ── Histórico (timeseries) ──────────────────────────────────────────────
+
+    private static final DateTimeFormatter ISO_DATE = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+    // Janela do gráfico: 30 dias = 1 requisição (limite do endpoint), econômico
+    // para a cota free (~100 req/mês).
+    private static final int HISTORY_DAYS = 30;
+
+    // Série diária muda 1x/dia → janela longa de frescor evita rebuscar à toa.
+    private static final Duration HISTORY_FRESHNESS = Duration.ofHours(12);
+
+    @Cacheable(value = "metals-history", sync = true)
+    public MetalHistoryDTO getMetalHistory() {
+        LocalDate end = LocalDate.now();
+        LocalDate start = end.minusDays(HISTORY_DAYS - 1L);
+
+        // DB-first: serve do banco se a série existe e o ponto mais novo é recente
+        List<MetalHistorySnapshot> series = snapshotService.getMetalHistorySeries(start, end);
+        if (!series.isEmpty() && isHistoryFresh(series.get(series.size() - 1))) {
+            return toHistoryDTO(series);
+        }
+
+        String url = "https://api.metals.dev/v1/timeseries?api_key=" + apiKey
+                + "&start_date=" + start.format(ISO_DATE)
+                + "&end_date=" + end.format(ISO_DATE);
+
+        try {
+            MetalsTimeseriesResponseDTO response = restClient.get()
+                    .uri(url)
+                    .retrieve()
+                    .body(MetalsTimeseriesResponseDTO.class);
+
+            if (response == null || !"success".equals(response.status()) || response.rates() == null) {
+                throw new MetalsException("Erro na API de metais (timeseries)", 502);
+            }
+
+            List<MetalHistoryPointDTO> points = new ArrayList<>(response.rates().size());
+            response.rates().forEach((date, day) -> {
+                Map<String, BigDecimal> m = day.metals() != null ? day.metals() : Map.of();
+                points.add(new MetalHistoryPointDTO(
+                        date,
+                        dval(m, "gold"), dval(m, "silver"), dval(m, "platinum"), dval(m, "palladium"),
+                        dval(m, "copper"), dval(m, "aluminum"), dval(m, "nickel"), dval(m, "zinc")
+                ));
+            });
+            points.sort(Comparator.comparing(MetalHistoryPointDTO::date));
+
+            snapshotService.saveMetalHistory(points, response.currency(), response.unit());
+            log.info("Histórico de metais obtido: {} dias", points.size());
+            return new MetalHistoryDTO(response.currency(), response.unit(), points);
+
+        } catch (MetalsException e) {
+            if (!series.isEmpty()) {
+                log.warn("Timeseries falhou ({}); servindo histórico de metais do banco", e.getMessage());
+                return toHistoryDTO(series);
+            }
+            throw e;
+        } catch (Exception e) {
+            log.error("Erro ao buscar histórico de metais: {}", e.getMessage());
+            if (!series.isEmpty()) {
+                log.warn("Servindo histórico de metais do banco após erro de comunicação");
+                return toHistoryDTO(series);
+            }
+            throw new MetalsException("Erro na comunicação com a API de metais", 502);
+        }
+    }
+
+    private boolean isHistoryFresh(MetalHistorySnapshot s) {
+        return s.getFetchedAt() != null
+                && s.getFetchedAt().isAfter(LocalDateTime.now().minus(HISTORY_FRESHNESS));
+    }
+
+    private MetalHistoryDTO toHistoryDTO(List<MetalHistorySnapshot> series) {
+        List<MetalHistoryPointDTO> points = series.stream()
+                .map(s -> new MetalHistoryPointDTO(
+                        s.getPriceDate().format(ISO_DATE),
+                        bd(s.getGold()), bd(s.getSilver()), bd(s.getPlatinum()), bd(s.getPalladium()),
+                        bd(s.getCopper()), bd(s.getAluminum()), bd(s.getNickel()), bd(s.getZinc())
+                ))
+                .toList();
+        String currency = series.get(0).getCurrency();
+        String unit = series.get(0).getUnit();
+        return new MetalHistoryDTO(currency, unit, points);
+    }
+
+    private static Double dval(Map<String, BigDecimal> m, String key) {
+        BigDecimal v = m.get(key);
+        return v != null ? v.doubleValue() : null;
     }
 
     // ── Reconstrução DB → DTO ──────────────────────────────────────────────

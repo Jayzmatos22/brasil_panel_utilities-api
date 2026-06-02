@@ -76,6 +76,8 @@ public class CacheConfig {
                 build("frank-furter",            60,  TimeUnit.MINUTES, 10),
                 build("frank-furter-last-30-days", 60, TimeUnit.MINUTES, 10),
                 build("metals",                  60,  TimeUnit.MINUTES, 10),
+                // Histórico de metais: série diária muda 1x/dia → janela longa
+                build("metals-history",          12,  TimeUnit.HOURS,    2),
 
                 // ── Cotações em tempo real ───────────────────────────────────────
                 // Ações: AlphaVantage (limite diário de requests — 15 min equilibra

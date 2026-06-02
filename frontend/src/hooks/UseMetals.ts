@@ -9,3 +9,11 @@ export function useMetals() {
     ...FINANCIAL,
   });
 }
+
+export function useMetalHistory() {
+  return useQuery({
+    queryKey: ['metals', 'history'],
+    queryFn: metalsDevService.getMetalHistory,
+    ...FINANCIAL,
+  });
+}
