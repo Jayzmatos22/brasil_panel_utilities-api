@@ -5,18 +5,28 @@ import com.brasilpanel.backend.dto.api.ipea.IpeaItemDTO;
 import com.brasilpanel.backend.dto.api.ipea.IpeaResponseDTO;
 import com.brasilpanel.backend.dto.api.ipea.IpeaSerieDTO;
 import com.brasilpanel.backend.exception.customized.IpeaException;
+import com.brasilpanel.backend.model.FinancialDataPoint;
+import com.brasilpanel.backend.service.financial.FinancialDataService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+import java.time.ZoneOffset;
 import java.util.Comparator;
 import java.util.List;
 
+/**
+ * Serve séries do IPEA priorizando o banco local.
+ * DB-first: cache → FinancialDataPoint (source "IPEA") → API externa (fallback + persiste).
+ */
 @Service
 @RequiredArgsConstructor
 public class IpeaService {
     private final RestClient restClient;
+    private final FinancialDataService financialDataService;
+    private static final String SOURCE = "IPEA";
+    private static final ZoneOffset BRT = ZoneOffset.of("-03:00");
     private static final String BASE_URL =
             "http://ipeadata.gov.br/api/odata4/Metadados('{codigo}')/Valores";
 
@@ -52,6 +62,98 @@ public class IpeaService {
     private static final String PROJECAO_MULHERES = "DEPIS_POPMP";
 
 
+    @Cacheable("ipea-emprego")
+    public List<IpeaSerieDTO> getEmprego() {
+        return List.of(
+                serie(DESOCUPACAO, "Taxa de desocupação (%)"),
+                serie(OCUPACAO, "Nível de ocupação (%)")
+        );
+    }
+
+
+    @Cacheable("ipea-renda")
+    public List<IpeaSerieDTO> getRenda() {
+        return List.of(
+                serie(SALARIO_MINIMO_REAL, "Salário mínimo real (R$)"),
+                serie(SALARIO_MINIMO_PPC, "Salário mínimo PPC (USD)"),
+                serie(RENDA_PER_CAPITA, "Renda domiciliar per capita (R$)")
+        );
+    }
+
+
+    @Cacheable("ipea-desigualdade")
+    public List<IpeaSerieDTO> getDesigualdade() {
+        return List.of(
+                serie(GINI, "Coeficiente de Gini"),
+                serie(POBREZA, "Taxa de pobreza % (PPC$3/dia)")
+        );
+    }
+
+
+    @Cacheable("ipea-macro")
+    public List<IpeaSerieDTO> getMacro() {
+        return List.of(
+                serie(PIB, "PIB (US$ bilhões)"),
+                serie(INVESTIMENTO, "Investimento (% PIB)"),
+                serie(DESEMPREGO_FMI, "Taxa de desemprego FMI (%)"),
+                serie(SELIC, "Taxa Selic/Overnight (% a.a.)"),
+                serie(RESERVAS, "Reservas internacionais (US$ milhões)"),
+                serie(ARRECADACAO, "Arrecadação federal (R$ milhões)")
+        );
+    }
+
+
+    @Cacheable("ipea-precos")
+    public List<IpeaSerieDTO> getPrecos() {
+        return List.of(
+                serie(INPC, "INPC - índice"),
+                serie(IGPM, "IGP-M - índice")
+        );
+    }
+
+
+    @Cacheable("ipea-populacao")
+    public List<IpeaSerieDTO> getPopulacao() {
+        return List.of(
+                serie(POPULACAO, "População total (mil pessoas)"),
+                serie(PROJECAO_TOTAL, "Projeção população total"),
+                serie(PROJECAO_HOMENS, "Projeção população homens"),
+                serie(PROJECAO_MULHERES, "Projeção população mulheres")
+        );
+    }
+
+    // ── DB-first ──────────────────────────────────────────────────────────
+
+    /** Monta uma série DB-first: lê do banco; se vazio, busca na API e persiste. */
+    private IpeaSerieDTO serie(String codigo, String nome) {
+        return new IpeaSerieDTO(codigo, nome, loadSerie(codigo));
+    }
+
+    private List<IpeaItemDTO> loadSerie(String codigo) {
+        List<FinancialDataPoint> points = financialDataService.getAllPoints(codigo, SOURCE);
+
+        if (!points.isEmpty()) {
+            return points.stream()
+                    .sorted(Comparator.comparing(FinancialDataPoint::getReferenceDate).reversed())
+                    .map(p -> new IpeaItemDTO(
+                            p.getReferenceDate().atStartOfDay().atOffset(BRT),
+                            p.getValue().doubleValue()))
+                    .toList();
+        }
+
+        // Cold path: banco vazio → busca na API e persiste para as próximas leituras.
+        List<IpeaItemDTO> fresh = fetchSerie(codigo);
+        persist(codigo, fresh);
+        return fresh;
+    }
+
+    private void persist(String codigo, List<IpeaItemDTO> dados) {
+        for (IpeaItemDTO item : dados) {
+            if (item.data() == null || item.valor() == null) continue;
+            financialDataService.savePoint(codigo, SOURCE, item.data().toLocalDate(), item.valor(), null);
+        }
+    }
+
     // Requisição feita à API baseada no código.
     // As requisições abaixo reutilizam essa função, só o código de série muda.
     private List<IpeaItemDTO> fetchSerie(String codigo) {
@@ -75,67 +177,6 @@ public class IpeaService {
         } catch (Exception e) {
             throw new IpeaException("Erro ao buscar série: " + codigo, 502);
         }
-    }
-
-
-    @Cacheable("ipea-emprego")
-    public List<IpeaSerieDTO> getEmprego() {
-        return List.of(
-                new IpeaSerieDTO(DESOCUPACAO, "Taxa de desocupação (%)", fetchSerie(DESOCUPACAO)),
-                new IpeaSerieDTO(OCUPACAO, "Nível de ocupação (%)", fetchSerie(OCUPACAO))
-        );
-    }
-
-
-    @Cacheable("ipea-renda")
-    public List<IpeaSerieDTO> getRenda() {
-        return List.of(
-                new IpeaSerieDTO(SALARIO_MINIMO_REAL, "Salário mínimo real (R$)", fetchSerie(SALARIO_MINIMO_REAL)),
-                new IpeaSerieDTO(SALARIO_MINIMO_PPC, "Salário mínimo PPC (USD)", fetchSerie(SALARIO_MINIMO_PPC)),
-                new IpeaSerieDTO(RENDA_PER_CAPITA, "Renda domiciliar per capita (R$)", fetchSerie(RENDA_PER_CAPITA))
-        );
-    }
-
-
-    @Cacheable("ipea-desigualdade")
-    public List<IpeaSerieDTO> getDesigualdade() {
-        return List.of(
-                new IpeaSerieDTO(GINI, "Coeficiente de Gini", fetchSerie(GINI)),
-                new IpeaSerieDTO(POBREZA, "Taxa de pobreza % (PPC$3/dia)", fetchSerie(POBREZA))
-        );
-    }
-
-
-    @Cacheable("ipea-macro")
-    public List<IpeaSerieDTO> getMacro() {
-        return List.of(
-                new IpeaSerieDTO(PIB, "PIB (US$ bilhões)", fetchSerie(PIB)),
-                new IpeaSerieDTO(INVESTIMENTO, "Investimento (% PIB)", fetchSerie(INVESTIMENTO)),
-                new IpeaSerieDTO(DESEMPREGO_FMI, "Taxa de desemprego FMI (%)", fetchSerie(DESEMPREGO_FMI)),
-                new IpeaSerieDTO(SELIC, "Taxa Selic/Overnight (% a.a.)", fetchSerie(SELIC)),
-                new IpeaSerieDTO(RESERVAS, "Reservas internacionais (US$ milhões)", fetchSerie(RESERVAS)),
-                new IpeaSerieDTO(ARRECADACAO, "Arrecadação federal (R$ milhões)", fetchSerie(ARRECADACAO))
-        );
-    }
-
-
-    @Cacheable("ipea-precos")
-    public List<IpeaSerieDTO> getPrecos() {
-        return List.of(
-                new IpeaSerieDTO(INPC, "INPC - índice", fetchSerie(INPC)),
-                new IpeaSerieDTO(IGPM, "IGP-M - índice", fetchSerie(IGPM))
-        );
-    }
-
-
-    @Cacheable("ipea-populacao")
-    public List<IpeaSerieDTO> getPopulacao() {
-        return List.of(
-                new IpeaSerieDTO(POPULACAO, "População total (mil pessoas)", fetchSerie(POPULACAO)),
-                new IpeaSerieDTO(PROJECAO_TOTAL, "Projeção população total", fetchSerie(PROJECAO_TOTAL)),
-                new IpeaSerieDTO(PROJECAO_HOMENS, "Projeção população homens", fetchSerie(PROJECAO_HOMENS)),
-                new IpeaSerieDTO(PROJECAO_MULHERES, "Projeção população mulheres", fetchSerie(PROJECAO_MULHERES))
-        );
     }
 
 }

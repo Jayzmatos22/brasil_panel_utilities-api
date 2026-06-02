@@ -46,8 +46,23 @@ public class FinancialDataService {
     public void savePoint(String seriesCode, String source,
                           String bcbDateStr, double value, Double secondaryValue) {
         try {
-            FinancialSeries series = findSeries(seriesCode, source);
             LocalDate date = LocalDate.parse(bcbDateStr, BCB_DATE);
+            savePoint(seriesCode, source, date, value, secondaryValue);
+        } catch (Exception e) {
+            // Não deixa falha de persistência derrubar a resposta ao usuário
+            log.warn("Falha ao persistir ponto da série {} ({}): {}", seriesCode, source, e.getMessage());
+        }
+    }
+
+    /**
+     * Variante que recebe a data já parseada como {@link LocalDate}.
+     * Usada por fontes cujas datas não vêm no formato BCB "dd/MM/yyyy" (ex: IPEA).
+     */
+    @Transactional
+    public void savePoint(String seriesCode, String source,
+                          LocalDate date, double value, Double secondaryValue) {
+        try {
+            FinancialSeries series = findSeries(seriesCode, source);
 
             if (dataPointRepository.existsBySeriesAndReferenceDate(series, date)) {
                 log.debug("Ponto já existe: série={} data={}", seriesCode, date);

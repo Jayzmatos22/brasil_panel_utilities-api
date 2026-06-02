@@ -67,6 +67,95 @@ public class FinancialSeriesSeeder implements ApplicationRunner {
         FinancialSeries.builder()
                 .code("1619").source("BCB").name("Salário Mínimo")
                 .unit("R$").description("Valor nominal do salário mínimo vigente")
+                .build(),
+
+        // ── IPEA ──────────────────────────────────────────────────────────
+        // Emprego
+        FinancialSeries.builder()
+                .code("PNADC12_NDESOCM12").source("IPEA").name("Taxa de desocupação")
+                .unit("%").description("Taxa de desocupação (PNAD Contínua)")
+                .build(),
+        FinancialSeries.builder()
+                .code("PNADC12_NOCUP12").source("IPEA").name("Nível de ocupação")
+                .unit("%").description("Nível de ocupação (PNAD Contínua)")
+                .build(),
+
+        // Renda
+        FinancialSeries.builder()
+                .code("GAC12_SALMINRE12").source("IPEA").name("Salário mínimo real")
+                .unit("R$").description("Salário mínimo real")
+                .build(),
+        FinancialSeries.builder()
+                .code("GAC12_SALMINDOL12").source("IPEA").name("Salário mínimo PPC")
+                .unit("USD").description("Salário mínimo em paridade de poder de compra")
+                .build(),
+        FinancialSeries.builder()
+                .code("PNADS_RENDAMEDIA").source("IPEA").name("Renda per capita")
+                .unit("R$").description("Renda domiciliar per capita")
+                .build(),
+
+        // Desigualdade
+        FinancialSeries.builder()
+                .code("PNADS_GINI").source("IPEA").name("Coeficiente de Gini")
+                .unit("índice").description("Coeficiente de Gini")
+                .build(),
+        FinancialSeries.builder()
+                .code("PNADS_PERCPOBRE300").source("IPEA").name("Taxa de pobreza")
+                .unit("%").description("Taxa de pobreza (PPC$3/dia)")
+                .build(),
+
+        // Macro
+        FinancialSeries.builder()
+                .code("WEO_PIBWEOBRA").source("IPEA").name("PIB (FMI)")
+                .unit("US$ bilhões").description("PIB segundo o World Economic Outlook (FMI)")
+                .build(),
+        FinancialSeries.builder()
+                .code("WEO_INVESTWEOBRA").source("IPEA").name("Investimento")
+                .unit("% PIB").description("Investimento como % do PIB (FMI)")
+                .build(),
+        FinancialSeries.builder()
+                .code("WEO_DESEMWEOBRA").source("IPEA").name("Taxa de desemprego (FMI)")
+                .unit("%").description("Taxa de desemprego segundo o FMI")
+                .build(),
+        FinancialSeries.builder()
+                .code("PAN12_TJOVER12").source("IPEA").name("Taxa Selic/Overnight")
+                .unit("% a.a.").description("Taxa Selic/Overnight")
+                .build(),
+        FinancialSeries.builder()
+                .code("BM12_RES12").source("IPEA").name("Reservas internacionais")
+                .unit("US$ milhões").description("Reservas internacionais")
+                .build(),
+        FinancialSeries.builder()
+                .code("SRF12_TOTGER12").source("IPEA").name("Arrecadação federal")
+                .unit("R$ milhões").description("Arrecadação federal total")
+                .build(),
+
+        // Preços
+        FinancialSeries.builder()
+                .code("PRECOS12_INPC12").source("IPEA").name("INPC")
+                .unit("índice").description("INPC - índice")
+                .build(),
+        FinancialSeries.builder()
+                .code("IGP12_IGPM12").source("IPEA").name("IGP-M")
+                .unit("índice").description("IGP-M - índice")
+                .build(),
+
+        // População
+        FinancialSeries.builder()
+                .code("PNADC12_POP12").source("IPEA").name("População total")
+                .unit("mil pessoas").description("População total (PNAD Contínua)")
+                .build(),
+        FinancialSeries.builder()
+                .code("DEPIS_POPP").source("IPEA").name("Projeção população total")
+                .unit("pessoas").description("Projeção da população total")
+                .build(),
+        FinancialSeries.builder()
+                .code("DEPIS_POPHP").source("IPEA").name("Projeção população homens")
+                .unit("pessoas").description("Projeção da população - homens")
+                .build(),
+        FinancialSeries.builder()
+                .code("DEPIS_POPMP").source("IPEA").name("Projeção população mulheres")
+                .unit("pessoas").description("Projeção da população - mulheres")
                 .build()
     );
 

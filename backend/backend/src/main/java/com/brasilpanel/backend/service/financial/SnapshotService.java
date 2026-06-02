@@ -5,9 +5,11 @@ import com.brasilpanel.backend.dto.api.coinGecko.CryptoCoinGeckoMarketDTO;
 import com.brasilpanel.backend.dto.api.metalsDev.MetalsDataDTO;
 import com.brasilpanel.backend.model.CryptoSnapshot;
 import com.brasilpanel.backend.model.MetalSnapshot;
+import com.brasilpanel.backend.model.PibSnapshot;
 import com.brasilpanel.backend.model.StockSnapshot;
 import com.brasilpanel.backend.repository.snapshot.CryptoSnapshotRepository;
 import com.brasilpanel.backend.repository.snapshot.MetalSnapshotRepository;
+import com.brasilpanel.backend.repository.snapshot.PibSnapshotRepository;
 import com.brasilpanel.backend.repository.snapshot.StockSnapshotRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +38,7 @@ public class SnapshotService {
     private final StockSnapshotRepository stockRepository;
     private final MetalSnapshotRepository metalRepository;
     private final CryptoSnapshotRepository cryptoRepository;
+    private final PibSnapshotRepository pibRepository;
 
     // ── Ações ─────────────────────────────────────────────────────────────
 
@@ -178,6 +181,47 @@ public class SnapshotService {
     @Transactional(readOnly = true)
     public Optional<CryptoSnapshot> getLatestCrypto(String coinId) {
         return Optional.ofNullable(cryptoRepository.findTopByCoinIdOrderByFetchedAtDesc(coinId));
+    }
+
+    // ── PIB (World Bank) ──────────────────────────────────────────────────
+
+    /**
+     * Persiste (upsert) o PIB de um ano. Se o ano já existe, atualiza valor e
+     * fetchedAt — o ano corrente pode ser revisado pelo World Bank.
+     */
+    @Transactional
+    public void savePib(int year, double value, String currency) {
+        try {
+            Long existingId = pibRepository.findByYear(year)
+                    .map(PibSnapshot::getId)
+                    .orElse(null);
+
+            PibSnapshot snapshot = PibSnapshot.builder()
+                    .id(existingId)               // null → insert; preenchido → update (merge)
+                    .year(year)
+                    .value(BigDecimal.valueOf(value))
+                    .currency(currency)
+                    .build();
+
+            pibRepository.save(snapshot);
+            log.debug("PIB snapshot salvo ({}): ano={} valor={}",
+                    existingId == null ? "insert" : "update", year, value);
+
+        } catch (Exception e) {
+            log.warn("Falha ao persistir PIB snapshot do ano {}: {}", year, e.getMessage());
+        }
+    }
+
+    /** PIB do ano mais recente salvo (para leitura DB-first do PIB atual). */
+    @Transactional(readOnly = true)
+    public Optional<PibSnapshot> getLatestPib() {
+        return pibRepository.findTopByOrderByYearDesc();
+    }
+
+    /** PIB de um ano específico salvo no banco (para leitura DB-first). */
+    @Transactional(readOnly = true)
+    public Optional<PibSnapshot> getPibByYear(int year) {
+        return pibRepository.findByYear(year);
     }
 
     // ── Utilitários ───────────────────────────────────────────────────────
