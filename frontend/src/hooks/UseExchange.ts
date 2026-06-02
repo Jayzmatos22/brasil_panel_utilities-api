@@ -1,6 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
-import { MARKET } from '../constants/queryTimes';
+import { MARKET, STATIC } from '../constants/queryTimes';
 import { FrankfurterService } from '../api/services/Frankfurter';
+
+
+export function useCurrencies() {
+    return useQuery({
+        queryKey: ['exchange', 'currencies'],
+        queryFn: () => FrankfurterService.getCurrencies(),
+        ...STATIC,
+    });
+}
 
 
 export function useLast30DaysExchange(from: string, to: string) {

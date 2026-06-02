@@ -13,11 +13,22 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Map;
+
 @RequestMapping("/api/frankfurter")
 @RestController
 @RequiredArgsConstructor
 public class FrankfurterController {
     private final FrankFurterService frankFurterService;
+
+
+    @Operation(summary = "Moedas suportadas", description = "Lista as moedas suportadas pela fonte de câmbio (código → nome)")
+    @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso")
+    @ApiResponse(responseCode = "502", description = "Erro na comunicação com Frankfurter")
+    @GetMapping("/currencies")
+    public ResponseEntity<Map<String, String>> getSupportedCurrencies() {
+        return ResponseEntity.ok(frankFurterService.returnSupportedCurrencies());
+    }
 
 
     @Operation(summary = "Taxa de câmbio entre moedas", description = "Retorna a taxa de câmbio atual entre duas moedas com valor convertido")

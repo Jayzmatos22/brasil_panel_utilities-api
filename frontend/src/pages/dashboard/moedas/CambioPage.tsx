@@ -4,11 +4,12 @@
 //   GET /frankfurter/last-30-days → useLast30DaysExchange(from, to)
 //   GET /frankfurter/history      → useGetHistoryByCoins(from, to, startDate, endDate)
 
-import { useState, type ChangeEvent } from 'react';
+import { useMemo, useState, type ChangeEvent } from 'react';
 import { LoaderCircle } from 'lucide-react';
-import { useRateByCoins, useLast30DaysExchange, useGetHistoryByCoins } from '../../../hooks/UseExchange';
+import { useRateByCoins, useLast30DaysExchange, useGetHistoryByCoins, useCurrencies } from '../../../hooks/UseExchange';
+import { CURRENCIES as CURRENCY_META } from '../../../constants/currencies';
 
-const CURRENCIES = ['BRL', 'USD', 'EUR', 'GBP', 'JPY', 'ARS', 'CLP', 'CAD', 'AUD', 'CHF'];
+const META_BY_CODE = new Map(CURRENCY_META.map((c) => [c.code, c]));
 
 export default function CambioPage() {
   const [from,   setFrom]   = useState('USD');
@@ -17,6 +18,20 @@ export default function CambioPage() {
 
   const [startDate, setStartDate] = useState('');
   const [endDate,   setEndDate]   = useState('');
+
+  const { data: currencies } = useCurrencies();
+  const currencyOptions = useMemo(() => {
+    const codes = currencies ? Object.keys(currencies) : [];
+    return codes
+      .map((code) => {
+        const meta = META_BY_CODE.get(code);
+        return {
+          code,
+          label: meta ? `${meta.flag} ${code} — ${meta.name}` : `${code} — ${currencies?.[code] ?? ''}`,
+        };
+      })
+      .sort((a, b) => a.code.localeCompare(b.code));
+  }, [currencies]);
 
   const { data: rate,    isLoading: loadingRate    } = useRateByCoins(from, to, amount);
   const { data: last30,  isLoading: loadingLast30  } = useLast30DaysExchange(from, to);
@@ -44,11 +59,11 @@ export default function CambioPage() {
             className={`${inputClass} w-24`}
           />
           <select value={from} onChange={(e) => setFrom(e.target.value)} className={selectClass}>
-            {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+            {currencyOptions.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
           </select>
           <span className="text-slate-400">→</span>
           <select value={to} onChange={(e) => setTo(e.target.value)} className={selectClass}>
-            {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+            {currencyOptions.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
           </select>
         </div>
 

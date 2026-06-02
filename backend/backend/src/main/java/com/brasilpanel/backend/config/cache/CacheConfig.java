@@ -57,6 +57,9 @@ public class CacheConfig {
                 // ── Histórico Frankfurter (dados passados nunca mudam) ───────────
                 build("frank-furter-history",    24,  TimeUnit.HOURS,   50),
 
+                // Lista de moedas suportadas muda raramente (novas moedas ECB)
+                build("frank-furter-currencies", 24,  TimeUnit.HOURS,    1),
+
                 // ── BCB — Banco Central ──────────────────────────────────────────
                 // Selic: reuniões COPOM a cada ~45 dias, mas valor diário pode variar
                 build("selic",                   60,  TimeUnit.MINUTES, 10),

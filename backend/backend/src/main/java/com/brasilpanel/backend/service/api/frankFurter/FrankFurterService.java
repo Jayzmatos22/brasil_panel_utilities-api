@@ -16,12 +16,38 @@ import org.springframework.web.client.RestClient;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class FrankFurterService {
     private final RestClient restClient;
     private final FrankfurterValidator frankfurterValidator;
+
+    /**
+     * Lista as moedas suportadas pela fonte (Frankfurter / taxas de referência do BCE).
+     * Retorna um mapa código → nome (ex: {"USD":"United States Dollar"}).
+     * O front usa essa lista para montar o select e nunca oferecer moeda que dá 404.
+     */
+    @Cacheable("frank-furter-currencies")
+    public Map<String, String> returnSupportedCurrencies() {
+        try {
+            Map<String, String> data = restClient.get()
+                    .uri("https://api.frankfurter.dev/v1/currencies")
+                    .header("Accept", "application/json")
+                    .header("User-Agent", "Mozilla/5.0")
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<Map<String, String>>() {});
+            if (data == null || data.isEmpty()) {
+                throw new FrankfurterRateException("Lista de moedas indisponível", 502);
+            }
+            return data;
+        } catch (FrankfurterRateException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new FrankfurterRateException("Erro ao buscar moedas suportadas: " + e.getMessage(), 502);
+        }
+    }
 
     @Cacheable("frank-furter")
     public FrankfurterRateDTO returnFrankFurterRate(String from, String to, double amount){
@@ -35,7 +61,7 @@ public class FrankFurterService {
                     .retrieve()
                     .onStatus(status -> status.value() == 404,
                             (request, response) -> {
-                                throw new FrankfurterRateException("Moeda inválida: " + from + " ou " + to, 400);
+                                throw new FrankfurterRateException("Moeda não suportada pela fonte de câmbio: " + from + " ou " + to, 400);
                             })
 
                     .body(FrankfurterRateDTO.class);
@@ -61,7 +87,7 @@ public class FrankFurterService {
                     .retrieve()
                     .onStatus(status -> status.value() == 404,
                             (req, res) -> {
-                                throw new FrankfurterRateException("Moeda ou data inválida: " + from + " → " + to, 400);
+                                throw new FrankfurterRateException("Moeda não suportada pela fonte de câmbio ou data inválida: " + from + " → " + to, 400);
                             })
                     .body(FrankfurterHistoryRawDTO.class);
 

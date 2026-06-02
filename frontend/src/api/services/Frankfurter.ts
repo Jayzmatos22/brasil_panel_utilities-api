@@ -2,6 +2,10 @@ import { apiClient } from '../client/Client';
 import type { FrankfurterHistory, FrankfurterRate } from '../../types/FrankfurterType';
 
 export const FrankfurterService = {
+  getCurrencies: () =>
+    apiClient.get<Record<string, string>>('/frankfurter/currencies').then((res) => res.data),
+
+
   returnRateByCoins: (base: string, to: string, amount: number) =>
     apiClient.get<FrankfurterRate>(`/frankfurter?from=${base}&to=${to}&amount=${amount}`).then((res) => res.data),
 
