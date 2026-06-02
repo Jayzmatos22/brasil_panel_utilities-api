@@ -1,6 +1,7 @@
 package com.brasilpanel.backend.controller.api;
 
 import com.brasilpanel.backend.dto.api.alphaVantage.GlobalQuoteWrapper;
+import com.brasilpanel.backend.dto.api.alphaVantage.StockHistoryDTO;
 import com.brasilpanel.backend.dto.api.alphaVantage.StockQuoteDTO;
 import com.brasilpanel.backend.service.api.alphaVantage.AlphaVantageService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -24,5 +25,16 @@ public class AlphaVantageController {
     public ResponseEntity<StockQuoteDTO> getQuote(
             @PathVariable String symbol) {
         return ResponseEntity.ok(alphaVantageService.getStockQuote(symbol));
+    }
+
+    @Operation(summary = "Histórico de ação", description = "Retorna a série diária (~100 pregões) de uma ação. Ex: PETR4.SA, AAPL")
+    @ApiResponse(responseCode = "200", description = "Histórico retornado com sucesso")
+    @ApiResponse(responseCode = "404", description = "Ação não encontrada")
+    @ApiResponse(responseCode = "429", description = "Limite de requisições da AlphaVantage atingido")
+    @ApiResponse(responseCode = "502", description = "Erro na comunicação com a API")
+    @GetMapping("/{symbol}/history")
+    public ResponseEntity<StockHistoryDTO> getHistory(
+            @PathVariable String symbol) {
+        return ResponseEntity.ok(alphaVantageService.getStockHistory(symbol));
     }
 }

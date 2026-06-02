@@ -9,7 +9,9 @@ import { LoaderCircle } from 'lucide-react';
 import { useRateByCoins, useLast30DaysExchange, useGetHistoryByCoins, useCurrencies } from '../../../hooks/UseExchange';
 import { CURRENCIES as CURRENCY_META } from '../../../constants/currencies';
 
-const META_BY_CODE = new Map(CURRENCY_META.map((c) => [c.code, c]));
+const META_BY_CODE = new Map<string, (typeof CURRENCY_META)[number]>(
+  CURRENCY_META.map((c) => [c.code, c]),
+);
 
 export default function CambioPage() {
   const [from,   setFrom]   = useState('USD');

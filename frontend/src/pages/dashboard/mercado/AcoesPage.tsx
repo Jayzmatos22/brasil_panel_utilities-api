@@ -4,13 +4,52 @@
 
 import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { LoaderCircle, Search, TrendingUp, TrendingDown } from 'lucide-react';
-import { useStockQuote } from '../../../hooks/UseStocks';
+import { useStockQuote, useStockHistory } from '../../../hooks/UseStocks';
+import type { StockHistoryPoint } from '../../../types/StocksType';
+
+// Gráfico de linha em SVG puro — sem dependência externa.
+function LineChartSvg({ points }: { points: StockHistoryPoint[] }) {
+  const W = 800, H = 300, PAD_X = 56, PAD_Y = 24;
+  const closes = points.map((p) => p.close);
+  const min = Math.min(...closes);
+  const max = Math.max(...closes);
+  const range = max - min || 1;
+  const n = points.length;
+
+  const x = (i: number) => PAD_X + (i / (n - 1 || 1)) * (W - PAD_X - 16);
+  const y = (v: number) => PAD_Y + (1 - (v - min) / range) * (H - PAD_Y * 2);
+
+  const path = points
+    .map((p, i) => `${i === 0 ? 'M' : 'L'} ${x(i).toFixed(1)} ${y(p.close).toFixed(1)}`)
+    .join(' ');
+
+  const yTicks = [max, min + range / 2, min];
+  const fmt = (v: number) => v.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="Histórico de fechamento">
+      {yTicks.map((v, i) => {
+        const yy = y(v);
+        return (
+          <g key={i}>
+            <line x1={PAD_X} y1={yy} x2={W - 16} y2={yy} stroke="#334155" strokeDasharray="3 3" />
+            <text x={PAD_X - 8} y={yy + 4} textAnchor="end" fill="#94a3b8" fontSize="12">{fmt(v)}</text>
+          </g>
+        );
+      })}
+      <text x={PAD_X} y={H - 4} textAnchor="start" fill="#94a3b8" fontSize="12">{points[0].date}</text>
+      <text x={W - 16} y={H - 4} textAnchor="end" fill="#94a3b8" fontSize="12">{points[n - 1].date}</text>
+      <path d={path} fill="none" stroke="#eab308" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+    </svg>
+  );
+}
 
 export default function AcoesPage() {
   const [input, setInput]   = useState('');
   const [symbol, setSymbol] = useState('');
 
   const { data: stock, isLoading, error, isFetching } = useStockQuote(symbol);
+  const { data: history, isLoading: loadingHistory } = useStockHistory(symbol);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -87,6 +126,25 @@ export default function AcoesPage() {
           </div>
 
           <p className="text-slate-500 text-xs">Último pregão: {stock.latestTradingDay}</p>
+        </div>
+      )}
+
+      {/* Histórico — fechamento ao longo do tempo */}
+      {symbol && !error && (
+        <div className="bg-slate-900 border border-slate-700 rounded-xl p-6">
+          <h2 className="text-yellow-500 font-semibold text-sm uppercase tracking-wider mb-4">
+            Histórico — {symbol}
+          </h2>
+
+          {loadingHistory ? (
+            <div className="flex items-center gap-2 text-slate-400 text-sm">
+              <LoaderCircle size={16} className="animate-spin" /> Carregando histórico...
+            </div>
+          ) : history && history.data.length > 0 ? (
+            <LineChartSvg points={history.data} />
+          ) : (
+            <p className="text-slate-500 text-sm">Sem histórico disponível para {symbol}.</p>
+          )}
         </div>
       )}
 

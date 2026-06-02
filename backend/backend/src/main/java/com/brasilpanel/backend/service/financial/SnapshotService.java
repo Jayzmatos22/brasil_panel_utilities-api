@@ -1,5 +1,6 @@
 package com.brasilpanel.backend.service.financial;
 
+import com.brasilpanel.backend.dto.api.alphaVantage.StockHistoryPointDTO;
 import com.brasilpanel.backend.dto.api.alphaVantage.StockQuoteDTO;
 import com.brasilpanel.backend.dto.api.coinGecko.CryptoCoinGeckoMarketDTO;
 import com.brasilpanel.backend.dto.api.metalsDev.MetalsDataDTO;
@@ -83,6 +84,61 @@ public class SnapshotService {
     @Transactional(readOnly = true)
     public Optional<StockSnapshot> getLatestStock(String symbol) {
         return stockRepository.findTopBySymbolOrderByTradingDayDesc(symbol);
+    }
+
+    /**
+     * Persiste (upsert em lote) a série diária de uma ação (TIME_SERIES_DAILY).
+     * Os pontos devem vir ordenados por data crescente — change/changePercent são
+     * calculados a partir do fechamento do pregão anterior na própria série.
+     */
+    @Transactional
+    public void saveStockHistory(String symbol, List<StockHistoryPointDTO> points) {
+        try {
+            var existingIds = stockRepository.findBySymbolOrderByTradingDayDesc(symbol).stream()
+                    .collect(java.util.stream.Collectors.toMap(
+                            StockSnapshot::getTradingDay, StockSnapshot::getId, (a, b) -> a));
+
+            BigDecimal prevClose = null;
+            List<StockSnapshot> batch = new java.util.ArrayList<>(points.size());
+
+            for (StockHistoryPointDTO p : points) {
+                LocalDate tradingDay = LocalDate.parse(p.date(), ALPHA_DATE);
+                BigDecimal close = BigDecimal.valueOf(p.close());
+                BigDecimal change = prevClose != null ? close.subtract(prevClose) : null;
+                BigDecimal changePercent = (prevClose != null && prevClose.signum() != 0)
+                        ? change.multiply(BigDecimal.valueOf(100))
+                                .divide(prevClose, 4, java.math.RoundingMode.HALF_UP)
+                        : null;
+
+                batch.add(StockSnapshot.builder()
+                        .id(existingIds.get(tradingDay))   // null → insert; preenchido → update
+                        .symbol(symbol)
+                        .tradingDay(tradingDay)
+                        .open(BigDecimal.valueOf(p.open()))
+                        .high(BigDecimal.valueOf(p.high()))
+                        .low(BigDecimal.valueOf(p.low()))
+                        .price(close)
+                        .previousClose(prevClose)
+                        .change(change)
+                        .changePercent(changePercent)
+                        .volume(p.volume())
+                        .build());
+
+                prevClose = close;
+            }
+
+            stockRepository.saveAll(batch);
+            log.debug("Stock history salvo: {} pregões de {}", batch.size(), symbol);
+
+        } catch (Exception e) {
+            log.warn("Falha ao persistir stock history {}: {}", symbol, e.getMessage());
+        }
+    }
+
+    /** Série diária completa de uma ação, do mais recente ao mais antigo. */
+    @Transactional(readOnly = true)
+    public List<StockSnapshot> getStockSeries(String symbol) {
+        return stockRepository.findBySymbolOrderByTradingDayDesc(symbol);
     }
 
     // ── Metais ────────────────────────────────────────────────────────────

@@ -81,6 +81,8 @@ public class CacheConfig {
                 // Ações: AlphaVantage (limite diário de requests — 15 min equilibra
                 // frescor dos dados e economia de quota)
                 build("stocks",                  15,  TimeUnit.MINUTES, 200),
+                // Histórico de ações: série diária muda 1x/dia → janela longa
+                build("stock-history",           12,  TimeUnit.HOURS,   100),
 
                 // Crypto: CoinGecko free tier — 5 min é o mínimo razoável
                 build("crypto-list",              5,  TimeUnit.MINUTES,  20),

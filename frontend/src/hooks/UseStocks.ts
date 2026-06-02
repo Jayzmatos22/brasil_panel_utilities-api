@@ -10,3 +10,12 @@ export function useStockQuote(symbol: string) {
     ...FINANCIAL,
   });
 }
+
+export function useStockHistory(symbol: string) {
+  return useQuery({
+    queryKey: ['stocks', 'history', symbol],
+    queryFn: () => alphaVantageService.getStockHistory(symbol),
+    enabled: symbol.trim().length > 0,
+    ...FINANCIAL,
+  });
+}
