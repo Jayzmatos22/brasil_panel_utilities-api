@@ -122,6 +122,30 @@ public class IpeaService {
         );
     }
 
+    private static final List<String> ALL_CODES = List.of(
+            DESOCUPACAO, OCUPACAO,
+            SALARIO_MINIMO_REAL, SALARIO_MINIMO_PPC, RENDA_PER_CAPITA,
+            GINI, POBREZA,
+            PIB, INVESTIMENTO, DESEMPREGO_FMI, SELIC, RESERVAS, ARRECADACAO,
+            INPC, IGPM,
+            POPULACAO, PROJECAO_TOTAL, PROJECAO_HOMENS, PROJECAO_MULHERES
+    );
+
+    /**
+     * Força a busca de todas as séries na API e persiste os pontos novos
+     * (idempotente — datas já existentes são ignoradas), ignorando o atalho DB-first.
+     * Usado pelo scheduler para re-alimentar o banco. Falhas por série não abortam as demais.
+     */
+    public void refreshAll() {
+        for (String codigo : ALL_CODES) {
+            try {
+                persist(codigo, fetchSerie(codigo));
+            } catch (Exception e) {
+                // segue para a próxima série mesmo que uma falhe na API
+            }
+        }
+    }
+
     // ── DB-first ──────────────────────────────────────────────────────────
 
     /** Monta uma série DB-first: lê do banco; se vazio, busca na API e persiste. */

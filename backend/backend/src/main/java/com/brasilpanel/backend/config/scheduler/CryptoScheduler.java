@@ -31,9 +31,9 @@ public class CryptoScheduler {
     public void refreshCryptoList() {
         log.info("[CryptoScheduler] Iniciando refresh da lista de criptomoedas...");
         try {
+            coinGeckoService.refreshAllCryptos();
             evict("crypto-list");
             evict("crypto-by-name");
-            coinGeckoService.returnAllCryptos();
             log.info("[CryptoScheduler] Criptomoedas atualizadas com sucesso.");
         } catch (Exception e) {
             log.warn("[CryptoScheduler] Falha ao atualizar criptomoedas: {}", e.getMessage());

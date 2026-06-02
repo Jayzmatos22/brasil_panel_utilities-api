@@ -37,8 +37,7 @@ public class WorldBankService {
     public PibBrasilDTO getCurrentPib() {
         return snapshotService.getLatestPib()
                 .map(this::toDTO)
-                .orElseGet(() -> fetchAndPersist(
-                        "https://api.worldbank.org/v2/country/BR/indicator/NY.GDP.MKTP.CD?format=json&mrv=1"));
+                .orElseGet(this::refreshCurrentPib);
     }
 
     // PIB histórico: dado de anos passados nunca muda. Ano corrente pode ser
@@ -50,6 +49,16 @@ public class WorldBankService {
                 .map(this::toDTO)
                 .orElseGet(() -> fetchAndPersist(
                         "https://api.worldbank.org/v2/country/BR/indicator/NY.GDP.MKTP.CD?format=json&date=" + year));
+    }
+
+    /**
+     * Busca o PIB mais recente na API e persiste (upsert por ano), ignorando o atalho DB-first.
+     * Usado pelo scheduler para re-alimentar o banco — anos anteriores nunca mudam,
+     * só o ano corrente pode ser revisado.
+     */
+    public PibBrasilDTO refreshCurrentPib() {
+        return fetchAndPersist(
+                "https://api.worldbank.org/v2/country/BR/indicator/NY.GDP.MKTP.CD?format=json&mrv=1");
     }
 
     /** Busca na API do World Bank, persiste o snapshot e devolve o DTO. */

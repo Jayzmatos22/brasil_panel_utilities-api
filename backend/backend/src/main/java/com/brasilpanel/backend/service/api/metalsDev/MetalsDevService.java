@@ -34,8 +34,14 @@ public class MetalsDevService {
         if (latest.isPresent()) {
             return toDTO(latest.get());
         }
+        return refreshMetals();
+    }
 
-        // fallback — API externa (persiste para próximas leituras)
+    /**
+     * Busca os preços na API e persiste, ignorando o atalho DB-first.
+     * Usado pelo scheduler para re-alimentar o banco e como fallback de leitura.
+     */
+    public MetalsDataDTO refreshMetals() {
         String url = "https://api.metals.dev/v1/latest?api_key=" + apiKey
                 + "&currency=BRL&unit=toz";
         try {

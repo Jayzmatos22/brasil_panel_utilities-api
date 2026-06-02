@@ -50,8 +50,14 @@ public class BcbService implements BcbImplementations{
                     compoundPercent(history)
             );
         }
+        return refreshSelic();
+    }
 
-        // fallback — API externa (persiste para próximas leituras)
+    /**
+     * Busca a SELIC na API e persiste, ignorando o atalho DB-first.
+     * Usado pelo scheduler para re-alimentar o banco e como fallback de leitura.
+     */
+    public SelicDataDTO refreshSelic() {
         try {
             List<SelicHistoryDTO> currentApi = fetchSelic("432", 1);
             Thread.sleep(1200);
@@ -104,8 +110,14 @@ public class BcbService implements BcbImplementations{
                     compoundPercent(history)
             );
         }
+        return refreshIpca();
+    }
 
-        // fallback — API externa (persiste para próximas leituras)
+    /**
+     * Busca o IPCA na API e persiste, ignorando o atalho DB-first.
+     * Usado pelo scheduler para re-alimentar o banco e como fallback de leitura.
+     */
+    public IpcaDataDTO refreshIpca() {
         try {
                 List<IpcaHistoryDTO> currentMonth = fetchIpca("433", 1);
                 List<IpcaHistoryDTO> accumulatedYear = fetchIpca("13522", 1);
@@ -155,8 +167,14 @@ public class BcbService implements BcbImplementations{
             FinancialDataPoint p = last.get();
             return new DollarPtaxDTO(p.getReferenceDate().format(BCB_DATE), p.getValue().doubleValue());
         }
+        return refreshDollarPtax();
+    }
 
-        // fallback — API externa (persiste para próximas leituras)
+    /**
+     * Busca a PTAX na API e persiste, ignorando o atalho DB-first.
+     * Usado pelo scheduler para re-alimentar o banco e como fallback de leitura.
+     */
+    public DollarPtaxDTO refreshDollarPtax() {
         try {
             List<DollarPtaxDTO> data = restClient.get()
                     .uri("https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados/ultimos/1?formato=json")
@@ -195,8 +213,14 @@ public class BcbService implements BcbImplementations{
                     p.getSecondaryValue() != null ? p.getSecondaryValue().doubleValue() : null
             );
         }
+        return refreshCdiRate();
+    }
 
-        // fallback — API externa (persiste para próximas leituras)
+    /**
+     * Busca o CDI na API e persiste, ignorando o atalho DB-first.
+     * Usado pelo scheduler para re-alimentar o banco e como fallback de leitura.
+     */
+    public CdiDataDTO refreshCdiRate() {
         try {
             List<Map<String, String>> data = restClient.get()
                     .uri("https://api.bcb.gov.br/dados/serie/bcdata.sgs.12/dados/ultimos/1?formato=json")
@@ -240,8 +264,14 @@ public class BcbService implements BcbImplementations{
                     .map(p -> new SelicHistoryDTO(p.getReferenceDate().format(BCB_DATE), p.getValue().doubleValue()))
                     .toList();
         }
+        return refreshSelicHistory();
+    }
 
-        // fallback — API externa (persiste para próximas leituras)
+    /**
+     * Busca o histórico SELIC na API e persiste, ignorando o atalho DB-first.
+     * Usado pelo scheduler para re-alimentar o banco e como fallback de leitura.
+     */
+    public List<SelicHistoryDTO> refreshSelicHistory() {
         try {
             List<SelicHistoryDTO> data = fetchSelic("4390", 12);
             data.forEach(h -> financialDataService.savePoint("4390", SOURCE, h.date(), h.value(), null));
@@ -276,8 +306,14 @@ public class BcbService implements BcbImplementations{
                     .map(p -> new MinimumWageDTO(p.getReferenceDate().format(BCB_DATE), p.getValue().doubleValue()))
                     .toList();
         }
+        return refreshMinimumWage();
+    }
 
-        // fallback — API externa (persiste para próximas leituras)
+    /**
+     * Busca o salário mínimo na API e persiste, ignorando o atalho DB-first.
+     * Usado pelo scheduler para re-alimentar o banco e como fallback de leitura.
+     */
+    public List<MinimumWageDTO> refreshMinimumWage() {
         try {
             String url = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.1619/dados/ultimos/20?formato=json";
             List<MinimumWageDTO> data = restClient.get()

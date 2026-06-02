@@ -28,8 +28,8 @@ public class BcbScheduler {
     public void refreshCdi() {
         log.info("[BcbScheduler] Iniciando refresh CDI...");
         try {
+            bcbService.refreshCdiRate();
             evict("bcb-cdi");
-            bcbService.getCdiRate();
             log.info("[BcbScheduler] CDI atualizado com sucesso.");
         } catch (Exception e) {
             log.warn("[BcbScheduler] Falha ao atualizar CDI: {}", e.getMessage());
@@ -42,8 +42,8 @@ public class BcbScheduler {
     public void refreshPtax() {
         log.info("[BcbScheduler] Iniciando refresh PTAX...");
         try {
+            bcbService.refreshDollarPtax();
             evict("bcb-ptax");
-            bcbService.getDollarPtax();
             log.info("[BcbScheduler] PTAX atualizada com sucesso.");
         } catch (Exception e) {
             log.warn("[BcbScheduler] Falha ao atualizar PTAX: {}", e.getMessage());
@@ -56,10 +56,10 @@ public class BcbScheduler {
     public void refreshSelic() {
         log.info("[BcbScheduler] Iniciando refresh SELIC...");
         try {
+            bcbService.refreshSelic();
+            bcbService.refreshSelicHistory();
             evict("selic");
             evict("selic-history");
-            bcbService.getSelic();
-            bcbService.getSelicHistory();
             log.info("[BcbScheduler] SELIC atualizada com sucesso.");
         } catch (Exception e) {
             log.warn("[BcbScheduler] Falha ao atualizar SELIC: {}", e.getMessage());
@@ -73,8 +73,8 @@ public class BcbScheduler {
     public void refreshIpca() {
         log.info("[BcbScheduler] Iniciando refresh IPCA...");
         try {
+            bcbService.refreshIpca();
             evict("bcb-ipca");
-            bcbService.getIpca();
             log.info("[BcbScheduler] IPCA atualizado com sucesso.");
         } catch (Exception e) {
             log.warn("[BcbScheduler] Falha ao atualizar IPCA: {}", e.getMessage());
@@ -87,8 +87,8 @@ public class BcbScheduler {
     public void refreshSalarioMinimo() {
         log.info("[BcbScheduler] Iniciando refresh Salário Mínimo...");
         try {
+            bcbService.refreshMinimumWage();
             evict("salario-minimo");
-            bcbService.getMinimumWageAll();
             log.info("[BcbScheduler] Salário Mínimo atualizado com sucesso.");
         } catch (Exception e) {
             log.warn("[BcbScheduler] Falha ao atualizar Salário Mínimo: {}", e.getMessage());

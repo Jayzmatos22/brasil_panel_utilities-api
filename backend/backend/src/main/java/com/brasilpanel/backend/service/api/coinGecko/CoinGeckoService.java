@@ -34,8 +34,14 @@ public class CoinGeckoService {
         if (!latest.isEmpty()) {
             return latest.stream().map(this::toMarketDTO).toList();
         }
+        return refreshAllCryptos();
+    }
 
-        // fallback — API externa (persiste para próximas leituras)
+    /**
+     * Busca o top 100 na API e persiste um novo batch, ignorando o atalho DB-first.
+     * Usado pelo scheduler para re-alimentar o banco e como fallback de leitura.
+     */
+    public List<CryptoCoinGeckoMarketDTO> refreshAllCryptos(){
         try {
             List<CryptoCoinGeckoMarketDTO> data = restClient.get()
                     .uri("https://api.coingecko.com/api/v3/coins/markets?vs_currency=brl&order=market_cap_desc&per_page=100&page=1")

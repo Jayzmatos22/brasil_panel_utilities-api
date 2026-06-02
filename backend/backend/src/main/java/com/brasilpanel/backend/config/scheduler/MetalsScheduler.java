@@ -28,8 +28,8 @@ public class MetalsScheduler {
     public void refreshMetals() {
         log.info("[MetalsScheduler] Iniciando refresh de metais...");
         try {
+            metalsDevService.refreshMetals();
             evict("metals");
-            metalsDevService.getMetals();
             log.info("[MetalsScheduler] Metais atualizados com sucesso.");
         } catch (Exception e) {
             log.warn("[MetalsScheduler] Falha ao atualizar metais: {}", e.getMessage());
