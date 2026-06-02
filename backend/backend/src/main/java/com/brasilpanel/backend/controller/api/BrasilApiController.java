@@ -1,7 +1,8 @@
 package com.brasilpanel.backend.controller.api;
 
 import com.brasilpanel.backend.dto.api.brasilAPI.BankDTO;
-import com.brasilpanel.backend.service.api.brasilAPI.BrasilAPIService;
+import com.brasilpanel.backend.exception.customized.BrasilApiNotFoundException;
+import com.brasilpanel.backend.service.static_data.StaticDataService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +17,7 @@ import java.util.List;
 @RequestMapping("/api/banks")
 @RequiredArgsConstructor
 public class BrasilApiController {
-    private final BrasilAPIService brasilAPIService;
+    private final StaticDataService staticDataService;
 
 
     @Operation(summary = "Retorna todos os bancos no BrasilAPI", description = "Somente os que possuem nome e código")
@@ -25,7 +26,7 @@ public class BrasilApiController {
     @ApiResponse(responseCode = "502", description = "Erro desconhecido na comunicação com a API BrasilAPI")
     @GetMapping
     public ResponseEntity<List<BankDTO>> getAllBanks(){
-        return ResponseEntity.ok(brasilAPIService.returnAllBanks());
+        return ResponseEntity.ok(staticDataService.getAllBanks());
     }
 
 
@@ -35,6 +36,7 @@ public class BrasilApiController {
     @ApiResponse(responseCode = "502", description = "Erro na comunicação com a API BrasilAPI")
     @GetMapping("/{code}")
     public ResponseEntity<BankDTO> getBankByCode(@PathVariable @Positive int code){
-        return ResponseEntity.ok(brasilAPIService.getBankByCode(code));
+        return ResponseEntity.ok(staticDataService.getBankByCode(code)
+                .orElseThrow(() -> new BrasilApiNotFoundException("Banco com código " + code + " não encontrado")));
     }
 }

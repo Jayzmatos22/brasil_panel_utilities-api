@@ -4,6 +4,7 @@ import com.brasilpanel.backend.dto.api.brasilAPI.BankDTO;
 import com.brasilpanel.backend.dto.api.ibge.EstadoDTO;
 import com.brasilpanel.backend.dto.api.ibge.MunicipioDTO;
 import com.brasilpanel.backend.dto.api.ibge.RegiaoDTO;
+import com.brasilpanel.backend.exception.customized.IbgeException;
 import com.brasilpanel.backend.model.Bank;
 import com.brasilpanel.backend.model.IbgeCity;
 import com.brasilpanel.backend.model.IbgeState;
@@ -12,6 +13,7 @@ import com.brasilpanel.backend.repository.static_data.IbgeCityRepository;
 import com.brasilpanel.backend.repository.static_data.IbgeStateRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +39,7 @@ public class StaticDataService {
     // ── Bancos ─────────────────────────────────────────────────────────────
 
     /** Lista todos os bancos ordenados por código */
+    @Cacheable("banks")
     @Transactional(readOnly = true)
     public List<BankDTO> getAllBanks() {
         return bankRepository.findAllByOrderByCodeAsc().stream()
@@ -45,6 +48,7 @@ public class StaticDataService {
     }
 
     /** Busca banco por código */
+    @Cacheable(value = "bank-by-code", key = "#code")
     @Transactional(readOnly = true)
     public Optional<BankDTO> getBankByCode(int code) {
         return bankRepository.findByCode(code).map(this::toDTO);
@@ -53,6 +57,7 @@ public class StaticDataService {
     // ── Estados ────────────────────────────────────────────────────────────
 
     /** Lista todos os estados ordenados por nome */
+    @Cacheable("ibge-states")
     @Transactional(readOnly = true)
     public List<EstadoDTO> getAllStates() {
         return stateRepository.findAllByOrderByNomeAsc().stream()
@@ -63,29 +68,41 @@ public class StaticDataService {
     // ── Municípios — lazy seeding ──────────────────────────────────────────
 
     /**
-     * Retorna municípios de um estado.
+     * Retorna municípios de um estado, identificado por ID (ex: "35") ou sigla (ex: "SP").
      * Se não existirem no banco, busca na API do IBGE e persiste (lazy seeding).
      *
-     * @param sigla sigla do estado — ex: "SP", "RJ"
+     * @param state  ID ou sigla do estado — ex: "SP", "35"
      * @param filtro filtro opcional por nome
      */
+    @Cacheable(value = "ibge-cities", key = "#state.toUpperCase() + '|' + (#filtro == null ? '' : #filtro.trim().toLowerCase())")
     @Transactional
-    public List<MunicipioDTO> getCitiesByState(String sigla, String filtro) {
-        IbgeState state = stateRepository.findBySiglaIgnoreCase(sigla)
-                .orElseThrow(() -> new IllegalArgumentException("Estado não encontrado: " + sigla));
+    public List<MunicipioDTO> getCitiesByState(String state, String filtro) {
+        IbgeState resolved = resolveState(state);
 
         // Lazy seeding: carrega da API se ainda não tem no banco
-        if (!cityRepository.existsByState(state)) {
-            loadCitiesFromApi(state);
+        if (!cityRepository.existsByState(resolved)) {
+            loadCitiesFromApi(resolved);
         }
 
         List<IbgeCity> cities = (filtro != null && !filtro.isBlank())
-                ? cityRepository.findByStateAndNomeContainingIgnoreCaseOrderByNomeAsc(state, filtro.trim())
-                : cityRepository.findByStateOrderByNomeAsc(state);
+                ? cityRepository.findByStateAndNomeContainingIgnoreCaseOrderByNomeAsc(resolved, filtro.trim())
+                : cityRepository.findByStateOrderByNomeAsc(resolved);
 
         return cities.stream()
                 .map(c -> new MunicipioDTO(c.getId(), c.getNome()))
                 .toList();
+    }
+
+    /** Resolve um estado por ID numérico ou sigla. Lança 400 se não existir no banco. */
+    private IbgeState resolveState(String state) {
+        String raw = state.trim();
+        Optional<IbgeState> found;
+        try {
+            found = stateRepository.findById(Integer.parseInt(raw));
+        } catch (NumberFormatException e) {
+            found = stateRepository.findBySiglaIgnoreCase(raw);
+        }
+        return found.orElseThrow(() -> new IbgeException("Estado inválido: " + state, 400));
     }
 
     // ── Conversores ────────────────────────────────────────────────────────

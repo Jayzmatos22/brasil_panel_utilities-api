@@ -2,7 +2,7 @@ package com.brasilpanel.backend.controller.api;
 
 import com.brasilpanel.backend.dto.api.ibge.EstadoDTO;
 import com.brasilpanel.backend.dto.api.ibge.MunicipioDTO;
-import com.brasilpanel.backend.service.api.ibge.IbgeService;
+import com.brasilpanel.backend.service.static_data.StaticDataService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import lombok.RequiredArgsConstructor;
@@ -15,14 +15,14 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 public class IbgeController {
-    private final IbgeService ibgeService;
+    private final StaticDataService staticDataService;
 
     @Operation(summary = "Todos os estados", description = "Retorna todos os estados brasileiros com região")
     @ApiResponse(responseCode = "200", description = "Lista de estados retornada com sucesso")
     @ApiResponse(responseCode = "502", description = "Erro na comunicação com IBGE")
     @GetMapping
     public ResponseEntity<List<EstadoDTO>> getAllStates() {
-        return ResponseEntity.ok(ibgeService.returnAllBrazilianStates());
+        return ResponseEntity.ok(staticDataService.getAllStates());
     }
 
     @Operation(summary = "Municípios por estado", description = "Retorna municípios de um estado pelo ID ou sigla. Filtro opcional por nome.")
@@ -34,7 +34,7 @@ public class IbgeController {
     public ResponseEntity<List<MunicipioDTO>> getCitiesByState(
             @PathVariable String state,
             @RequestParam(required = false) String filtro) {
-        return ResponseEntity.ok(ibgeService.getMunicipiosByEstado(state, filtro));
+        return ResponseEntity.ok(staticDataService.getCitiesByState(state, filtro));
     }
 
 
