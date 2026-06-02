@@ -33,3 +33,17 @@ export interface MetalHistory {
   unit: string;
   data: MetalHistoryPoint[];
 }
+
+// Metals.dev — GET /api/metals/lbma (fixing oficial LBMA, USD/toz)
+// Campos podem ser null quando o fixing ainda não foi publicado (ex: PM pela manhã).
+export interface LbmaFixing {
+  currency: string;
+  timestamp: string; // Instant serializado como ISO 8601
+  goldAm: number | null;
+  goldPm: number | null;
+  silver: number | null;
+  platinumAm: number | null;
+  platinumPm: number | null;
+  palladiumAm: number | null;
+  palladiumPm: number | null;
+}

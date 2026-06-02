@@ -17,3 +17,11 @@ export function useMetalHistory() {
     ...FINANCIAL,
   });
 }
+
+export function useLbmaFixing() {
+  return useQuery({
+    queryKey: ['metals', 'lbma'],
+    queryFn: metalsDevService.getLbmaFixing,
+    ...FINANCIAL,
+  });
+}

@@ -1,12 +1,15 @@
 package com.brasilpanel.backend.service.api.metalsDev;
 
 
+import com.brasilpanel.backend.dto.api.metalsDev.LbmaAuthorityResponseDTO;
+import com.brasilpanel.backend.dto.api.metalsDev.LbmaFixingDTO;
 import com.brasilpanel.backend.dto.api.metalsDev.MetalHistoryDTO;
 import com.brasilpanel.backend.dto.api.metalsDev.MetalHistoryPointDTO;
 import com.brasilpanel.backend.dto.api.metalsDev.MetalsDataDTO;
 import com.brasilpanel.backend.dto.api.metalsDev.MetalsResponseDTO;
 import com.brasilpanel.backend.dto.api.metalsDev.MetalsTimeseriesResponseDTO;
 import com.brasilpanel.backend.exception.customized.MetalsException;
+import com.brasilpanel.backend.model.LbmaFixingSnapshot;
 import com.brasilpanel.backend.model.MetalHistorySnapshot;
 import com.brasilpanel.backend.model.MetalSnapshot;
 import com.brasilpanel.backend.service.financial.SnapshotService;
@@ -19,6 +22,7 @@ import org.springframework.web.client.RestClient;
 
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -181,6 +185,80 @@ public class MetalsDevService {
     private static Double dval(Map<String, BigDecimal> m, String key) {
         BigDecimal v = m.get(key);
         return v != null ? v.doubleValue() : null;
+    }
+
+    // ── Fixing LBMA (authority) ─────────────────────────────────────────────
+
+    @Cacheable(value = "lbma-fixing", sync = true)
+    public LbmaFixingDTO getLbmaFixing() {
+        // DB-first: serve o fixing mais recente; só chama a API se o banco estiver vazio.
+        Optional<LbmaFixingSnapshot> latest = snapshotService.getLatestLbmaFixing();
+        if (latest.isPresent()) {
+            return toLbmaDTO(latest.get());
+        }
+        return refreshLbmaFixing();
+    }
+
+    /**
+     * Busca o fixing oficial LBMA na API e persiste, ignorando o atalho DB-first.
+     * Usado pelo scheduler e como fallback de leitura. Uma requisição traz todos
+     * os fixings AM/PM (ouro, platina, paládio) + o fixing único da prata.
+     */
+    public LbmaFixingDTO refreshLbmaFixing() {
+        String url = "https://api.metals.dev/v1/metal/authority?api_key=" + apiKey
+                + "&authority=lbma";
+        try {
+            LbmaAuthorityResponseDTO response = restClient.get()
+                    .uri(url)
+                    .retrieve()
+                    .body(LbmaAuthorityResponseDTO.class);
+
+            if (response == null || !"success".equals(response.status()) || response.rates() == null) {
+                throw new MetalsException("Erro na API de metais (authority LBMA)", 502);
+            }
+
+            Map<String, BigDecimal> r = response.rates();
+            Instant ts = response.timestamp();
+            LbmaFixingDTO dto = new LbmaFixingDTO(
+                    response.currency(),
+                    ts,
+                    dval(r, "lbma_gold_am"), dval(r, "lbma_gold_pm"),
+                    dval(r, "lbma_silver"),
+                    dval(r, "lbma_platinum_am"), dval(r, "lbma_platinum_pm"),
+                    dval(r, "lbma_palladium_am"), dval(r, "lbma_palladium_pm")
+            );
+
+            snapshotService.saveLbmaFixing(dto, ts);
+            log.info("Fixing LBMA obtido: ts={}", ts);
+            return dto;
+
+        } catch (MetalsException e) {
+            Optional<LbmaFixingSnapshot> latest = snapshotService.getLatestLbmaFixing();
+            if (latest.isPresent()) {
+                log.warn("Authority LBMA falhou ({}); servindo fixing do banco", e.getMessage());
+                return toLbmaDTO(latest.get());
+            }
+            throw e;
+        } catch (Exception e) {
+            log.error("Erro ao buscar fixing LBMA: {}", e.getMessage());
+            Optional<LbmaFixingSnapshot> latest = snapshotService.getLatestLbmaFixing();
+            if (latest.isPresent()) {
+                log.warn("Servindo fixing LBMA do banco após erro de comunicação");
+                return toLbmaDTO(latest.get());
+            }
+            throw new MetalsException("Erro na comunicação com a API de metais", 502);
+        }
+    }
+
+    private LbmaFixingDTO toLbmaDTO(LbmaFixingSnapshot s) {
+        return new LbmaFixingDTO(
+                s.getCurrency(),
+                s.getReferenceTs(),
+                bd(s.getGoldAm()), bd(s.getGoldPm()),
+                bd(s.getSilver()),
+                bd(s.getPlatinumAm()), bd(s.getPlatinumPm()),
+                bd(s.getPalladiumAm()), bd(s.getPalladiumPm())
+        );
     }
 
     // ── Reconstrução DB → DTO ──────────────────────────────────────────────

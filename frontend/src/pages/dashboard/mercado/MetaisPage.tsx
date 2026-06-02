@@ -2,10 +2,11 @@
 // Endpoints consumidos:
 //   GET /metals         → useMetals()
 //   GET /metals/history → useMetalHistory()
+//   GET /metals/lbma    → useLbmaFixing()
 
 import { useMemo, useState } from 'react';
 import { LoaderCircle } from 'lucide-react';
-import { useMetals, useMetalHistory } from '../../../hooks/UseMetals';
+import { useMetals, useMetalHistory, useLbmaFixing } from '../../../hooks/UseMetals';
 import { LineChartSvg } from '../../../components/charts/LineChartSvg';
 import type { MetalKey } from '../../../types/MetalsType';
 
@@ -20,9 +21,16 @@ const METALS = [
   { key: 'zinc',      label: 'Zinco',     emoji: '🔳' },
 ] as const;
 
+const LBMA_FIXINGS = [
+  { label: 'Ouro',     emoji: '🥇', am: 'goldAm',      pm: 'goldPm' },
+  { label: 'Platina',  emoji: '⚪', am: 'platinumAm',  pm: 'platinumPm' },
+  { label: 'Paládio',  emoji: '🔘', am: 'palladiumAm', pm: 'palladiumPm' },
+] as const;
+
 export default function MetaisPage() {
   const { data: metals, isLoading, error } = useMetals();
   const { data: history, isLoading: loadingHistory } = useMetalHistory();
+  const { data: lbma, isLoading: loadingLbma } = useLbmaFixing();
 
   const [selected, setSelected] = useState<MetalKey>('gold');
 
@@ -48,6 +56,11 @@ export default function MetaisPage() {
 
   const brl = (v: number) =>
     v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 });
+
+  const usd = (v: number | null) =>
+    v == null
+      ? '—'
+      : v.toLocaleString('pt-BR', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 });
 
   return (
     <div className="flex flex-col gap-6">
@@ -121,6 +134,63 @@ export default function MetaisPage() {
           <p className="text-slate-500 text-sm">
             Sem histórico disponível para este metal.
           </p>
+        )}
+      </div>
+
+      {/* Fixing oficial LBMA (AM/PM) — USD/toz */}
+      <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 flex flex-col gap-4">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <h2 className="text-yellow-500 font-semibold text-sm uppercase tracking-wider">
+            Preço oficial LBMA (AM/PM)
+          </h2>
+          <div className="flex items-center gap-3">
+            {lbma && (
+              <span className="text-slate-500 text-xs">
+                {new Date(lbma.timestamp).toLocaleString('pt-BR')}
+              </span>
+            )}
+            <span className="text-slate-500 text-xs">USD / toz</span>
+          </div>
+        </div>
+
+        {loadingLbma ? (
+          <div className="flex items-center gap-2 text-slate-400 text-sm">
+            <LoaderCircle size={16} className="animate-spin" /> Carregando fixing...
+          </div>
+        ) : lbma ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {LBMA_FIXINGS.map(({ label, emoji, am, pm }) => (
+              <div
+                key={label}
+                className="bg-slate-800 border border-slate-700 rounded-lg p-4 flex flex-col gap-2"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">{emoji}</span>
+                  <span className="text-slate-300 text-sm font-medium">{label}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">AM</span>
+                  <span className="text-white font-mono">{usd(lbma[am])}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">PM</span>
+                  <span className="text-white font-mono">{usd(lbma[pm])}</span>
+                </div>
+              </div>
+            ))}
+            <div className="bg-slate-800 border border-slate-700 rounded-lg p-4 flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🥈</span>
+                <span className="text-slate-300 text-sm font-medium">Prata</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-500">Fixing</span>
+                <span className="text-white font-mono">{usd(lbma.silver)}</span>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <p className="text-slate-500 text-sm">Fixing LBMA indisponível.</p>
         )}
       </div>
     </div>

@@ -1,5 +1,5 @@
 import { apiClient } from '../client/Client';
-import { type MetalsData, type MetalHistory } from '../../types/MetalsType';
+import { type MetalsData, type MetalHistory, type LbmaFixing } from '../../types/MetalsType';
 
 export const metalsDevService = {
   getMetals: () =>
@@ -7,5 +7,8 @@ export const metalsDevService = {
 
   getMetalHistory: () =>
     apiClient.get<MetalHistory>('/metals/history').then((res) => res.data),
+
+  getLbmaFixing: () =>
+    apiClient.get<LbmaFixing>('/metals/lbma').then((res) => res.data),
 };
 

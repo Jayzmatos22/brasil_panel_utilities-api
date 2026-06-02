@@ -1,5 +1,6 @@
 package com.brasilpanel.backend.controller.api;
 
+import com.brasilpanel.backend.dto.api.metalsDev.LbmaFixingDTO;
 import com.brasilpanel.backend.dto.api.metalsDev.MetalHistoryDTO;
 import com.brasilpanel.backend.dto.api.metalsDev.MetalsDataDTO;
 import com.brasilpanel.backend.service.api.metalsDev.MetalsDevService;
@@ -32,6 +33,14 @@ public class MetalsController {
     @GetMapping("/history")
     public ResponseEntity<MetalHistoryDTO> getMetalHistory() {
         return ResponseEntity.ok(metalsDevService.getMetalHistory());
+    }
+
+    @Operation(summary = "Fixing oficial LBMA", description = "Fixings AM/PM de ouro, platina e paládio + fixing único da prata (USD/toz), via Metals Dev authority. Persistido e servido DB-first.")
+    @ApiResponse(responseCode = "200", description = "Fixing retornado com sucesso")
+    @ApiResponse(responseCode = "502", description = "Erro na comunicação com a API")
+    @GetMapping("/lbma")
+    public ResponseEntity<LbmaFixingDTO> getLbmaFixing() {
+        return ResponseEntity.ok(metalsDevService.getLbmaFixing());
     }
 
 }

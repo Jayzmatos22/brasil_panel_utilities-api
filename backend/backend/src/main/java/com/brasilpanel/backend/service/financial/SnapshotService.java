@@ -3,14 +3,17 @@ package com.brasilpanel.backend.service.financial;
 import com.brasilpanel.backend.dto.api.alphaVantage.StockHistoryPointDTO;
 import com.brasilpanel.backend.dto.api.alphaVantage.StockQuoteDTO;
 import com.brasilpanel.backend.dto.api.coinGecko.CryptoCoinGeckoMarketDTO;
+import com.brasilpanel.backend.dto.api.metalsDev.LbmaFixingDTO;
 import com.brasilpanel.backend.dto.api.metalsDev.MetalHistoryPointDTO;
 import com.brasilpanel.backend.dto.api.metalsDev.MetalsDataDTO;
 import com.brasilpanel.backend.model.CryptoSnapshot;
+import com.brasilpanel.backend.model.LbmaFixingSnapshot;
 import com.brasilpanel.backend.model.MetalHistorySnapshot;
 import com.brasilpanel.backend.model.MetalSnapshot;
 import com.brasilpanel.backend.model.PibSnapshot;
 import com.brasilpanel.backend.model.StockSnapshot;
 import com.brasilpanel.backend.repository.snapshot.CryptoSnapshotRepository;
+import com.brasilpanel.backend.repository.snapshot.LbmaFixingRepository;
 import com.brasilpanel.backend.repository.snapshot.MetalHistoryRepository;
 import com.brasilpanel.backend.repository.snapshot.MetalSnapshotRepository;
 import com.brasilpanel.backend.repository.snapshot.PibSnapshotRepository;
@@ -42,6 +45,7 @@ public class SnapshotService {
     private final StockSnapshotRepository stockRepository;
     private final MetalSnapshotRepository metalRepository;
     private final MetalHistoryRepository metalHistoryRepository;
+    private final LbmaFixingRepository lbmaFixingRepository;
     private final CryptoSnapshotRepository cryptoRepository;
     private final PibSnapshotRepository pibRepository;
 
@@ -246,6 +250,46 @@ public class SnapshotService {
     @Transactional(readOnly = true)
     public Optional<MetalHistorySnapshot> getLatestMetalHistory() {
         return metalHistoryRepository.findTopByOrderByPriceDateDesc();
+    }
+
+    // ── Fixing LBMA (Metals Dev /v1/metal/authority?authority=lbma) ─────────
+
+    /**
+     * Persiste fixing oficial LBMA. Idempotente: usa o timestamp da API como chave única,
+     * então re-fetches do mesmo fixing (AM/PM) não duplicam registros.
+     */
+    @Transactional
+    public void saveLbmaFixing(LbmaFixingDTO dto, Instant referenceTs) {
+        try {
+            if (lbmaFixingRepository.existsByReferenceTs(referenceTs)) {
+                log.debug("Fixing LBMA já existe: {}", referenceTs);
+                return;
+            }
+
+            LbmaFixingSnapshot snapshot = LbmaFixingSnapshot.builder()
+                    .referenceTs(referenceTs)
+                    .currency(dto.currency())
+                    .goldAm(toBD(dto.goldAm()))
+                    .goldPm(toBD(dto.goldPm()))
+                    .silver(toBD(dto.silver()))
+                    .platinumAm(toBD(dto.platinumAm()))
+                    .platinumPm(toBD(dto.platinumPm()))
+                    .palladiumAm(toBD(dto.palladiumAm()))
+                    .palladiumPm(toBD(dto.palladiumPm()))
+                    .build();
+
+            lbmaFixingRepository.save(snapshot);
+            log.debug("Fixing LBMA salvo: ts={}", referenceTs);
+
+        } catch (Exception e) {
+            log.warn("Falha ao persistir fixing LBMA: {}", e.getMessage());
+        }
+    }
+
+    /** Fixing LBMA mais recente salvo no banco (para leitura DB-first). */
+    @Transactional(readOnly = true)
+    public Optional<LbmaFixingSnapshot> getLatestLbmaFixing() {
+        return lbmaFixingRepository.findTopByOrderByReferenceTsDesc();
     }
 
     // ── Criptomoedas ──────────────────────────────────────────────────────

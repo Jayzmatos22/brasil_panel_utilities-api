@@ -78,6 +78,8 @@ public class CacheConfig {
                 build("metals",                  60,  TimeUnit.MINUTES, 10),
                 // Histórico de metais: série diária muda 1x/dia → janela longa
                 build("metals-history",          12,  TimeUnit.HOURS,    2),
+                // Fixing LBMA: publicado 2x/dia útil → janela alinhada ao scheduler
+                build("lbma-fixing",             12,  TimeUnit.HOURS,    2),
 
                 // ── Cotações em tempo real ───────────────────────────────────────
                 // Ações: AlphaVantage (limite diário de requests — 15 min equilibra
