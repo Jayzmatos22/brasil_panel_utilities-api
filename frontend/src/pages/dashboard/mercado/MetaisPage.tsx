@@ -5,9 +5,12 @@
 //   GET /metals/lbma    → useLbmaFixing()
 
 import { useMemo, useState } from 'react';
+import { motion } from 'motion/react';
 import { LoaderCircle } from 'lucide-react';
 import { useMetals, useMetalHistory, useLbmaFixing } from '../../../hooks/UseMetals';
 import { LineChartEcharts } from '../../../components/charts/LineChartEcharts';
+import { AnimatedNumber } from '../../../components/AnimatedNumber';
+import { container, item } from '../../../lib/motion/presets';
 import type { MetalKey } from '../../../types/MetalsType';
 
 const METALS = [
@@ -63,15 +66,15 @@ export default function MetaisPage() {
       : v.toLocaleString('pt-BR', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 });
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+    <motion.div className="flex flex-col gap-6" variants={container} initial="hidden" animate="show">
+      <motion.div variants={item} className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-white">Metais Preciosos</h1>
         {metals && (
           <span className="text-slate-500 text-xs">
             Atualizado: {new Date(metals.lastUpdated).toLocaleString('pt-BR')}
           </span>
         )}
-      </div>
+      </motion.div>
 
       {isLoading && (
         <div className="flex items-center gap-2 text-slate-400 text-sm">
@@ -84,10 +87,11 @@ export default function MetaisPage() {
       )}
 
       {metals && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <motion.div variants={item} className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {METALS.map(({ key, label, emoji }) => (
-            <div
+            <motion.div
               key={key}
+              whileHover={{ y: -4 }}
               className="bg-slate-900 border border-slate-700 rounded-xl p-4 flex flex-col gap-2"
             >
               <div className="flex items-center gap-2">
@@ -95,16 +99,16 @@ export default function MetaisPage() {
                 <span className="text-slate-400 text-sm">{label}</span>
               </div>
               <p className="text-white font-bold text-xl font-mono">
-                {brl(metals[key])}
+                <AnimatedNumber value={metals[key]} format={brl} />
               </p>
               <p className="text-slate-600 text-xs">por troy oz</p>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       )}
 
       {/* Histórico — últimos 30 dias (USD/toz) */}
-      <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 flex flex-col gap-4">
+      <motion.div variants={item} whileHover={{ y: -4 }} className="bg-slate-900 border border-slate-700 rounded-xl p-6 flex flex-col gap-4">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <h2 className="text-yellow-500 font-semibold text-sm uppercase tracking-wider">
             Histórico — 30 dias
@@ -135,10 +139,10 @@ export default function MetaisPage() {
             Sem histórico disponível para este metal.
           </p>
         )}
-      </div>
+      </motion.div>
 
       {/* Fixing oficial LBMA (AM/PM) — USD/toz */}
-      <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 flex flex-col gap-4">
+      <motion.div variants={item} whileHover={{ y: -4 }} className="bg-slate-900 border border-slate-700 rounded-xl p-6 flex flex-col gap-4">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <h2 className="text-yellow-500 font-semibold text-sm uppercase tracking-wider">
             Preço oficial LBMA (AM/PM)
@@ -192,7 +196,7 @@ export default function MetaisPage() {
         ) : (
           <p className="text-slate-500 text-sm">Fixing LBMA indisponível.</p>
         )}
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

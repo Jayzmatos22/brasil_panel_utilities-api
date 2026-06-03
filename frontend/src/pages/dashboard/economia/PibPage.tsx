@@ -5,11 +5,14 @@
 //   GET /worldbank/series   → usePibSeries()
 
 import { useState, useMemo, type ChangeEvent } from 'react';
+import { motion } from 'motion/react';
 import { LoaderCircle, Landmark, CalendarSearch, LineChart, TrendingUp, TrendingDown, Minus, Map } from 'lucide-react';
 import { useCurrentPibBrazil, usePibBrazilByYear, usePibSeries } from '../../../hooks/UseWorldBank';
 import { usePibPorEstado } from '../../../hooks/UseSidra';
 import { LineChartEcharts } from '../../../components/charts/LineChartEcharts';
 import { BarChartEcharts } from '../../../components/charts/BarChartEcharts';
+import { AnimatedNumber } from '../../../components/AnimatedNumber';
+import { container, item } from '../../../lib/motion/presets';
 
 // PIB vem em R$ cheios (~10^13). Mostra compacto (tri/bi/mi) e o valor integral abaixo.
 const compactBrl = (v: number) => {
@@ -53,17 +56,17 @@ export default function PibPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
+    <motion.div className="flex flex-col gap-6" variants={container} initial="hidden" animate="show">
+      <motion.div variants={item}>
         <h1 className="text-2xl font-bold text-white">PIB do Brasil</h1>
         <p className="text-slate-500 text-sm mt-1">
           Produto Interno Bruto a preços correntes (R$), fonte World Bank.
         </p>
-      </div>
+      </motion.div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <motion.div variants={item} className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* PIB atual */}
-        <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 flex flex-col gap-3">
+        <motion.div whileHover={{ y: -4 }} className="bg-pib-item border border-slate-700 rounded-xl p-6 flex flex-col gap-3">
           <div className="flex items-center gap-2">
             <span className="text-yellow-500"><Landmark size={15} /></span>
             <h2 className="text-yellow-500 font-semibold text-sm uppercase tracking-wider">PIB mais recente</h2>
@@ -77,23 +80,25 @@ export default function PibPage() {
             <span className="text-red-400 text-sm">Erro ao carregar o PIB atual.</span>
           ) : currentPib ? (
             <>
-              <p className="text-4xl font-bold text-green-400 tracking-tight">{compactBrl(currentPib.value)}</p>
+              <p className="text-4xl font-bold text-green-400 tracking-tight">
+                <AnimatedNumber value={currentPib.value} format={compactBrl} />
+              </p>
               <p className="text-slate-400 text-sm font-mono">{fullBrl(currentPib.value)}</p>
               <span className="inline-flex w-fit text-xs text-yellow-400 bg-yellow-500/15 px-2 py-0.5 rounded-full">
                 Ano de referência: {currentPib.year}
               </span>
             </>
           ) : null}
-        </div>
+        </motion.div>
 
         {/* PIB por ano */}
-        <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 flex flex-col gap-3">
+        <motion.div whileHover={{ y: -4 }} className="bg-slate-900 border border-slate-700 bg-pib-item2 rounded-xl p-6 flex flex-col gap-3">
           <div className="flex items-center gap-2">
             <span className="text-yellow-500"><CalendarSearch size={15} /></span>
-            <h2 className="text-yellow-500 font-semibold text-sm uppercase tracking-wider">Consultar por ano</h2>
+            <h2 className="text-yellow-500 font-semibold text-sm uppercase tracking-wider ">Consultar por ano</h2>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 ">
             <input
               type="number"
               value={year}
@@ -108,7 +113,9 @@ export default function PibPage() {
             <span className="text-red-400 text-sm">Erro ao carregar o PIB para {year}.</span>
           ) : pibByYear ? (
             <>
-              <p className="text-4xl font-bold text-green-400 tracking-tight">{compactBrl(pibByYear.value)}</p>
+              <p className="text-4xl font-bold text-green-400 tracking-tight">
+                <AnimatedNumber value={pibByYear.value} format={compactBrl} />
+              </p>
               <p className="text-slate-400 text-sm font-mono">{fullBrl(pibByYear.value)}</p>
               <span className="inline-flex w-fit text-xs text-yellow-400 bg-yellow-500/15 px-2 py-0.5 rounded-full">
                 Ano de referência: {pibByYear.year}
@@ -117,11 +124,11 @@ export default function PibPage() {
           ) : !isPibByYearLoading ? (
             <p className="text-slate-500 text-sm">Sem dados para o ano {year}.</p>
           ) : null}
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
       {/* Série histórica */}
-      <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 flex flex-col gap-4">
+      <motion.div variants={item} whileHover={{ y: -4 }} className="bg-slate-900 border border-slate-700 rounded-xl p-6 flex flex-col gap-4">
         <div className="flex items-center gap-2">
           <span className="text-yellow-500"><LineChart size={15} /></span>
           <h2 className="text-yellow-500 font-semibold text-sm uppercase tracking-wider">Evolução histórica</h2>
@@ -168,10 +175,10 @@ export default function PibPage() {
         ) : (
           <p className="text-slate-500 text-sm">Série sem pontos suficientes para o gráfico.</p>
         )}
-      </div>
+      </motion.div>
 
       {/* PIB por estado */}
-      <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 flex flex-col gap-4">
+      <motion.div variants={item} whileHover={{ y: -4 }} className="bg-slate-900 border border-slate-700 rounded-xl p-6 flex flex-col gap-4">
         <div className="flex items-center gap-2">
           <span className="text-yellow-500"><Map size={15} /></span>
           <h2 className="text-yellow-500 font-semibold text-sm uppercase tracking-wider">
@@ -194,7 +201,7 @@ export default function PibPage() {
         ) : (
           <p className="text-slate-500 text-sm">Sem dados de PIB por estado.</p>
         )}
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

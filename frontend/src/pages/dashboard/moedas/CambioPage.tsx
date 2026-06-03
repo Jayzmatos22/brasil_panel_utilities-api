@@ -5,10 +5,13 @@
 //   GET /frankfurter/history      → useGetHistoryByCoins(from, to, startDate, endDate)
 
 import { useMemo, useState, type ChangeEvent } from 'react';
+import { motion } from 'motion/react';
 import { LoaderCircle, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { useRateByCoins, useLast30DaysExchange, useGetHistoryByCoins, useCurrencies } from '../../../hooks/UseExchange';
 import { CURRENCIES as CURRENCY_META } from '../../../constants/currencies';
 import { LineChartEcharts } from '../../../components/charts/LineChartEcharts';
+import { AnimatedNumber } from '../../../components/AnimatedNumber';
+import { container, item } from '../../../lib/motion/presets';
 import type { FrankfurterHistoryItem } from '../../../types/FrankfurterType';
 
 const META_BY_CODE = new Map<string, (typeof CURRENCY_META)[number]>(
@@ -69,11 +72,11 @@ export default function CambioPage() {
     'h-10 px-3 rounded-md bg-slate-800 text-white border border-slate-600 outline-none focus:ring-2 focus:ring-yellow-500 transition-all text-sm';
 
   return (
-    <div className="flex flex-col gap-8">
-      <h1 className="text-2xl font-bold text-white">Câmbio</h1>
+    <motion.div className="flex flex-col gap-8" variants={container} initial="hidden" animate="show">
+      <motion.h1 variants={item} className="text-2xl font-bold text-white">Câmbio</motion.h1>
 
       {/* ── Conversor ── */}
-      <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 max-w-lg flex flex-col gap-4">
+      <motion.div variants={item} whileHover={{ y: -4 }} className="bg-slate-900 border border-slate-700 rounded-xl p-6 max-w-lg flex flex-col gap-4">
         <h2 className="text-yellow-500 font-semibold text-sm uppercase tracking-wider">Conversão</h2>
 
         <div className="flex items-center gap-2 flex-wrap">
@@ -97,18 +100,18 @@ export default function CambioPage() {
           <div className="flex items-center gap-2 text-slate-400 text-sm">
             <LoaderCircle size={16} className="animate-spin" /> Calculando...
           </div>
-        ) : rate ? (
+        ) : rate && rate.rates[to] != null ? (
           <div>
             <p className="text-3xl font-bold text-white font-mono">
-              {rate.rates[to]?.toLocaleString('pt-BR', { minimumFractionDigits: 4 })} {to}
+              <AnimatedNumber value={rate.rates[to]} format={fmt} /> {to}
             </p>
             <p className="text-slate-500 text-xs mt-1">Referência: {rate.date}</p>
           </div>
         ) : null}
-      </div>
+      </motion.div>
 
       {/* ── Últimos 30 dias ── */}
-      <div className="bg-slate-900 border border-slate-700 rounded-xl p-6">
+      <motion.div variants={item} whileHover={{ y: -4 }} className="bg-slate-900 border border-slate-700 rounded-xl p-6">
         <h2 className="text-yellow-500 font-semibold text-sm uppercase tracking-wider mb-4">
           Últimos 30 dias — {from}/{to}
         </h2>
@@ -139,10 +142,10 @@ export default function CambioPage() {
             </table>
           </div>
         ) : null}
-      </div>
+      </motion.div>
 
       {/* ── Histórico por período ── */}
-      <div className="bg-slate-900 border border-slate-700 rounded-xl p-6">
+      <motion.div variants={item} whileHover={{ y: -4 }} className="bg-slate-900 border border-slate-700 rounded-xl p-6">
         <h2 className="text-yellow-500 font-semibold text-sm uppercase tracking-wider mb-4">
           Histórico por Período
         </h2>
@@ -192,7 +195,7 @@ export default function CambioPage() {
         ) : (
           <p className="text-slate-500 text-sm">Selecione um período para consultar.</p>
         )}
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

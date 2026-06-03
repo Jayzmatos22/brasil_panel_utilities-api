@@ -8,10 +8,12 @@
 //   GET /ipea/populacao            → usePopulacao()
 
 import { useMemo, useState } from 'react';
+import { motion } from 'motion/react';
 import { LoaderCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import { useMacro, useEmprego, useRenda, useDesigualdade, usePrecos, usePopulacao } from '../../../hooks/UseIpea';
 import type { IpeaSerie } from '../../../types/IpeaType';
 import { LineChartEcharts, type LinePoint } from '../../../components/charts/LineChartEcharts';
+import { container, item } from '../../../lib/motion/presets';
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 
@@ -128,11 +130,11 @@ export default function IpeaPage() {
   })();
 
   return (
-    <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-bold text-white">IPEA — Indicadores Socioeconômicos</h1>
+    <motion.div className="flex flex-col gap-6" variants={container} initial="hidden" animate="show">
+      <motion.h1 variants={item} className="text-2xl font-bold text-white">IPEA — Indicadores Socioeconômicos</motion.h1>
 
       {/* Tabs */}
-      <div className="flex gap-1 flex-wrap border-b border-slate-700">
+      <motion.div variants={item} className="flex gap-1 flex-wrap border-b border-slate-700">
         {TABS.map(tab => (
           <button
             key={tab}
@@ -147,14 +149,16 @@ export default function IpeaPage() {
             {tab}
           </button>
         ))}
-      </div>
+      </motion.div>
 
       {/* Conteúdo */}
-      <TabContent
-        data={active.data}
-        isLoading={active.isLoading}
-        error={active.error}
-      />
-    </div>
+      <motion.div variants={item}>
+        <TabContent
+          data={active.data}
+          isLoading={active.isLoading}
+          error={active.error}
+        />
+      </motion.div>
+    </motion.div>
   );
 }

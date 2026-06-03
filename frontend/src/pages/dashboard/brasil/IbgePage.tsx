@@ -4,9 +4,11 @@
 //   GET /ibge/cities/{state}?filtro=... → useCitiesByState(state, filtro?)
 
 import { useState, type ChangeEvent } from 'react';
+import { motion } from 'motion/react';
 import { LoaderCircle, Search, BarChart3 } from 'lucide-react';
 import { useStates, useCitiesByState, useStatesRanking } from '../../../hooks/UseIbge';
 import { BarChartEcharts } from '../../../components/charts/BarChartEcharts';
+import { container, item } from '../../../lib/motion/presets';
 
 export default function IbgePage() {
   const [selectedState, setSelectedState] = useState('');
@@ -20,11 +22,11 @@ export default function IbgePage() {
     'h-10 px-3 rounded-md bg-slate-800 text-white border border-slate-600 outline-none focus:ring-2 focus:ring-yellow-500 transition-all text-sm';
 
   return (
-    <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-bold text-white">IBGE — Estados e Municípios</h1>
+    <motion.div className="flex flex-col gap-6" variants={container} initial="hidden" animate="show">
+      <motion.h1 variants={item} className="text-2xl font-bold text-green-500">IBGE — Estados e Municípios</motion.h1>
 
       {/* Ranking de estados por nº de municípios */}
-      <div className="bg-slate-900 border border-slate-700 rounded-xl p-5 flex flex-col gap-4">
+      <motion.div variants={item} whileHover={{ y: -4 }} className="bg-slate-900 border border-slate-700 rounded-xl p-5 flex flex-col gap-4">
         <div className="flex items-center gap-2">
           <span className="text-yellow-500"><BarChart3 size={15} /></span>
           <h2 className="text-yellow-500 font-semibold text-sm uppercase tracking-wider">
@@ -46,10 +48,10 @@ export default function IbgePage() {
         ) : (
           <p className="text-slate-500 text-sm">Sem dados para o ranking.</p>
         )}
-      </div>
+      </motion.div>
 
       {/* Controles */}
-      <div className="flex items-end gap-3 flex-wrap">
+      <motion.div variants={item} className="flex items-end gap-3 flex-wrap">
         <div className="flex flex-col gap-1">
           <label className="text-slate-400 text-xs">Estado</label>
           {loadingStates ? (
@@ -85,11 +87,11 @@ export default function IbgePage() {
             </div>
           </div>
         )}
-      </div>
+      </motion.div>
 
       {/* Resumo do estado selecionado */}
       {selectedState && states && (
-        <div className="bg-slate-900 border border-slate-700 rounded-xl p-4 max-w-sm">
+        <motion.div variants={item} whileHover={{ y: -4 }} className="bg-slate-900 border border-slate-700 rounded-xl p-4 max-w-sm">
           {(() => {
             const state = states.find(s => s.sigla === selectedState);
             return state ? (
@@ -101,12 +103,12 @@ export default function IbgePage() {
               </div>
             ) : null;
           })()}
-        </div>
+        </motion.div>
       )}
 
       {/* Lista de municípios */}
       {selectedState && (
-        <div className="bg-slate-900 border border-slate-700 rounded-xl p-5">
+        <motion.div variants={item} whileHover={{ y: -4 }} className="bg-slate-900 border border-slate-700 rounded-xl p-5">
           <h2 className="text-yellow-500 font-semibold text-sm uppercase tracking-wider mb-4">Municípios</h2>
 
           {loadingCities ? (
@@ -127,12 +129,12 @@ export default function IbgePage() {
           ) : (
             <p className="text-slate-500 text-sm">Nenhum município encontrado.</p>
           )}
-        </div>
+        </motion.div>
       )}
 
       {!selectedState && (
         <p className="text-slate-500 text-sm">Selecione um estado para ver os municípios.</p>
       )}
-    </div>
+    </motion.div>
   );
 }

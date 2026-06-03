@@ -3,9 +3,12 @@
 //   GET /stocks/quote/{symbol} → useStockQuote(symbol)
 
 import { useState, type ChangeEvent, type FormEvent } from 'react';
+import { motion } from 'motion/react';
 import { LoaderCircle, Search, TrendingUp, TrendingDown } from 'lucide-react';
 import { useStockQuote, useStockHistory } from '../../../hooks/UseStocks';
 import { LineChartEcharts } from '../../../components/charts/LineChartEcharts';
+import { AnimatedNumber } from '../../../components/AnimatedNumber';
+import { container, item } from '../../../lib/motion/presets';
 
 export default function AcoesPage() {
   const [input, setInput]   = useState('');
@@ -22,11 +25,11 @@ export default function AcoesPage() {
   const positive = stock && stock.change >= 0;
 
   return (
-    <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-bold text-white">Cotação de Ações</h1>
+    <motion.div className="flex flex-col gap-6" variants={container} initial="hidden" animate="show">
+      <motion.h1 variants={item} className="text-2xl font-bold text-white">Cotação de Ações</motion.h1>
 
       {/* Busca */}
-      <form onSubmit={handleSubmit} className="flex gap-2 max-w-sm">
+      <motion.form variants={item} onSubmit={handleSubmit} className="flex gap-2 max-w-sm">
         <input
           value={input}
           onChange={(e: ChangeEvent<HTMLInputElement>) => setInput(e.target.value)}
@@ -42,7 +45,7 @@ export default function AcoesPage() {
           <Search size={15} />
           Buscar
         </button>
-      </form>
+      </motion.form>
 
       {/* Loading */}
       {(isLoading || isFetching) && symbol && (
@@ -59,7 +62,7 @@ export default function AcoesPage() {
 
       {/* Card de cotação */}
       {stock && !isLoading && (
-        <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 max-w-md flex flex-col gap-4">
+        <motion.div variants={item} whileHover={{ y: -4 }} className="bg-slate-900 border border-slate-700 rounded-xl p-6 max-w-md flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <h2 className="text-white font-bold text-xl">{stock.symbol}</h2>
             <span className={`flex items-center gap-1 text-sm font-semibold ${positive ? 'text-green-400' : 'text-red-400'}`}>
@@ -69,7 +72,7 @@ export default function AcoesPage() {
           </div>
 
           <p className="text-4xl font-bold text-white">
-            ${stock.price.toFixed(2)}
+            <AnimatedNumber value={stock.price} format={(v) => `$${v.toFixed(2)}`} />
           </p>
 
           <div className="grid grid-cols-2 gap-2 text-sm">
@@ -89,12 +92,12 @@ export default function AcoesPage() {
           </div>
 
           <p className="text-slate-500 text-xs">Último pregão: {stock.latestTradingDay}</p>
-        </div>
+        </motion.div>
       )}
 
       {/* Histórico — fechamento ao longo do tempo */}
       {symbol && !error && (
-        <div className="bg-slate-900 border border-slate-700 rounded-xl p-6">
+        <motion.div variants={item} whileHover={{ y: -4 }} className="bg-slate-900 border border-slate-700 rounded-xl p-6">
           <h2 className="text-yellow-500 font-semibold text-sm uppercase tracking-wider mb-4">
             Histórico — {symbol}
           </h2>
@@ -108,12 +111,12 @@ export default function AcoesPage() {
           ) : (
             <p className="text-slate-500 text-sm">Sem histórico disponível para {symbol}.</p>
           )}
-        </div>
+        </motion.div>
       )}
 
       {!symbol && (
         <p className="text-slate-500 text-sm">Digite um símbolo para buscar a cotação.</p>
       )}
-    </div>
+    </motion.div>
   );
 }

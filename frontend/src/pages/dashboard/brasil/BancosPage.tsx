@@ -4,8 +4,10 @@
 //   GET /banks/{code} → useBankByCode(code)
 
 import { useState, type ChangeEvent } from 'react';
+import { motion } from 'motion/react';
 import { LoaderCircle, Search } from 'lucide-react';
 import { useAllBanks, useBankByCode } from '../../../hooks/UseBanks';
+import { container, item } from '../../../lib/motion/presets';
 
 export default function BancosPage() {
   const [search,  setSearch]  = useState('');
@@ -29,11 +31,11 @@ export default function BancosPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-bold text-white">Bancos do Brasil</h1>
+    <motion.div className="flex flex-col gap-6" variants={container} initial="hidden" animate="show">
+      <motion.h1 variants={item} className="text-2xl font-bold text-white">Bancos do Brasil</motion.h1>
 
       {/* Busca por código */}
-      <div className="bg-slate-900 border border-slate-700 rounded-xl p-5 max-w-md flex flex-col gap-3">
+      <motion.div variants={item} whileHover={{ y: -4 }} className="bg-slate-900 border border-slate-700 rounded-xl p-5 max-w-md flex flex-col gap-3">
         <h2 className="text-yellow-500 font-semibold text-sm uppercase tracking-wider">Busca por Código</h2>
         <form onSubmit={handleCodeSearch} className="flex gap-2">
           <input
@@ -70,10 +72,10 @@ export default function BancosPage() {
             </div>
           </div>
         )}
-      </div>
+      </motion.div>
 
       {/* Lista completa com filtro */}
-      <div className="bg-slate-900 border border-slate-700 rounded-xl p-5">
+      <motion.div variants={item} whileHover={{ y: -4 }} className="bg-slate-900 border border-slate-700 rounded-xl p-5">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
           <h2 className="text-yellow-500 font-semibold text-sm uppercase tracking-wider">
             Todos os Bancos {banks && `(${filtered.length})`}
@@ -119,7 +121,7 @@ export default function BancosPage() {
             )}
           </div>
         )}
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

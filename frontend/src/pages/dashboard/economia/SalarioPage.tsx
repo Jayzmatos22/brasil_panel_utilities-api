@@ -5,10 +5,13 @@
 //   GET /ipea/renda               → useRenda()  (séries para contraste)
 
 import { useMemo, useState } from 'react';
+import { motion } from 'motion/react';
 import { LoaderCircle, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { useMinimumWage, useMinimumWageHistory } from '../../../hooks/UseEconomy';
 import { useRenda } from '../../../hooks/UseIpea';
 import { LineChartEcharts, type LinePoint } from '../../../components/charts/LineChartEcharts';
+import { AnimatedNumber } from '../../../components/AnimatedNumber';
+import { container, item } from '../../../lib/motion/presets';
 
 // Fontes contrastáveis. BCB = mínimo nominal; demais vêm do IPEA (/ipea/renda), DB-first.
 const SOURCES = [
@@ -63,11 +66,15 @@ export default function SalarioPage() {
   const errChart = source === 'bcb' ? errHistory : errRenda;
 
   return (
-    <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-bold text-blue-600">Salário Mínimo</h1>
+    <motion.div className="flex flex-col gap-6" variants={container} initial="hidden" animate="show">
+      <motion.h1 variants={item} className="text-2xl font-bold text-blue-600">Salário Mínimo</motion.h1>
 
       {/* Valor atual (BCB nominal) */}
-      <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 max-w-sm">
+      <motion.div
+        variants={item}
+        whileHover={{ y: -4 }}
+        className="bg-gray-950 border border-slate-700 bg-card-item bg-card-filter rounded-xl p-6 max-w-sm hover:bg-gray-900 transition-colors"
+      >
         <h2 className="text-yellow-500 font-semibold text-sm uppercase tracking-wider mb-3">Valor Atual</h2>
         {loadingCurrent ? (
           <div className="flex items-center gap-2 text-slate-400 text-sm">
@@ -77,16 +84,18 @@ export default function SalarioPage() {
           <span className="text-red-400 text-sm">Erro ao carregar.</span>
         ) : latest ? (
           <>
-            <p className="text-4xl font-bold text-green-600">{brl(latest.valor)}</p>
+            <p className="text-4xl font-bold text-green-600">
+              <AnimatedNumber value={latest.valor} format={brl} />
+            </p>
             <p className="text-slate-500 text-xs mt-2">Vigência: {latest.data}</p>
           </>
         ) : null}
-      </div>
+      </motion.div>
 
       {/* Histórico — gráfico com seletor de fonte para contraste */}
-      <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 flex flex-col gap-4">
+      <motion.div variants={item} whileHover={{ y: -4 }} className="bg-card-item border bg-card-filter border-slate-700 rounded-xl p-6 flex flex-col gap-4">
         <div className="flex items-center justify-between flex-wrap gap-3">
-          <h2 className="text-yellow-500 font-semibold text-sm uppercase tracking-wider">Histórico</h2>
+          <h2 className="text-yellow-500 font-semibold text-sm uppercase tracking-wider ">Histórico</h2>
           <div className="flex items-center gap-2">
             <select
               value={source}
@@ -135,7 +144,7 @@ export default function SalarioPage() {
         ) : (
           <p className="text-slate-500 text-sm">Sem dados suficientes para o gráfico.</p>
         )}
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
