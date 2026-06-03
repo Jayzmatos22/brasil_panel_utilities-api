@@ -9,4 +9,7 @@ export const worldBankService = {
 
   getPibBrazilByYear: (year: number) =>
     apiClient.get<PibBrasil>(`/worldbank/${year}`).then((res) => res.data),
+
+  getPibSeries: () =>
+    apiClient.get<PibBrasil[]>('/worldbank/series').then((res) => res.data),
 };

@@ -12,11 +12,13 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Serve o PIB do Brasil (World Bank, NY.GDP.MKTP.CD) priorizando o banco local.
+ * Serve o PIB do Brasil (World Bank, NY.GDP.MKTP.CN — moeda local, R$) priorizando o banco local.
  * DB-first: cache → PibSnapshot → API externa (fallback + persiste).
  */
 @Service
@@ -29,13 +31,18 @@ public class WorldBankService {
     private static final String SOURCE = "WORLD_BANK";
     private static final String DATE = "date";
     private static final String VALUE = "value";
-    private static final String USD = "USD";
+    // NY.GDP.MKTP.CN = PIB a preços correntes em moeda local (R$).
+    private static final String INDICATOR = "NY.GDP.MKTP.CN";
+    private static final String CURRENCY = "BRL";
+    // Quantos anos buscar na série histórica (1 requisição via mrv).
+    private static final int SERIES_YEARS = 35;
 
     // PIB atual: World Bank publica revisões anuais — 24h garante frescor sem
     // sobrecarregar a API para dado que muda uma vez por ano.
     @Cacheable("worldbank-pib-current")
     public PibBrasilDTO getCurrentPib() {
         return snapshotService.getLatestPib()
+                .filter(s -> CURRENCY.equals(s.getCurrency())) // snapshot em moeda antiga → re-busca em R$
                 .map(this::toDTO)
                 .orElseGet(this::refreshCurrentPib);
     }
@@ -46,9 +53,35 @@ public class WorldBankService {
     public PibBrasilDTO getPibByYear(int year) {
         worldBankValidator.validYear(year);
         return snapshotService.getPibByYear(year)
+                .filter(s -> CURRENCY.equals(s.getCurrency())) // snapshot em moeda antiga → re-busca em R$
                 .map(this::toDTO)
                 .orElseGet(() -> fetchAndPersist(
-                        "https://api.worldbank.org/v2/country/BR/indicator/NY.GDP.MKTP.CD?format=json&date=" + year));
+                        "https://api.worldbank.org/v2/country/BR/indicator/" + INDICATOR + "?format=json&date=" + year));
+    }
+
+    // Série histórica do PIB para o gráfico. DB-first: se já há série suficiente no
+    // banco, serve do banco; senão busca os últimos SERIES_YEARS anos em 1 requisição.
+    @Cacheable("worldbank-pib-series")
+    public List<PibBrasilDTO> getPibSeries() {
+        List<PibSnapshot> stored = snapshotService.getPibSeries(CURRENCY);
+        if (stored.size() >= 10) {
+            return stored.stream().map(this::toDTO).toList();
+        }
+        return refreshPibSeries();
+    }
+
+    /** Busca a série histórica do PIB na API (1 requisição via mrv), persiste cada ano e devolve. */
+    public List<PibBrasilDTO> refreshPibSeries() {
+        List<PibBrasilDTO> series = fetchPibSeries(
+                "https://api.worldbank.org/v2/country/BR/indicator/" + INDICATOR + "?format=json&mrv=" + SERIES_YEARS);
+        for (PibBrasilDTO dto : series) {
+            try {
+                snapshotService.savePib(Integer.parseInt(dto.year()), dto.value(), dto.currency());
+            } catch (NumberFormatException e) {
+                log.warn("Ano do PIB não numérico, não persistido: {}", dto.year());
+            }
+        }
+        return series;
     }
 
     /**
@@ -58,7 +91,7 @@ public class WorldBankService {
      */
     public PibBrasilDTO refreshCurrentPib() {
         return fetchAndPersist(
-                "https://api.worldbank.org/v2/country/BR/indicator/NY.GDP.MKTP.CD?format=json&mrv=1");
+                "https://api.worldbank.org/v2/country/BR/indicator/" + INDICATOR + "?format=json&mrv=1");
     }
 
     /** Busca na API do World Bank, persiste o snapshot e devolve o DTO. */
@@ -92,15 +125,40 @@ public class WorldBankService {
         return new PibBrasilDTO(
                 (String) entry.get(DATE),
                 ((Number) entry.get(VALUE)).doubleValue(),
-                USD
+                CURRENCY
         );
+    }
+
+    /** Busca a série completa na API do World Bank, ignora anos sem valor e devolve em ordem cronológica. */
+    private List<PibBrasilDTO> fetchPibSeries(String url) {
+        List<Object> response = restClient.get()
+                .uri(url)
+                .retrieve()
+                .body(new ParameterizedTypeReference<List<Object>>() {});
+
+        List<Map<String, Object>> data = (List<Map<String, Object>>) response.get(1);
+
+        if (data == null || data.isEmpty()) {
+            throw new WorldBankException("Dados do PIB indisponíveis", 502);
+        }
+
+        List<PibBrasilDTO> series = new ArrayList<>(data.size());
+        for (Map<String, Object> entry : data) {
+            if (entry.get(VALUE) == null) continue; // ano sem dado publicado
+            series.add(new PibBrasilDTO(
+                    (String) entry.get(DATE),
+                    ((Number) entry.get(VALUE)).doubleValue(),
+                    CURRENCY));
+        }
+        series.sort(Comparator.comparing(PibBrasilDTO::year));
+        return series;
     }
 
     private PibBrasilDTO toDTO(PibSnapshot snapshot) {
         return new PibBrasilDTO(
                 String.valueOf(snapshot.getYear()),
                 snapshot.getValue().doubleValue(),
-                snapshot.getCurrency() != null ? snapshot.getCurrency() : USD
+                snapshot.getCurrency() != null ? snapshot.getCurrency() : CURRENCY
         );
     }
 }

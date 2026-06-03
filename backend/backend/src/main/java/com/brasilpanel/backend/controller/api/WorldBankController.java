@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RequestMapping("/api/worldbank")
 @RestController
 @RequiredArgsConstructor
@@ -18,6 +20,11 @@ public class WorldBankController {
     @GetMapping
     public ResponseEntity<PibBrasilDTO> getCurrentPibBrazil(){
         return ResponseEntity.ok(worldBankService.getCurrentPib());
+    }
+
+    @GetMapping("/series")
+    public ResponseEntity<List<PibBrasilDTO>> getPibSeries(){
+        return ResponseEntity.ok(worldBankService.getPibSeries());
     }
 
     @GetMapping("/{year}")

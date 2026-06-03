@@ -7,10 +7,11 @@
 //   GET /ipea/precos               → usePrecos()
 //   GET /ipea/populacao            → usePopulacao()
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { LoaderCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import { useMacro, useEmprego, useRenda, useDesigualdade, usePrecos, usePopulacao } from '../../../hooks/UseIpea';
 import type { IpeaSerie } from '../../../types/IpeaType';
+import { LineChartEcharts, type LinePoint } from '../../../components/charts/LineChartEcharts';
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 
@@ -26,6 +27,15 @@ function SerieCard({ serie }: { serie: IpeaSerie }) {
   const dados = serie.dados ?? [];
   const valid = dados.filter(d => d.valor !== null);
   const latest = valid.length > 0 ? valid[valid.length - 1] : null;
+
+  // Pontos em ordem cronológica crescente para o gráfico.
+  const points = useMemo<LinePoint[]>(
+    () =>
+      [...valid]
+        .map((d) => ({ date: String(d.data).slice(0, 10), value: d.valor as number }))
+        .sort((a, b) => a.date.localeCompare(b.date)),
+    [valid],
+  );
 
   return (
     <div className="bg-slate-800 rounded-lg overflow-hidden">
@@ -54,25 +64,12 @@ function SerieCard({ serie }: { serie: IpeaSerie }) {
       </button>
 
       {open && (
-        <div className="border-t border-slate-700 max-h-48 overflow-y-auto">
-          <table className="w-full text-xs">
-            <thead className="sticky top-0 bg-slate-800">
-              <tr className="border-b border-slate-700">
-                <th className="text-left py-1.5 px-4 text-slate-400 font-medium">Data</th>
-                <th className="text-right py-1.5 px-4 text-slate-400 font-medium">Valor</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[...valid].reverse().map((item, i) => (
-                <tr key={i} className="border-b border-slate-700/50 hover:bg-slate-700 transition-colors">
-                  <td className="py-1.5 px-4 text-slate-300">{String(item.data).slice(0, 10)}</td>
-                  <td className="py-1.5 px-4 text-right font-mono text-white">
-                    {item.valor?.toLocaleString('pt-BR', { maximumFractionDigits: 4 })}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="border-t border-slate-700 p-4">
+          {points.length >= 2 ? (
+            <LineChartEcharts points={points} />
+          ) : (
+            <p className="text-slate-500 text-xs">Série sem pontos suficientes para o gráfico.</p>
+          )}
         </div>
       )}
     </div>

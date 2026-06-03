@@ -53,6 +53,8 @@ public class SecurityConfig {
                                 "/api/metals/**",
                                 "/api/ipea",
                                 "/api/ipea/**",
+                                "/api/sidra",
+                                "/api/sidra/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs",

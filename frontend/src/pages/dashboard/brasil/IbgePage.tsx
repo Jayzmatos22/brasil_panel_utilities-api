@@ -4,8 +4,9 @@
 //   GET /ibge/cities/{state}?filtro=... → useCitiesByState(state, filtro?)
 
 import { useState, type ChangeEvent } from 'react';
-import { LoaderCircle, Search } from 'lucide-react';
-import { useStates, useCitiesByState } from '../../../hooks/UseIbge';
+import { LoaderCircle, Search, BarChart3 } from 'lucide-react';
+import { useStates, useCitiesByState, useStatesRanking } from '../../../hooks/UseIbge';
+import { BarChartEcharts } from '../../../components/charts/BarChartEcharts';
 
 export default function IbgePage() {
   const [selectedState, setSelectedState] = useState('');
@@ -13,6 +14,7 @@ export default function IbgePage() {
 
   const { data: states,  isLoading: loadingStates } = useStates();
   const { data: cities,  isLoading: loadingCities } = useCitiesByState(selectedState, filtro || undefined);
+  const { data: ranking, isLoading: loadingRanking, error: rankingError } = useStatesRanking();
 
   const selectClass =
     'h-10 px-3 rounded-md bg-slate-800 text-white border border-slate-600 outline-none focus:ring-2 focus:ring-yellow-500 transition-all text-sm';
@@ -20,6 +22,31 @@ export default function IbgePage() {
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-bold text-white">IBGE — Estados e Municípios</h1>
+
+      {/* Ranking de estados por nº de municípios */}
+      <div className="bg-slate-900 border border-slate-700 rounded-xl p-5 flex flex-col gap-4">
+        <div className="flex items-center gap-2">
+          <span className="text-yellow-500"><BarChart3 size={15} /></span>
+          <h2 className="text-yellow-500 font-semibold text-sm uppercase tracking-wider">
+            Estados por nº de municípios
+          </h2>
+        </div>
+
+        {loadingRanking ? (
+          <div className="flex items-center gap-2 text-slate-400 text-sm">
+            <LoaderCircle size={16} className="animate-spin" /> Carregando ranking...
+          </div>
+        ) : rankingError ? (
+          <span className="text-red-400 text-sm">Erro ao carregar o ranking.</span>
+        ) : ranking && ranking.length > 0 ? (
+          <BarChartEcharts
+            items={ranking.map((e) => ({ label: e.sigla, value: e.totalMunicipios }))}
+            color="#eab308"
+          />
+        ) : (
+          <p className="text-slate-500 text-sm">Sem dados para o ranking.</p>
+        )}
+      </div>
 
       {/* Controles */}
       <div className="flex items-end gap-3 flex-wrap">

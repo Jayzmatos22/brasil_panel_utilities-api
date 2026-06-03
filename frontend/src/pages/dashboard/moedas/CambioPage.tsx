@@ -5,9 +5,11 @@
 //   GET /frankfurter/history      → useGetHistoryByCoins(from, to, startDate, endDate)
 
 import { useMemo, useState, type ChangeEvent } from 'react';
-import { LoaderCircle } from 'lucide-react';
+import { LoaderCircle, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { useRateByCoins, useLast30DaysExchange, useGetHistoryByCoins, useCurrencies } from '../../../hooks/UseExchange';
 import { CURRENCIES as CURRENCY_META } from '../../../constants/currencies';
+import { LineChartEcharts } from '../../../components/charts/LineChartEcharts';
+import type { FrankfurterHistoryItem } from '../../../types/FrankfurterType';
 
 const META_BY_CODE = new Map<string, (typeof CURRENCY_META)[number]>(
   CURRENCY_META.map((c) => [c.code, c]),
@@ -38,6 +40,28 @@ export default function CambioPage() {
   const { data: rate,    isLoading: loadingRate    } = useRateByCoins(from, to, amount);
   const { data: last30,  isLoading: loadingLast30  } = useLast30DaysExchange(from, to);
   const { data: history, isLoading: loadingHistory } = useGetHistoryByCoins(from, to, startDate, endDate);
+
+  // Estatísticas do período: variação ponta a ponta + mínima/máxima.
+  const stats = useMemo(() => {
+    if (!history || history.data.length < 2) return null;
+    const sorted = [...history.data].sort((a: FrankfurterHistoryItem, b: FrankfurterHistoryItem) =>
+      a.date.localeCompare(b.date),
+    );
+    const first = sorted[0].rate;
+    const last = sorted[sorted.length - 1].rate;
+    const change = last - first;
+    const pct = first !== 0 ? (change / first) * 100 : 0;
+    const rates = sorted.map((p) => p.rate);
+    return {
+      points: sorted.map((p) => ({ date: p.date, value: p.rate })),
+      change,
+      pct,
+      min: Math.min(...rates),
+      max: Math.max(...rates),
+    };
+  }, [history]);
+
+  const fmt = (v: number) => v.toLocaleString('pt-BR', { minimumFractionDigits: 4 });
 
   const selectClass =
     'h-10 px-3 rounded-md bg-slate-800 text-white border border-slate-600 outline-none focus:ring-2 focus:ring-yellow-500 transition-all text-sm';
@@ -138,27 +162,33 @@ export default function CambioPage() {
           <div className="flex items-center gap-2 text-slate-400 text-sm">
             <LoaderCircle size={16} className="animate-spin" /> Carregando...
           </div>
-        ) : history ? (
-          <div className="overflow-x-auto max-h-60 overflow-y-auto">
-            <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-slate-900">
-                <tr className="border-b border-slate-700">
-                  <th className="text-left py-2 px-3 text-slate-400 font-medium">Data</th>
-                  <th className="text-right py-2 px-3 text-slate-400 font-medium">Taxa</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[...history.data].reverse().map((item) => (
-                  <tr key={item.date} className="border-b border-slate-800 hover:bg-slate-800 transition-colors">
-                    <td className="py-2 px-3 text-slate-300">{item.date}</td>
-                    <td className="py-2 px-3 text-right font-mono text-white">
-                      {item.rate.toLocaleString('pt-BR', { minimumFractionDigits: 4 })}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        ) : stats ? (
+          <div className="flex flex-col gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="bg-slate-800 rounded-lg p-3 flex flex-col gap-1">
+                <span className="text-slate-400 text-xs">Variação no período</span>
+                <span
+                  className={`flex items-center gap-1 font-mono font-semibold ${
+                    stats.change > 0 ? 'text-green-400' : stats.change < 0 ? 'text-red-400' : 'text-slate-300'
+                  }`}
+                >
+                  {stats.change > 0 ? <TrendingUp size={15} /> : stats.change < 0 ? <TrendingDown size={15} /> : <Minus size={15} />}
+                  {stats.change > 0 ? '+' : ''}{fmt(stats.change)} ({stats.pct > 0 ? '+' : ''}{stats.pct.toFixed(2)}%)
+                </span>
+              </div>
+              <div className="bg-slate-800 rounded-lg p-3 flex flex-col gap-1">
+                <span className="text-slate-400 text-xs">Mínima</span>
+                <span className="font-mono text-white font-semibold">{fmt(stats.min)}</span>
+              </div>
+              <div className="bg-slate-800 rounded-lg p-3 flex flex-col gap-1">
+                <span className="text-slate-400 text-xs">Máxima</span>
+                <span className="font-mono text-white font-semibold">{fmt(stats.max)}</span>
+              </div>
+            </div>
+            <LineChartEcharts points={stats.points} color="#06b6d4" />
           </div>
+        ) : history ? (
+          <p className="text-slate-500 text-sm">Período sem dados suficientes para o gráfico.</p>
         ) : (
           <p className="text-slate-500 text-sm">Selecione um período para consultar.</p>
         )}

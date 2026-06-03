@@ -1,6 +1,7 @@
 package com.brasilpanel.backend.controller.api;
 
 import com.brasilpanel.backend.dto.api.ibge.EstadoDTO;
+import com.brasilpanel.backend.dto.api.ibge.EstadoRankingDTO;
 import com.brasilpanel.backend.dto.api.ibge.MunicipioDTO;
 import com.brasilpanel.backend.service.static_data.StaticDataService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -23,6 +24,14 @@ public class IbgeController {
     @GetMapping
     public ResponseEntity<List<EstadoDTO>> getAllStates() {
         return ResponseEntity.ok(staticDataService.getAllStates());
+    }
+
+    @Operation(summary = "Ranking de estados por municípios", description = "Estados ordenados pelo nº de municípios, do maior para o menor")
+    @ApiResponse(responseCode = "200", description = "Ranking retornado com sucesso")
+    @ApiResponse(responseCode = "502", description = "Erro na comunicação com IBGE")
+    @GetMapping("/states/ranking")
+    public ResponseEntity<List<EstadoRankingDTO>> getStatesRanking() {
+        return ResponseEntity.ok(staticDataService.getStatesRanking());
     }
 
     @Operation(summary = "Municípios por estado", description = "Retorna municípios de um estado pelo ID ou sigla. Filtro opcional por nome.")

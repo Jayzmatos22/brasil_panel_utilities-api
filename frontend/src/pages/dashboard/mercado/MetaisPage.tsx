@@ -7,7 +7,7 @@
 import { useMemo, useState } from 'react';
 import { LoaderCircle } from 'lucide-react';
 import { useMetals, useMetalHistory, useLbmaFixing } from '../../../hooks/UseMetals';
-import { LineChartSvg } from '../../../components/charts/LineChartSvg';
+import { LineChartEcharts } from '../../../components/charts/LineChartEcharts';
 import type { MetalKey } from '../../../types/MetalsType';
 
 const METALS = [
@@ -129,7 +129,7 @@ export default function MetaisPage() {
             <LoaderCircle size={16} className="animate-spin" /> Carregando histórico...
           </div>
         ) : chartPoints.length > 0 ? (
-          <LineChartSvg points={chartPoints} />
+          <LineChartEcharts points={chartPoints} color="#f59e0b" />
         ) : (
           <p className="text-slate-500 text-sm">
             Sem histórico disponível para este metal.

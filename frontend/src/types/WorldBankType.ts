@@ -2,5 +2,5 @@
 export interface PibBrasil {
   year: string;
   value: number;
-  currency: string; // sempre "USD"
+  currency: string; // "BRL"
 }

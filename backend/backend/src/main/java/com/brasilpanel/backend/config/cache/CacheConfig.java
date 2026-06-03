@@ -25,6 +25,8 @@ public class CacheConfig {
                 build("ibge-states",              7,  TimeUnit.DAYS,    10),
                 // Cidades: chave = estado+filtro → até N combinações por estado
                 build("ibge-cities",              7,  TimeUnit.DAYS,   200),
+                // Ranking de municípios por estado: dado estático (1 entrada)
+                build("ibge-states-ranking",      7,  TimeUnit.DAYS,     1),
 
                 // Lista de bancos raramente muda
                 build("banks",                   12,  TimeUnit.HOURS,   10),
@@ -46,6 +48,12 @@ public class CacheConfig {
                 // Histórico por ano: dado passado é imutável; ano corrente pode ser
                 // revisado raramente — 24h é conservador e suficiente
                 build("worldbank-pib-year",      24,  TimeUnit.HOURS,   50),
+                // Série histórica completa (1 entrada) para o gráfico
+                build("worldbank-pib-series",    24,  TimeUnit.HOURS,    1),
+
+                // ── IBGE/SIDRA ───────────────────────────────────────────────────
+                // PIB por estado: divulgado anualmente; 1 entrada (ano mais recente)
+                build("sidra-pib-estados",       24,  TimeUnit.HOURS,    1),
 
                 // ── ViaCep ───────────────────────────────────────────────────────
                 // CEP → endereço é praticamente imutável (base CORREIOS muda raramente)

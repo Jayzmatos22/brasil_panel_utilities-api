@@ -99,7 +99,7 @@ export default function EconomiaPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">Indicadores Econômicos</h1>
+        <h1 className="text-2xl font-bold text-blue-600">Indicadores Econômicos</h1>
         <p className="text-slate-500 text-sm mt-1">
           Dados oficiais do Banco Central do Brasil, atualizados diariamente.
         </p>
@@ -122,11 +122,11 @@ export default function EconomiaPage() {
           {l0 ? <Spinner /> : e0 ? (
             <span className="text-red-400 text-sm">Falha ao carregar.</span>
           ) : dollar ? (
-            <div className="flex flex-col gap-1">
-              <p className="text-4xl font-bold text-white tracking-tight">
+            <div className="flex  flex-col gap-1 cursor-pointer">
+              <p className="text-4xl font-bold text-green-700 tracking-tight hover:scale-107 transition-transform">
                 {brl(dollar.value)}
               </p>
-              <p className="text-slate-500 text-xs mt-1">Referência: {dollar.date}</p>
+              <p className="text-cyan-400 text-xs mt-1 ">Referência: {dollar.date}</p>
             </div>
           ) : null}
         </IndicadorCard>
@@ -144,13 +144,13 @@ export default function EconomiaPage() {
           }
         >
           {l1 ? <Spinner /> : e1 ? (
-            <span className="text-red-400 text-sm">Falha ao carregar.</span>
+            <span className="text-red-400 text-sm ">Falha ao carregar.</span>
           ) : selic ? (
-            <div className="flex flex-col gap-2">
-              <p className="text-4xl font-bold text-white tracking-tight">
+            <div className="flex flex-col gap-2 cursor-pointer">
+              <p className="text-4xl font-bold text-red-400 tracking-tight hover:scale-107 transition-transform">
                 {pct(selic.currentRate)}
               </p>
-              <div className="flex flex-col gap-[2px] mt-1">
+              <div className="flex flex-col gap-[2px] mt-1 text-cyan-400">
                 <Row label="Acum. mês"      value={pct(selic.accumulatedMonth)} />
                 <Row label="Acum. ano"      value={pct(selic.accumulatedYear)} />
                 <Row label="Últ. 12 meses"  value={pct(selic.last12MonthsCompound)} />
@@ -174,11 +174,11 @@ export default function EconomiaPage() {
           {l2 ? <Spinner /> : e2 ? (
             <span className="text-red-400 text-sm">Falha ao carregar.</span>
           ) : cdi ? (
-            <div className="flex flex-col gap-1">
-              <p className="text-4xl font-bold text-white tracking-tight">
+            <div className="flex flex-col gap-1 cursor-pointer">
+              <p className="text-4xl font-bold text-blue-600 tracking-tight hover:scale-107 transition-transform">
                 {pct(cdi.annualRate)}
               </p>
-              <div className="flex flex-col gap-[2px] mt-1">
+              <div className="flex flex-col gap-0.5 mt-1 text-cyan-400">
                 <Row label="Taxa diária"  value={`${cdi.dailyRate.toFixed(4)}%`} />
                 <Row label="Referência"   value={cdi.date} />
               </div>
@@ -201,11 +201,11 @@ export default function EconomiaPage() {
           {l3 ? <Spinner /> : e3 ? (
             <span className="text-red-400 text-sm">Falha ao carregar.</span>
           ) : ipca ? (
-            <div className="flex flex-col gap-2">
-              <p className="text-4xl font-bold text-white tracking-tight">
+            <div className="flex flex-col gap-2 cursor-pointer">
+              <p className="text-4xl font-bold text-gray-400 tracking-tight hover:scale-107 transition-transform">
                 {pct(ipca.currentMonth)}
               </p>
-              <div className="flex flex-col gap-[2px] mt-1">
+              <div className="flex flex-col gap-0.5 mt-1 text-cyan-400">
                 <Row label="Acum. ano"       value={pct(ipca.accumulatedYear)} />
                 <Row label="Soma 12 meses"   value={pct(ipca.last12MonthsSum)} />
                 <Row label="Comp. 12 meses"  value={pct(ipca.last12MonthsCompound)} />

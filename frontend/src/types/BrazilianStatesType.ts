@@ -12,3 +12,10 @@ export interface Estado {
   nome: string;
   regiao: Regiao;
 }
+
+// IBGE — GET /api/ibge/states/ranking
+export interface EstadoRanking {
+  sigla: string;
+  nome: string;
+  totalMunicipios: number;
+}

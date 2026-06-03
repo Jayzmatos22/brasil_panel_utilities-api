@@ -18,3 +18,11 @@ export function usePibBrazilByYear(year: number) {
         ...HISTORICAL, enabled: year > 0
     });
 }
+
+export function usePibSeries() {
+    return useQuery({
+        queryKey: ['worldbank', 'series'],
+        queryFn: worldBankService.getPibSeries,
+        ...HISTORICAL,
+    });
+}

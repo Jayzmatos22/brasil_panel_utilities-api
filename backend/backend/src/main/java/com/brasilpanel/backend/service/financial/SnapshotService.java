@@ -10,12 +10,14 @@ import com.brasilpanel.backend.model.CryptoSnapshot;
 import com.brasilpanel.backend.model.LbmaFixingSnapshot;
 import com.brasilpanel.backend.model.MetalHistorySnapshot;
 import com.brasilpanel.backend.model.MetalSnapshot;
+import com.brasilpanel.backend.model.PibEstadualSnapshot;
 import com.brasilpanel.backend.model.PibSnapshot;
 import com.brasilpanel.backend.model.StockSnapshot;
 import com.brasilpanel.backend.repository.snapshot.CryptoSnapshotRepository;
 import com.brasilpanel.backend.repository.snapshot.LbmaFixingRepository;
 import com.brasilpanel.backend.repository.snapshot.MetalHistoryRepository;
 import com.brasilpanel.backend.repository.snapshot.MetalSnapshotRepository;
+import com.brasilpanel.backend.repository.snapshot.PibEstadualSnapshotRepository;
 import com.brasilpanel.backend.repository.snapshot.PibSnapshotRepository;
 import com.brasilpanel.backend.repository.snapshot.StockSnapshotRepository;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +50,7 @@ public class SnapshotService {
     private final LbmaFixingRepository lbmaFixingRepository;
     private final CryptoSnapshotRepository cryptoRepository;
     private final PibSnapshotRepository pibRepository;
+    private final PibEstadualSnapshotRepository pibEstadualRepository;
 
     // ── Ações ─────────────────────────────────────────────────────────────
 
@@ -384,6 +387,48 @@ public class SnapshotService {
     @Transactional(readOnly = true)
     public Optional<PibSnapshot> getPibByYear(int year) {
         return pibRepository.findByYear(year);
+    }
+
+    /** Série histórica completa do PIB de uma moeda, em ordem cronológica (para o gráfico). */
+    @Transactional(readOnly = true)
+    public List<PibSnapshot> getPibSeries(String currency) {
+        return pibRepository.findByCurrencyOrderByYearAsc(currency);
+    }
+
+    // ── PIB estadual (IBGE/SIDRA) ─────────────────────────────────────────
+
+    /** Persiste (upsert) o PIB de uma UF num ano. */
+    @Transactional
+    public void savePibEstadual(int year, int ufCode, String uf, BigDecimal value) {
+        try {
+            Long existingId = pibEstadualRepository.findByYearAndUfCode(year, ufCode)
+                    .map(PibEstadualSnapshot::getId)
+                    .orElse(null);
+
+            PibEstadualSnapshot snapshot = PibEstadualSnapshot.builder()
+                    .id(existingId)               // null → insert; preenchido → update (merge)
+                    .year(year)
+                    .ufCode(ufCode)
+                    .uf(uf)
+                    .value(value)
+                    .build();
+
+            pibEstadualRepository.save(snapshot);
+        } catch (Exception e) {
+            log.warn("Falha ao persistir PIB estadual {}/{}: {}", year, ufCode, e.getMessage());
+        }
+    }
+
+    /** Ano mais recente do PIB estadual salvo (para o controle DB-first). */
+    @Transactional(readOnly = true)
+    public Optional<Integer> getLatestPibEstadualYear() {
+        return pibEstadualRepository.findTopByOrderByYearDesc().map(PibEstadualSnapshot::getYear);
+    }
+
+    /** PIB de todas as UFs de um ano, do maior para o menor. */
+    @Transactional(readOnly = true)
+    public List<PibEstadualSnapshot> getPibEstadualByYear(int year) {
+        return pibEstadualRepository.findByYearOrderByValueDesc(year);
     }
 
     // ── Utilitários ───────────────────────────────────────────────────────

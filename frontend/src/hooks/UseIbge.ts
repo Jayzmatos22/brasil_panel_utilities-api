@@ -12,6 +12,15 @@ export function useStates() {
 }
 
 
+export function useStatesRanking() {
+  return useQuery({
+    queryKey: ['ibge', 'states', 'ranking'],
+    queryFn: ibgeService.getStatesRanking,
+    ...STATIC,
+  });
+}
+
+
 export function useCitiesByState(state: string, filtro?: string) {
   return useQuery({
     queryKey: ['ibge', 'cities', state, filtro],
