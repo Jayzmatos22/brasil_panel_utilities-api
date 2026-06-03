@@ -42,13 +42,17 @@ public class BcbService implements BcbImplementations{
         Optional<FinancialDataPoint> month   = financialDataService.getLastPoint("1178", SOURCE);
         Optional<FinancialDataPoint> year    = financialDataService.getLastPoint("4189", SOURCE);
         if (current.isPresent() && month.isPresent() && year.isPresent()) {
-            List<FinancialDataPoint> history = financialDataService.getRecentPoints("432", SOURCE, 12);
-            return new SelicDataDTO(
-                    current.get().getValue().doubleValue(),
-                    month.get().getValue().doubleValue(),
-                    year.get().getValue().doubleValue(),
-                    compoundPercent(history)
-            );
+            // Acumulado 12m: compõe os 12 últimos pontos MENSAIS (série 4390, Selic acum. no mês % a.m.).
+            // A 432 é a meta em % a.a.; compô-la como mensal inflava o resultado (~400%).
+            List<FinancialDataPoint> history = financialDataService.getRecentPoints("4390", SOURCE, 12);
+            if (history.size() == 12) {
+                return new SelicDataDTO(
+                        current.get().getValue().doubleValue(),
+                        month.get().getValue().doubleValue(),
+                        year.get().getValue().doubleValue(),
+                        compoundPercent(history)
+                );
+            }
         }
         return refreshSelic();
     }
@@ -65,10 +69,12 @@ public class BcbService implements BcbImplementations{
             Thread.sleep(1200);
             List<SelicHistoryDTO> yearApi    = fetchSelic("4189", 1);
             Thread.sleep(1200);
-            List<SelicHistoryDTO> history = fetchSelic("432", 12);
+            // Acumulado 12m a partir da série mensal 4390 (% a.m.), não da meta anual 432.
+            List<SelicHistoryDTO> history = fetchSelic("4390", 12);
 
             // persiste cada ponto (idempotente)
-            history.forEach(h -> financialDataService.savePoint("432", SOURCE, h.date(), h.value(), null));
+            currentApi.forEach(h -> financialDataService.savePoint("432", SOURCE, h.date(), h.value(), null));
+            history.forEach(h -> financialDataService.savePoint("4390", SOURCE, h.date(), h.value(), null));
             monthApi.forEach(h -> financialDataService.savePoint("1178", SOURCE, h.date(), h.value(), null));
             yearApi.forEach(h -> financialDataService.savePoint("4189", SOURCE, h.date(), h.value(), null));
 
