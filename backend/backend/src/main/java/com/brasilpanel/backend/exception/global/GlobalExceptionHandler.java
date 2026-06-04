@@ -128,10 +128,13 @@ public class GlobalExceptionHandler {
     }
 
 
-    // Exception genérica
+    // Exception genérica — NÃO expõe mensagem interna ao cliente
     @ExceptionHandler(Exception.class)
     public ResponseEntity<String> handleGeneral(Exception ex) {
-        return ResponseEntity.status(500).body("Erro interno do servidor: " + ex.getMessage());
+        // Loga internamente para diagnóstico
+        org.slf4j.LoggerFactory.getLogger(GlobalExceptionHandler.class)
+                .error("Exceção não tratada: {}", ex.getMessage(), ex);
+        return ResponseEntity.status(500).body("Erro interno do servidor. Tente novamente.");
     }
 
 

@@ -15,8 +15,12 @@ backend/backend/target/
 HELP.md
 backend/HELP.md
 
-# Backend — secrets
+# Backend — secrets / arquivos locais com credenciais
 backend/backend/src/main/resources/application-dev.yml
+backend/backend/src/main/resources/application-local.yaml
+backend/backend/src/main/resources/application-local.yml
+.env
+.env.local
 
 # Frontend — dependencies & build
 frontend/node_modules/

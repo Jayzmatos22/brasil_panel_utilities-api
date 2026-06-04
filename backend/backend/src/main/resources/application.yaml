@@ -13,9 +13,21 @@ spring:
 server:
   port: 8080
 
+# ── JWT ──────────────────────────────────────────────────────────────────────
+# Em produção, sobrescreva via variável de ambiente: JWT_SECRET=<sua-chave-256-bits>
+jwt:
+  secret: ${JWT_SECRET:mude-esta-chave-para-producao-use-256-bits-ou-mais!!}
+  expiration-ms: 86400000  # 24 h
+
+# ── CORS ─────────────────────────────────────────────────────────────────────
+# Em produção, sobrescreva via variável de ambiente: CORS_ALLOWED_ORIGINS=https://meudominio.com
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+
+# ── Springdoc — desabilitado por padrão; ativado apenas no perfil dev ────────
 springdoc:
   api-docs:
-    enabled: true
+    enabled: false
   swagger-ui:
-    enabled: true
-    disable-swagger-default-url: true
+    enabled: false

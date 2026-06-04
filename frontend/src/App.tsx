@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast';
 // Layouts
 import HeaderApp from './components/Header';
 import DashboardLayout from './layouts/DashboardLayout';
+import { PrivateRoute } from './components/PrivateRoute';
 
 // Auth (standalone — split-screen)
 import RegisterPage from './pages/auth/RegisterPage';
@@ -69,18 +70,20 @@ export default function App() {
 
       <Routes>
 
-        {/* ── Dashboard (sidebar) ── */}
-        <Route path="/dashboard" element={<DashboardLayout />}>
-          <Route path="economia"         element={<EconomiaPage />} />
-          <Route path="economia/salario" element={<SalarioPage />} />
-          <Route path="economia/pib"     element={<PibPage />} />
-          <Route path="mercado/acoes"    element={<AcoesPage />} />
-          <Route path="mercado/metais"   element={<MetaisPage />} />
-          <Route path="moedas/cambio"    element={<CambioPage />} />
-          <Route path="moedas/cripto"    element={<CriptoPage />} />
-          <Route path="brasil/ibge"      element={<IbgePage />} />
-          <Route path="brasil/ipea"      element={<IpeaPage />} />
-          <Route path="brasil/bancos"    element={<BancosPage />} />
+        {/* ── Dashboard (requer autenticação) ── */}
+        <Route element={<PrivateRoute />}>
+          <Route path="/dashboard" element={<DashboardLayout />}>
+            <Route path="economia"         element={<EconomiaPage />} />
+            <Route path="economia/salario" element={<SalarioPage />} />
+            <Route path="economia/pib"     element={<PibPage />} />
+            <Route path="mercado/acoes"    element={<AcoesPage />} />
+            <Route path="mercado/metais"   element={<MetaisPage />} />
+            <Route path="moedas/cambio"    element={<CambioPage />} />
+            <Route path="moedas/cripto"    element={<CriptoPage />} />
+            <Route path="brasil/ibge"      element={<IbgePage />} />
+            <Route path="brasil/ipea"      element={<IpeaPage />} />
+            <Route path="brasil/bancos"    element={<BancosPage />} />
+          </Route>
         </Route>
 
         {/* ── Auth — split-screen standalone ── */}

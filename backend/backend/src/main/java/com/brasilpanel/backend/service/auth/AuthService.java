@@ -26,8 +26,9 @@ public class AuthService {
 
 
     public AuthResponseDTO registerUser(UserRequestDTO dto) {
+        // Não confirmamos ao cliente se o e-mail existe (evita user enumeration)
         if (userRepository.findByEmail(dto.email()).isPresent()) {
-            throw new IllegalArgumentException("Email já cadastrado");
+            throw new IllegalArgumentException("Dados de cadastro inválidos");
         }
 
         UserEntity newUser = UserEntity.builder()

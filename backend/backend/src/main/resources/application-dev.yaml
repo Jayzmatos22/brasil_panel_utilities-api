@@ -1,0 +1,9 @@
+# Configurações exclusivas do perfil de desenvolvimento
+# Este arquivo NÃO deve ser copiado para produção.
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    disable-swagger-default-url: true

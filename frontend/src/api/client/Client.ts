@@ -16,23 +16,21 @@ apiClient.interceptors.request.use((config) => {
 });
 
 
+// Interceptor único: trata 401 (redireciona para login) e converte erros em ApiError.
+// Ordem importa: 401 é capturado antes da conversão para ApiError.
 apiClient.interceptors.response.use(
   (res) => res,
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
-      window.location.href = '/login';
+      window.location.href = '/login-usuario';
+      return Promise.reject(error);
     }
-    return Promise.reject(error);
-  }
-);
-
-
-apiClient.interceptors.response.use(
-  (res) => res,
-  (error) => {
-    const status = error.response?.status ?? 0;
-    const message = error.response?.data?.message ?? 'Erro de conexão';
+    // Backend retorna strings simples como body — não como {message: ...}
+    const status  = error.response?.status ?? 0;
+    const message = typeof error.response?.data === 'string'
+      ? error.response.data
+      : (error.response?.data?.message ?? 'Erro de conexão');
     return Promise.reject(new ApiError(message, status));
   }
 );
