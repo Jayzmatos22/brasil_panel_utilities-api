@@ -15,10 +15,9 @@ backend/backend/target/
 HELP.md
 backend/HELP.md
 
-# Backend — secrets / arquivos locais com credenciais
+# Backend — arquivos locais com credenciais (nunca commitar)
 backend/backend/src/main/resources/application-dev.yml
-backend/backend/src/main/resources/application-local.yaml
-backend/backend/src/main/resources/application-local.yml
+backend/backend/src/main/resources/application-dev.yaml
 .env
 .env.local
 
