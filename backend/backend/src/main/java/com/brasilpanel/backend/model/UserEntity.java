@@ -40,6 +40,16 @@ public class UserEntity implements UserDetails {
     @Builder.Default
     private Role role = Role.USER;
 
+    // ── Verificação de e-mail ─────────────────────────────────────────────
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean verified = false;
+
+    @Column(length = 6)
+    private String verificationCode;
+
+    private LocalDateTime verificationCodeExpiresAt;
+
     @Column(nullable = false, updatable = false)
     @CreationTimestamp
     private LocalDateTime createdAt;
@@ -47,6 +57,19 @@ public class UserEntity implements UserDetails {
     // Permite ao AdminSeeder / serviço de promoção alterar o role
     public void setRole(Role role) {
         this.role = role;
+    }
+
+    // ── Setters de verificação ────────────────────────────────────────────
+    public void setVerified(boolean verified) {
+        this.verified = verified;
+    }
+
+    public void setVerificationCode(String code) {
+        this.verificationCode = code;
+    }
+
+    public void setVerificationCodeExpiresAt(LocalDateTime expiresAt) {
+        this.verificationCodeExpiresAt = expiresAt;
     }
 
     @Override

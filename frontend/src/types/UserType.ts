@@ -18,6 +18,21 @@ export interface RegisterRequest {
   password: string;
 }
 
+export interface RegisterResponse {
+  message: string;
+}
+
+// ─── Auth — POST /api/auth/verify-email ──────────────────────────────────────
+export interface VerifyEmailRequest {
+  email: string;
+  code:  string;
+}
+
+// ─── Auth — POST /api/auth/resend-code ───────────────────────────────────────
+export interface ResendCodeRequest {
+  email: string;
+}
+
 // ─── Usuário — GET /api/auth/me (ou similar) ─────────────────────────────────
 export interface UserResponse {
   id: string;

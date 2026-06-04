@@ -56,6 +56,7 @@ public class AdminSeeder implements ApplicationRunner {
                 .email(adminEmail)
                 .password(passwordEncoder.encode(adminPassword))
                 .role(Role.ADMIN)
+                .verified(true)   // admin não precisa verificar e-mail
                 .build();
 
         userRepository.save(admin);

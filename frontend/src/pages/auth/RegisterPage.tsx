@@ -21,9 +21,10 @@ export default function RegisterPage() {
 
   const { mutate, isPending } = useMutation({
     mutationFn: (data: RegisterRequest) => authService.register(data),
-    onSuccess: () => {
-      toast.success('Cadastro realizado! Faça login para continuar.');
-      setTimeout(() => navigate('/login-usuario', { replace: true }), 1500);
+    onSuccess: (_, variables) => {
+      toast.success('Código enviado! Verifique seu e-mail.');
+      // Passa o e-mail via state para a página de verificação
+      navigate('/verificar-email', { replace: true, state: { email: variables.email } });
     },
     onError: (err: Error) => {
       toast.error(err.message ?? 'Erro ao cadastrar. Tente novamente.');

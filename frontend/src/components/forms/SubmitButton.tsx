@@ -5,6 +5,7 @@ interface SubmitButtonProps {
   label: string;
   pendingLabel?: string;
   disabled?: boolean;
+  onClick?: () => void;   // permite uso como botão comum (fora de <form>)
 }
 
 export function SubmitButton({
@@ -12,10 +13,12 @@ export function SubmitButton({
   label,
   pendingLabel = 'Aguarde…',
   disabled,
+  onClick,
 }: SubmitButtonProps) {
   return (
     <button
-      type="submit"
+      type={onClick ? 'button' : 'submit'}
+      onClick={onClick}
       disabled={isPending || disabled}
       className="w-full h-12 mt-1 bg-amber-500 hover:bg-amber-400
                  text-slate-950 font-bold rounded-lg transition-all

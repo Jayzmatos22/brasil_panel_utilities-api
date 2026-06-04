@@ -42,10 +42,17 @@ public class GlobalExceptionHandler {
     }
 
 
-    // Atende exceção illgeal
+    // Atende exceção de argumento inválido (ex: código errado, e-mail duplicado)
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<String> handleIllegalArgument(IllegalArgumentException ex) {
         return ResponseEntity.badRequest().body(ex.getMessage());
+    }
+
+
+    // Atende exceção de estado inválido (ex: e-mail não verificado no login)
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<String> handleIllegalState(IllegalStateException ex) {
+        return ResponseEntity.status(403).body(ex.getMessage());
     }
 
 

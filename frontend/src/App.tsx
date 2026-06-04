@@ -8,8 +8,9 @@ import { PrivateRoute } from './components/PrivateRoute';
 import { AdminRoute }   from './components/AdminRoute';
 
 // Auth (standalone — split-screen)
-import RegisterPage from './pages/auth/RegisterPage';
-import LoginPage    from './pages/auth/LoginPage';
+import RegisterPage    from './pages/auth/RegisterPage';
+import LoginPage       from './pages/auth/LoginPage';
+import VerifyEmailPage from './pages/auth/VerifyEmailPage';
 
 // Onboarding (com header)
 import AddressPage from './pages/onboarding/AddressPage';
@@ -99,6 +100,7 @@ export default function App() {
         <Route path="/"                 element={<RegisterPage />} />
         <Route path="/registro-usuario" element={<RegisterPage />} />
         <Route path="/login-usuario"    element={<LoginPage />} />
+        <Route path="/verificar-email"  element={<VerifyEmailPage />} />
 
         {/* ── Onboarding (com header Brasil Panel) ── */}
         <Route path="/*" element={<OnboardingLayout />} />

@@ -47,7 +47,7 @@ public class SecurityConfig {
                     // Rotas admin — somente ROLE_ADMIN
                     auth.requestMatchers("/api/admin/**").hasRole("ADMIN");
 
-                    // Rotas públicas de dados e autenticação
+                    // Rotas públicas de dados e autenticação (inclui verify-email e resend-code)
                     auth.requestMatchers(
                             "/api/auth/**",
                             "/api/banks/**",
