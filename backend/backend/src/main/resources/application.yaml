@@ -1,6 +1,6 @@
 spring:
   profiles:
-    active: dev
+    active: dev,local
 
   security:
     filter:
@@ -26,8 +26,9 @@ app:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
 
   # ── Admin seed ─────────────────────────────────────────────────────────────
-  # ADMIN_EMAIL    — e-mail do admin (deve ser único no banco)
-  # ADMIN_PASSWORD — senha do admin (mín. 8 caracteres); se vazio, admin não é criado
+  # Credenciais definidas em application-local.yaml (gitignored) ou via env vars:
+  #   ADMIN_EMAIL    — e-mail do admin
+  #   ADMIN_PASSWORD — senha do admin (mín. 8 caracteres); se vazio, admin não é criado
   admin:
     email:    ${ADMIN_EMAIL:admin@brasilpanel.com}
     password: ${ADMIN_PASSWORD:}
