@@ -1,16 +1,16 @@
 package com.brasilpanel.backend.model;
+
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
-
 
 
 @Entity
@@ -34,13 +34,24 @@ public class UserEntity implements UserDetails {
     @Column(nullable = false)
     private String password;
 
+    // Perfil do usuário — armazenado como string no banco para legibilidade
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private Role role = Role.USER;
+
     @Column(nullable = false, updatable = false)
     @CreationTimestamp
     private LocalDateTime createdAt;
 
+    // Permite ao AdminSeeder / serviço de promoção alterar o role
+    public void setRole(Role role) {
+        this.role = role;
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of();
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
     }
 
     @Override

@@ -5,6 +5,7 @@ import { Toaster } from 'react-hot-toast';
 import HeaderApp from './components/Header';
 import DashboardLayout from './layouts/DashboardLayout';
 import { PrivateRoute } from './components/PrivateRoute';
+import { AdminRoute }   from './components/AdminRoute';
 
 // Auth (standalone — split-screen)
 import RegisterPage from './pages/auth/RegisterPage';
@@ -31,6 +32,9 @@ import CriptoPage from './pages/dashboard/moedas/CriptoPage';
 import IbgePage   from './pages/dashboard/brasil/IbgePage';
 import IpeaPage   from './pages/dashboard/brasil/IpeaPage';
 import BancosPage from './pages/dashboard/brasil/BancosPage';
+
+// Dashboard — Admin
+import AdminUsersPage from './pages/dashboard/admin/AdminUsersPage';
 
 import './App.css';
 
@@ -83,6 +87,11 @@ export default function App() {
             <Route path="brasil/ibge"      element={<IbgePage />} />
             <Route path="brasil/ipea"      element={<IpeaPage />} />
             <Route path="brasil/bancos"    element={<BancosPage />} />
+
+            {/* ── Rotas admin — dupla proteção: PrivateRoute + AdminRoute ── */}
+            <Route element={<AdminRoute />}>
+              <Route path="admin/usuarios" element={<AdminUsersPage />} />
+            </Route>
           </Route>
         </Route>
 

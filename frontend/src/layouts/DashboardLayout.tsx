@@ -15,9 +15,11 @@ import {
   Users,
   Building2,
   LogOut,
+  ShieldCheck,
 } from 'lucide-react';
 import { useState } from 'react';
 import { BrandLogo } from '../components/brand/BrandLogo';
+import { getTokenEmail, isAdmin } from '../lib/auth/jwt';
 
 // ─── Navegação ────────────────────────────────────────────────────────────────
 
@@ -58,31 +60,28 @@ const NAV = [
   },
 ] as const;
 
+const ADMIN_NAV = {
+  group: 'Admin',
+  icon:  ShieldCheck,
+  items: [
+    { label: 'Usuários', path: '/dashboard/admin/usuarios', icon: Users },
+  ],
+} as const;
+
 // Mapeia path → título legível para o header
 const PAGE_TITLES: Record<string, string> = {
-  '/dashboard/economia':         'Indicadores Econômicos',
-  '/dashboard/economia/salario': 'Salário Mínimo',
-  '/dashboard/economia/pib':     'PIB Brasil',
-  '/dashboard/mercado/acoes':    'Ações',
-  '/dashboard/mercado/metais':   'Metais Preciosos',
-  '/dashboard/moedas/cambio':    'Câmbio',
-  '/dashboard/moedas/cripto':    'Criptomoedas',
-  '/dashboard/brasil/ibge':      'IBGE — Municípios',
-  '/dashboard/brasil/ipea':      'IPEA — Séries',
-  '/dashboard/brasil/bancos':    'Bancos',
+  '/dashboard/economia':           'Indicadores Econômicos',
+  '/dashboard/economia/salario':   'Salário Mínimo',
+  '/dashboard/economia/pib':       'PIB Brasil',
+  '/dashboard/mercado/acoes':      'Ações',
+  '/dashboard/mercado/metais':     'Metais Preciosos',
+  '/dashboard/moedas/cambio':      'Câmbio',
+  '/dashboard/moedas/cripto':      'Criptomoedas',
+  '/dashboard/brasil/ibge':        'IBGE — Municípios',
+  '/dashboard/brasil/ipea':        'IPEA — Séries',
+  '/dashboard/brasil/bancos':      'Bancos',
+  '/dashboard/admin/usuarios':     'Admin — Usuários',
 };
-
-// ─── Helper: decodifica JWT e retorna o subject (email/username) ──────────────
-function getJwtSub(): string {
-  try {
-    const token = localStorage.getItem('token');
-    if (!token) return 'Usuário';
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    return payload.sub ?? payload.email ?? 'Usuário';
-  } catch {
-    return 'Usuário';
-  }
-}
 
 // ─── Estilo dos links ativos ──────────────────────────────────────────────────
 const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -99,6 +98,7 @@ export default function DashboardLayout() {
   const location = useLocation();
 
   const [open, setOpen] = useState<Record<string, boolean>>({
+    Admin:    true,
     Economia: true,
     Mercado:  true,
     Moedas:   true,
@@ -108,8 +108,9 @@ export default function DashboardLayout() {
   const toggle = (group: string) =>
     setOpen(prev => ({ ...prev, [group]: !prev[group] }));
 
-  // Dados do usuário logado (decodificados do JWT)
-  const userEmail = useMemo(getJwtSub, []);
+  // Dados do usuário logado (decodificados do JWT via utilitário centralizado)
+  const userEmail = useMemo(getTokenEmail, []);
+  const admin     = useMemo(isAdmin, []);
   const initials  = userEmail[0]?.toUpperCase() ?? 'U';
   const pageTitle = PAGE_TITLES[location.pathname] ?? 'Brasil Panel';
 
@@ -169,6 +170,35 @@ export default function DashboardLayout() {
                           flex flex-col overflow-y-auto">
 
           <nav className="flex-1 p-3 flex flex-col gap-0.5 pt-4">
+            {/* Seção Admin — visível apenas para administradores */}
+            {admin && (
+              <div className="mb-1">
+                <button
+                  onClick={() => toggle(ADMIN_NAV.group)}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg
+                             text-amber-400 hover:bg-amber-500/10 transition-all
+                             text-xs font-semibold uppercase tracking-wider cursor-pointer"
+                >
+                  <ADMIN_NAV.icon size={13} className="shrink-0" />
+                  <span className="flex-1 text-left">{ADMIN_NAV.group}</span>
+                  {open[ADMIN_NAV.group]
+                    ? <ChevronDown  size={13} className="text-amber-600" />
+                    : <ChevronRight size={13} className="text-amber-600" />
+                  }
+                </button>
+                {open[ADMIN_NAV.group] && (
+                  <div className="ml-3 mt-0.5 pl-3 border-l border-amber-500/20 flex flex-col gap-0.5">
+                    {ADMIN_NAV.items.map(({ label, path, icon: ItemIcon }) => (
+                      <NavLink key={path} to={path} end className={linkClass}>
+                        <ItemIcon size={13} className="shrink-0" />
+                        {label}
+                      </NavLink>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {NAV.map(({ group, icon: GroupIcon, items }) => (
               <div key={group} className="mb-1">
 

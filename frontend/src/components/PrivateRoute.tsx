@@ -1,10 +1,10 @@
 import { Navigate, Outlet } from 'react-router-dom';
+import { isAuthenticated } from '../lib/auth/jwt';
 
 /**
  * Protege rotas que exigem autenticação.
- * Se não houver token no localStorage, redireciona para /login-usuario.
+ * Verifica presença do token E se ele ainda não expirou (via campo exp do payload).
  */
 export function PrivateRoute() {
-  const token = localStorage.getItem('token');
-  return token ? <Outlet /> : <Navigate to="/login-usuario" replace />;
+  return isAuthenticated() ? <Outlet /> : <Navigate to="/login-usuario" replace />;
 }

@@ -1,5 +1,6 @@
 package com.brasilpanel.backend.config.jwt;
 
+import com.brasilpanel.backend.model.UserEntity;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,16 +31,21 @@ public class JwtService {
     }
 
 
-    // Gerar token com issuer e jti para rastreabilidade
+    // Gerar token com issuer, jti e role para rastreabilidade e autorização no frontend
     public String generateToken(UserDetails userDetails) {
-        return Jwts.builder()
+        var builder = Jwts.builder()
                 .issuer(ISSUER)
                 .subject(userDetails.getUsername())
                 .id(UUID.randomUUID().toString())   // jti — ID único do token
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + expirationMs))
-                .signWith(getSigningKey())
-                .compact();
+                .expiration(new Date(System.currentTimeMillis() + expirationMs));
+
+        // Inclui o role como claim extra para o frontend ler sem chamada adicional
+        if (userDetails instanceof UserEntity user) {
+            builder.claim("role", user.getRole().name());
+        }
+
+        return builder.signWith(getSigningKey()).compact();
     }
 
 
