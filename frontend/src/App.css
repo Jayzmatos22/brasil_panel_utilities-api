@@ -224,3 +224,84 @@
     filter: drop-shadow(10px 1px 5px rgb(28, 1, 20));
 }
 
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Imagens dos cards de Indicadores Econômicos.
+   Cada classe estiliza a imagem de UM indicador individualmente.
+   Aplicadas via prop imageClassName no EconomiaPage.tsx.
+   Edite à vontade: object-position, filtros, etc.
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* HOVER: .img-xxx:hover NÃO funciona — há um overlay escuro por cima da
+   imagem que intercepta o mouse. Para reagir ao hover, use o card inteiro:
+   .group:hover .img-xxx  ("group" é a classe real no <article> do card).
+
+   FILTER drop-shadow: a imagem preenche todo o painel e o container tem
+   overflow-hidden, então sombras externas ficam cortadas. Use brightness,
+   contrast, saturate, grayscale, sepia, blur, hue-rotate — esses aparecem. */
+
+.img-dollar {
+    filter: sepia(1) hue-rotate(200deg) saturate(3);  /* tom totalmente novo */
+    filter: grayscale(1); 
+    object-fit: cover;
+    mix-blend-mode:hard-light;  /* mistura a imagem com o fundo de forma escura */
+    object-position: center;
+    transition: transform 0.5s ease, filter 0.5s ease;
+    animation: color-blend-animation 2s linear infinite; /* animação de mistura de cores */
+}
+.group:hover .img-dollar {
+    mix-blend-mode:luminosity;
+    transform: scale3d(-1.01, 1.20, 1.20); 
+}
+
+@keyframes color-blend-animation {
+    0% { mix-blend-mode: hard-light; }
+    100% { mix-blend-mode:lighten; }
+}
+
+.img-selic {
+    object-fit: cover;
+    object-position: center;
+    transition: transform 2.7s ease, filter 0.5s ease;
+    animation: ken-burns 5s ease-in-out infinite;
+}
+.group:hover .img-selic {
+    transform: scale(1.08);
+}
+
+.img-cdi {
+    object-fit: cover;
+    object-position: center;
+    transition: transform 0.7s ease, filter 0.5s ease;
+    animation: ken-burns 5s ease-in-out infinite;
+}
+.group:hover .img-cdi {
+    transform: scale(1.08);
+}
+
+.img-ipca {
+    object-fit: cover;
+    object-position: center;
+    transition: transform 0.7s ease, filter 0.5s ease;
+    animation: pulse-color 2s linear infinite;
+    
+    
+}
+.group:hover .img-ipca {
+    transform: scale(1.28);
+   
+}
+
+@keyframes pulse-color {
+    0%, 100% { filter: saturate(1)   brightness(1)  }
+    50%      { filter: saturate(2.8) brightness(0.7);  }
+}
+
+
+@keyframes ken-burns {
+    0%   { transform: scale(1); }
+    50%  { transform: scale(1.15); }
+    100% { transform: scale(1); }
+}
+
+

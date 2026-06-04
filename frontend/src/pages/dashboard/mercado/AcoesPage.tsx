@@ -4,11 +4,16 @@
 
 import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { motion } from 'motion/react';
-import { LoaderCircle, Search, TrendingUp, TrendingDown } from 'lucide-react';
+import { LoaderCircle, Search, TrendingUp, TrendingDown, Ban, AlertCircle } from 'lucide-react';
 import { useStockQuote, useStockHistory } from '../../../hooks/UseStocks';
 import { LineChartEcharts } from '../../../components/charts/LineChartEcharts';
 import { AnimatedNumber } from '../../../components/AnimatedNumber';
 import { container, item } from '../../../lib/motion/presets';
+import { ApiError } from '../../../lib/errors/ErrorsHttp';
+
+// true quando o erro é o limite diário da Alpha Vantage (HTTP 429)
+const isRateLimit = (err: unknown): boolean =>
+  err instanceof ApiError && err.status === 429;
 
 export default function AcoesPage() {
   const [input, setInput]   = useState('');
@@ -55,9 +60,31 @@ export default function AcoesPage() {
         </div>
       )}
 
-      {/* Erro */}
+      {/* Erro — distingue limite diário esgotado de símbolo inválido */}
       {error && (
-        <div className="text-red-400 text-sm">Erro ao buscar {symbol}. Verifique o símbolo.</div>
+        isRateLimit(error) ? (
+          <div className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 max-w-md">
+            <Ban size={18} className="text-amber-400 shrink-0 mt-0.5" />
+            <div className="flex flex-col gap-1">
+              <span className="text-amber-400 font-semibold text-sm">Busca esgotada por hoje</span>
+              <span className="text-slate-400 text-xs leading-relaxed">
+                O limite diário de consultas de ações foi atingido. As cotações já
+                buscadas continuam disponíveis pelo cache. Tente novos símbolos amanhã.
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/30 rounded-lg p-4 max-w-md">
+            <AlertCircle size={18} className="text-red-400 shrink-0 mt-0.5" />
+            <div className="flex flex-col gap-1">
+              <span className="text-red-400 font-semibold text-sm">Símbolo não encontrado</span>
+              <span className="text-slate-400 text-xs leading-relaxed">
+                Não foi possível encontrar "{symbol}". Verifique o código — ex: AAPL,
+                MSFT, PETR4.SAO.
+              </span>
+            </div>
+          </div>
+        )
       )}
 
       {/* Card de cotação */}

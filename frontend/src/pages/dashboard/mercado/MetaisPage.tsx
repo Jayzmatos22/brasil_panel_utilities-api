@@ -6,12 +6,20 @@
 
 import { useMemo, useState } from 'react';
 import { motion } from 'motion/react';
-import { LoaderCircle } from 'lucide-react';
+import { LoaderCircle, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { useMetals, useMetalHistory, useLbmaFixing } from '../../../hooks/UseMetals';
 import { LineChartEcharts } from '../../../components/charts/LineChartEcharts';
 import { AnimatedNumber } from '../../../components/AnimatedNumber';
 import { container, item } from '../../../lib/motion/presets';
 import type { MetalKey } from '../../../types/MetalsType';
+
+// Metais com variação destacada nos 30 dias
+const VARIATION_METALS = [
+  { key: 'gold',      label: 'Ouro',     emoji: '🥇' },
+  { key: 'silver',    label: 'Prata',    emoji: '🥈' },
+  { key: 'platinum',  label: 'Platina',  emoji: '⚪' },
+  { key: 'palladium', label: 'Paládio',  emoji: '🔘' },
+] as const;
 
 const METALS = [
   { key: 'gold',      label: 'Ouro',      emoji: '🥇' },
@@ -48,6 +56,25 @@ export default function MetaisPage() {
     availableMetals.some((m) => m.key === selected)
       ? selected
       : availableMetals[0]?.key ?? selected;
+
+  // Variação de 30 dias: compara o 1º com o último valor disponível de cada metal.
+  const variations = useMemo(() => {
+    if (!history) return [];
+    return VARIATION_METALS.map(({ key, label, emoji }) => {
+      const series = history.data
+        .filter((p) => p[key] != null)
+        .map((p) => ({ date: p.date, value: p[key] as number }));
+
+      if (series.length < 2) return null;
+
+      const first = series[0];
+      const last  = series[series.length - 1];
+      const diff  = last.value - first.value;
+      const pct   = (diff / first.value) * 100;
+
+      return { key, label, emoji, first, last, diff, pct };
+    }).filter((v): v is NonNullable<typeof v> => v !== null);
+  }, [history]);
 
   // Pontos do metal selecionado (descarta dias sem valor para aquele metal)
   const chartPoints = useMemo(() => {
@@ -104,6 +131,56 @@ export default function MetaisPage() {
               <p className="text-slate-600 text-xs">por troy oz</p>
             </motion.div>
           ))}
+        </motion.div>
+      )}
+
+      {/* Variação 30 dias — início vs. fim da série (USD/toz) */}
+      {variations.length > 0 && (
+        <motion.div variants={item} className="bg-slate-900 border border-slate-700 rounded-xl p-6 flex flex-col gap-4">
+          <h2 className="text-yellow-500 font-semibold text-sm uppercase tracking-wider">
+            Variação nos 30 dias
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {variations.map(({ key, label, emoji, first, last, diff, pct }) => {
+              const up   = pct > 0;
+              const flat = pct === 0;
+              const tone = flat ? 'text-slate-400' : up ? 'text-green-400' : 'text-red-400';
+              const Icon = flat ? Minus : up ? TrendingUp : TrendingDown;
+              return (
+                <motion.div
+                  key={key}
+                  whileHover={{ y: -4 }}
+                  className="bg-slate-800 border border-slate-700 rounded-lg p-4 flex flex-col gap-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">{emoji}</span>
+                      <span className="text-slate-300 text-sm font-medium">{label}</span>
+                    </div>
+                    <span className={`flex items-center gap-1 text-sm font-bold ${tone}`}>
+                      <Icon size={15} />
+                      {up ? '+' : ''}{pct.toFixed(2)}%
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col gap-1 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">{first.date}</span>
+                      <span className="text-slate-400 font-mono">{usd(first.value)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">{last.date}</span>
+                      <span className="text-white font-mono font-medium">{usd(last.value)}</span>
+                    </div>
+                  </div>
+
+                  <div className={`text-xs font-mono border-t border-slate-700 pt-2 ${tone}`}>
+                    {up ? '+' : ''}{usd(diff)} no período
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
         </motion.div>
       )}
 
