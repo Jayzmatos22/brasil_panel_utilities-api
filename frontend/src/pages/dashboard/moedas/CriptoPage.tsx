@@ -5,7 +5,7 @@
 
 import { useState, useMemo, useEffect, type ChangeEvent } from 'react';
 import { motion } from 'motion/react';
-import { LoaderCircle, TrendingUp, TrendingDown, Search, BarChart3 } from 'lucide-react';
+import { LoaderCircle, TrendingUp, TrendingDown, Search, BarChart3, Minus } from 'lucide-react';
 import { useCryptoMarket, useCryptoByName } from '../../../hooks/UseCrypto';
 import { BarChartEcharts } from '../../../components/charts/BarChartEcharts';
 import { AnimatedNumber } from '../../../components/AnimatedNumber';
@@ -15,6 +15,7 @@ export default function CriptoPage() {
   const [search, setSearch] = useState('');
   // Debounce: só consulta após o usuário parar de digitar (evita 1 req + 404 por tecla).
   const [debounced, setDebounced] = useState('');
+  
   useEffect(() => {
     const t = setTimeout(() => setDebounced(search.trim().toLowerCase()), 400);
     return () => clearTimeout(t);
@@ -29,12 +30,19 @@ export default function CriptoPage() {
   const compact = (v: number) =>
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact' }).format(v);
 
-  const pct = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`;
+  const pct = (v: number) => 
+    typeof v === 'number' ? `${v >= 0 ? '+' : ''}${v.toFixed(2)}%` : '-';
 
   // Comparativos derivados do mesmo batch (top 100) — sem requisições extras.
   const { gainers, losers, topCap } = useMemo(() => {
     if (!market) return { gainers: [], losers: [], topCap: [] };
-    const byChange = [...market].sort((a, b) => b.priceChange24h - a.priceChange24h);
+    
+    // Filtramos moedas que tenham priceChange24h válido (diferente de null/undefined)
+    const validChanges = [...market].filter((c) => typeof c.priceChange24h === 'number');
+    
+    // Ordenamos apenas as válidas
+    const byChange = validChanges.sort((a, b) => b.priceChange24h - a.priceChange24h);
+    
     return {
       gainers: byChange.slice(0, 10).map((c) => ({ label: c.symbol.toUpperCase(), value: c.priceChange24h })),
       losers: byChange.slice(-10).map((c) => ({ label: c.symbol.toUpperCase(), value: c.priceChange24h })),
@@ -112,7 +120,9 @@ export default function CriptoPage() {
               </thead>
               <tbody>
                 {market.map((coin, i) => {
-                  const up = coin.priceChange24h >= 0;
+                  const hasPriceChange = typeof coin.priceChange24h === 'number';
+                  const up = hasPriceChange && coin.priceChange24h >= 0;
+
                   return (
                     <tr key={coin.id} className="border-b border-slate-800 hover:bg-slate-800 transition-colors">
                       <td className="py-2 px-3 text-slate-500">{i + 1}</td>
@@ -125,9 +135,20 @@ export default function CriptoPage() {
                       </td>
                       <td className="py-2 px-3 text-right font-mono text-white">{brl(coin.currentPrice)}</td>
                       <td className="py-2 px-3 text-right font-mono text-slate-300">{compact(coin.marketCap)}</td>
-                      <td className={`py-2 px-3 text-right font-mono flex items-center justify-end gap-1 ${up ? 'text-green-400' : 'text-red-400'}`}>
-                        {up ? <TrendingUp size={13} /> : <TrendingDown size={13} />}
-                        {up ? '+' : ''}{coin.priceChange24h.toFixed(2)}%
+                      
+                      <td className={`py-2 px-3 text-right font-mono flex items-center justify-end gap-1 ${
+                        !hasPriceChange ? 'text-slate-500' : up ? 'text-green-400' : 'text-red-400'
+                      }`}>
+                        {hasPriceChange ? (
+                          <>
+                            {up ? <TrendingUp size={13} /> : <TrendingDown size={13} />}
+                            {up ? '+' : ''}{coin.priceChange24h.toFixed(2)}%
+                          </>
+                        ) : (
+                          <>
+                            <Minus size={13} /> N/A
+                          </>
+                        )}
                       </td>
                     </tr>
                   );
