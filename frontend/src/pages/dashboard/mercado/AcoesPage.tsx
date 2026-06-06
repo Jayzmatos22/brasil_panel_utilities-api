@@ -34,7 +34,7 @@ export default function AcoesPage() {
       <motion.h1 variants={item} className="text-2xl font-bold text-white">Cotação de Ações</motion.h1>
 
       {/* Busca */}
-      <motion.form variants={item} onSubmit={handleSubmit} className="flex gap-2 max-w-sm">
+      <motion.form variants={item} onSubmit={handleSubmit} className="flex gap-2 max-w-sm ">
         <input
           value={input}
           onChange={(e: ChangeEvent<HTMLInputElement>) => setInput(e.target.value)}
@@ -44,8 +44,8 @@ export default function AcoesPage() {
         />
         <button
           type="submit"
-          className="h-10 px-4 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md
-                     flex items-center gap-2 font-semibold text-sm transition-all active:scale-95"
+          className="h-10 px-4 bg-yellow-500 hover:bg-yellow-600 cursor-pointer text-white rounded-md
+                     flex items-center gap-2 font-semibold text-sm transition-all active:scale-95 hover:scale-105"
         >
           <Search size={15} />
           Buscar
@@ -69,7 +69,7 @@ export default function AcoesPage() {
               <span className="text-amber-400 font-semibold text-sm">Busca esgotada por hoje</span>
               <span className="text-slate-400 text-xs leading-relaxed">
                 O limite diário de consultas de ações foi atingido. As cotações já
-                buscadas continuam disponíveis pelo cache. Tente novos símbolos amanhã.
+                buscadas continuam disponíveis pelo cache. Tente novos símbolos wm 24H.
               </span>
             </div>
           </div>
@@ -89,10 +89,10 @@ export default function AcoesPage() {
 
       {/* Card de cotação */}
       {stock && !isLoading && (
-        <motion.div variants={item} whileHover={{ y: -4 }} className="bg-slate-900 border border-slate-700 rounded-xl p-6 max-w-md flex flex-col gap-4">
+        <motion.div variants={item} whileHover={{ y: -4, x: -1 }} className=" acoes-card-resultado-busca border border-slate-700 rounded-xl p-6 max-w-md flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <h2 className="text-white font-bold text-xl">{stock.symbol}</h2>
-            <span className={`flex items-center gap-1 text-sm font-semibold ${positive ? 'text-green-400' : 'text-red-400'}`}>
+            <span className={`flex items-center gap-1 text-sm font-semibold ${positive ? 'text-green-400' : 'text-red-800/90'}`}>
               {positive ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
               {stock.changePercent}
             </span>
@@ -111,20 +111,20 @@ export default function AcoesPage() {
               ['Variação',       `${stock.change >= 0 ? '+' : ''}${stock.change.toFixed(2)}`],
               ['Volume',         stock.volume.toLocaleString('pt-BR')],
             ].map(([label, value]) => (
-              <div key={label} className="flex justify-between bg-slate-800 rounded px-3 py-2">
-                <span className="text-slate-400">{label}</span>
-                <span className="text-white font-mono">{value}</span>
+              <div key={label} className="flex justify-between bg-white rounded px-3 py-2">
+                <span className="text-slate-500">{label}</span>
+                <span className="text-slate-700 font-mono">{value}</span>
               </div>
             ))}
           </div>
 
-          <p className="text-slate-500 text-xs">Último pregão: {stock.latestTradingDay}</p>
+          <p className="text-white text-xs">Último pregão: {stock.latestTradingDay}</p>
         </motion.div>
       )}
 
       {/* Histórico — fechamento ao longo do tempo */}
       {symbol && !error && (
-        <motion.div variants={item} whileHover={{ y: -4 }} className="bg-slate-900 border border-slate-700 rounded-xl p-6">
+        <motion.div variants={item} whileHover={{ y: -4 }} className="acoes-historico-ticker border border-slate-700 rounded-xl p-6">
           <h2 className="text-yellow-500 font-semibold text-sm uppercase tracking-wider mb-4">
             Histórico — {symbol}
           </h2>
