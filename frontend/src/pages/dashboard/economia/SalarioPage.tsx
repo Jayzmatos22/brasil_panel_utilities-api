@@ -13,6 +13,13 @@ import { LineChartEcharts, type LinePoint } from '../../../components/charts/Lin
 import { AnimatedNumber } from '../../../components/AnimatedNumber';
 import { container, item } from '../../../lib/motion/presets';
 
+// Imagem de banner da página (assets/salario/*-img.*)
+const PAGE_IMAGES = import.meta.glob(
+  '../../../assets/salario/*.{jpeg,jpg,png,webp,avif}',
+  { eager: true, import: 'default' },
+) as Record<string, string>;
+const bannerImage = Object.values(PAGE_IMAGES)[0];
+
 // Fontes contrastáveis. BCB = mínimo nominal; demais vêm do IPEA (/ipea/renda), DB-first.
 const SOURCES = [
   { key: 'bcb',   label: 'Nominal (BCB)',                 unit: 'BRL', code: undefined },
@@ -67,30 +74,56 @@ export default function SalarioPage() {
 
   return (
     <motion.div className="flex flex-col gap-6" variants={container} initial="hidden" animate="show">
-      <motion.h1 variants={item} className="text-2xl font-bold text-blue-600">Salário Mínimo</motion.h1>
-
-      {/* Valor atual (BCB nominal) */}
+      {/* Cabeçalho lado-a-lado: imagem (esq.) + título e valor atual (dir.) */}
       <motion.div
         variants={item}
-        whileHover={{ y: -4 }}
-        className="bg-gray-950 border border-slate-700 bg-card-item bg-card-filter rounded-xl p-6 max-w-sm hover:bg-gray-900 transition-colors"
+        className="flex flex-col lg:flex-row overflow-hidden rounded-2xl border border-slate-700 group bg-linear-to-r from-green-100 to-green-400 "
       >
-        <h2 className="text-yellow-500 font-semibold text-sm uppercase tracking-wider mb-3">Valor Atual</h2>
-        {loadingCurrent ? (
-          <div className="flex items-center gap-2 text-slate-400 text-sm">
-            <LoaderCircle size={16} className="animate-spin" /> Carregando...
-          </div>
-        ) : errCurrent ? (
-          <span className="text-red-400 text-sm">Erro ao carregar.</span>
-        ) : latest ? (
-          <>
-            <p className="text-4xl font-bold text-green-600">
-              <AnimatedNumber value={latest.valor} format={brl} />
+        {/* Painel da imagem */}
+        <div className="relative lg:w-2/5 h-52 lg:h-auto shrink-0 overflow-hidden ">
+          <div className="absolute inset-0 bg-linear-to-br from-emerald-900 to-green-700" />
+          {bannerImage && (
+            <img
+              src={bannerImage}
+              alt="Salário Mínimo"
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 "
+              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+            />
+          )}
+          <div className="absolute inset-0 bg-linear-to-t from-slate-950/70 to-transparent lg:bg-linear-to-r lg:from-transparent lg:to-slate-900/80" />
+        </div>
+
+        {/* Conteúdo */}
+        <div className="flex-1 flex flex-col justify-center p-6 gap-3">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-700">Salário Mínimo</h1>
+            <p className="text-slate-700 text-sm mt-1">
+              Valor nominal, real e comparativos de renda — BCB e IPEA.
             </p>
-            <p className="text-slate-500 text-xs mt-2">Vigência: {latest.data}</p>
-          </>
-        ) : null}
+          </div>
+
+          {/* Valor atual em destaque */}
+          {loadingCurrent ? (
+            <div className="flex items-center gap-2 text-slate-400 text-sm">
+              <LoaderCircle size={16} className="animate-spin" /> Carregando...
+            </div>
+          ) : latest ? (
+            <div className="flex items-baseline gap-3">
+              <p className="text-4xl font-bold text-white/80 border-3 bg-green-950 px-2 border-white rounded-lg ">
+                <AnimatedNumber value={latest.valor} format={brl} />
+              </p>
+              <span className="text-slate-700 text-xs ">Vigência {latest.data}</span>
+            </div>
+          ) : null}
+        </div>
       </motion.div>
+
+      {/* Erro do valor atual (raro) — o valor em si fica no cabeçalho */}
+      {errCurrent && (
+        <motion.div variants={item} className="text-red-400 text-sm">
+          Erro ao carregar o valor atual.
+        </motion.div>
+      )}
 
       {/* Histórico — gráfico com seletor de fonte para contraste */}
       <motion.div variants={item} whileHover={{ y: -4 }} className="bg-card-item border bg-card-filter border-slate-700 rounded-xl p-6 flex flex-col gap-4">
@@ -106,7 +139,7 @@ export default function SalarioPage() {
                 <option key={s.key} value={s.key}>{s.label}</option>
               ))}
             </select>
-            <span className="text-slate-500 text-xs">{meta.unit}</span>
+            <span className="text-green-500 text-xs">{meta.unit}</span>
           </div>
         </div>
 
@@ -119,24 +152,24 @@ export default function SalarioPage() {
         ) : stats ? (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="bg-slate-800 rounded-lg p-3 flex flex-col gap-1">
-                <span className="text-cyan-500 text-xs">Variação no período</span>
+              <div className="bg-green-800 rounded-lg p-3 flex flex-col gap-1 border-b border-white cursor-pointer hover:bg-green-700/60 float-card">
+                <span className="text-white text-xs">Variação no período</span>
                 <span
                   className={`flex items-center gap-1 font-mono font-semibold ${
-                    stats.change > 0 ? 'text-green-400' : stats.change < 0 ? 'text-red-400' : 'text-slate-300'
+                    stats.change > 0 ? 'text-green-200' : stats.change < 0 ? 'text-red-400' : 'text-slate-300'
                   }`}
                 >
                   {stats.change > 0 ? <TrendingUp size={15} /> : stats.change < 0 ? <TrendingDown size={15} /> : <Minus size={15} />}
                   {stats.pct > 0 ? '+' : ''}{stats.pct.toFixed(2)}%
                 </span>
               </div>
-              <div className="bg-slate-800 rounded-lg p-3 flex flex-col gap-1">
-                <span className="text-cyan-500 text-xs">Mínima</span>
-                <span className="font-mono text-red-600 font-semibold">{fmt(stats.min)}</span>
+              <div className="bg-blue-500 rounded-lg p-3 flex flex-col gap-1 border-b border-white cursor-pointer float-card hover:bg-blue-400/60">
+                <span className="text-white text-xs">Mínima</span>
+                <span className="font-mono text-red-800 font-semibold">{fmt(stats.min)}</span>
               </div>
-              <div className="bg-slate-800 rounded-lg p-3 flex flex-col gap-1">
-                <span className="text-cyan-500 text-xs">Máxima</span>
-                <span className="font-mono text-green-600 font-semibold">{fmt(stats.max)}</span>
+              <div className="bg-yellow-600 rounded-lg p-3 flex flex-col gap-1 border-b border-white cursor-pointer float-card hover:bg-yellow-500/60">
+                <span className="text-white text-xs">Máxima</span>
+                <span className="font-mono text-green-200 font-semibold">{fmt(stats.max)}</span>
               </div>
             </div>
             <LineChartEcharts points={points} color="#10b981" />
