@@ -13,6 +13,20 @@ import { AnimatedNumber } from '../../../components/AnimatedNumber';
 import { container, item } from '../../../lib/motion/presets';
 import type { MetalKey } from '../../../types/MetalsType';
 
+// Imagens dos metais (assets/metais/*-img.*). Nome do arquivo deve conter o termo
+// PT do metal — ex: metais-ouro-img.jpeg, metais-prata-img.png.
+const METAL_IMAGES = import.meta.glob(
+  '../../../assets/metais/*.{jpeg,jpg,png,webp,avif}',
+  { eager: true, import: 'default' },
+) as Record<string, string>;
+
+function findMetalImage(term: string): string | undefined {
+  const match = Object.entries(METAL_IMAGES).find(([path]) =>
+    path.toLowerCase().includes(`-${term}-img`),
+  );
+  return match?.[1];
+}
+
 // Metais com variação destacada nos 30 dias
 const VARIATION_METALS = [
   { key: 'gold',      label: 'Ouro',     emoji: '🥇' },
@@ -21,15 +35,16 @@ const VARIATION_METALS = [
   { key: 'palladium', label: 'Paládio',  emoji: '🔘' },
 ] as const;
 
+// img = termo PT usado no nome do arquivo da imagem
 const METALS = [
-  { key: 'gold',      label: 'Ouro',      emoji: '🥇' },
-  { key: 'silver',    label: 'Prata',     emoji: '🥈' },
-  { key: 'platinum',  label: 'Platina',   emoji: '⚪' },
-  { key: 'palladium', label: 'Paládio',   emoji: '🔘' },
-  { key: 'copper',    label: 'Cobre',     emoji: '🟤' },
-  { key: 'aluminum',  label: 'Alumínio',  emoji: '🔩' },
-  { key: 'nickel',    label: 'Níquel',    emoji: '⚙️'  },
-  { key: 'zinc',      label: 'Zinco',     emoji: '🔳' },
+  { key: 'gold',      label: 'Ouro',      emoji: '🥇', img: 'ouro'     },
+  { key: 'silver',    label: 'Prata',     emoji: '🥈', img: 'prata'    },
+  { key: 'platinum',  label: 'Platina',   emoji: '⚪', img: 'platina'  },
+  { key: 'palladium', label: 'Paládio',   emoji: '🔘', img: 'paladio'  },
+  { key: 'copper',    label: 'Cobre',     emoji: '🟤', img: 'cobre'    },
+  { key: 'aluminum',  label: 'Alumínio',  emoji: '🔩', img: 'aluminio' },
+  { key: 'nickel',    label: 'Níquel',    emoji: '⚙️', img: 'niquel'   },
+  { key: 'zinc',      label: 'Zinco',     emoji: '🔳', img: 'zinco'    },
 ] as const;
 
 const LBMA_FIXINGS = [
@@ -95,7 +110,7 @@ export default function MetaisPage() {
   return (
     <motion.div className="flex flex-col gap-6" variants={container} initial="hidden" animate="show">
       <motion.div variants={item} className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-white">Metais Preciosos</h1>
+        <h1 className="text-2xl font-bold text-yellow-500">Metais Preciosos</h1>
         {metals && (
           <span className="text-slate-500 text-xs">
             Atualizado: {new Date(metals.lastUpdated).toLocaleString('pt-BR')}
@@ -115,29 +130,47 @@ export default function MetaisPage() {
 
       {metals && (
         <motion.div variants={item} className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {METALS.map(({ key, label, emoji }) => (
-            <motion.div
-              key={key}
-              whileHover={{ y: -4 }}
-              className="bg-slate-900 border border-slate-700 rounded-xl p-4 flex flex-col gap-2"
-            >
-              <div className="flex items-center gap-2">
-                <span className="text-lg">{emoji}</span>
-                <span className="text-slate-400 text-sm">{label}</span>
-              </div>
-              <p className="text-white font-bold text-xl font-mono">
-                <AnimatedNumber value={metals[key]} format={brl} />
-              </p>
-              <p className="text-slate-600 text-xs">por troy oz</p>
-            </motion.div>
-          ))}
+          {METALS.map(({ key, label, emoji, img }) => {
+            const image = findMetalImage(img);
+            return (
+              <motion.div
+                key={key}
+                whileHover={{ y: -4 }}
+                className="relative overflow-hidden bg-metais-items cursor-pointer border border-slate-700 rounded-xl p-4 flex flex-col gap-2 group"
+              >
+                {/* Imagem de fundo (quando houver) + overlay para legibilidade */}
+                {image && (
+                  <>
+                    <img
+                      src={image}
+                      alt={label}
+                      className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:opacity-80
+                                 transition-transform duration-700 group-hover:scale-110"
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                    />
+                    <div className="absolute inset-0 bg-linear-to-t from-gray-950 via-slate-950/70 to-slate-950/30" />
+                  </>
+                )}
+
+                {/* Conteúdo acima da imagem */}
+                <div className="relative flex items-center gap-2">
+                  <span className="text-lg">{emoji}</span>
+                  <span className="text-slate-300 text-sm">{label}</span>
+                </div>
+                <p className="relative text-white font-bold text-xl font-mono">
+                  <AnimatedNumber value={metals[key]} format={brl} />
+                </p>
+                <p className="relative text-slate-400 text-xs">por troy oz</p>
+              </motion.div>
+            );
+          })}
         </motion.div>
       )}
 
       {/* Variação 30 dias — início vs. fim da série (USD/toz) */}
       {variations.length > 0 && (
-        <motion.div variants={item} className="bg-slate-900 border border-slate-700 rounded-xl p-6 flex flex-col gap-4">
-          <h2 className="text-yellow-500 font-semibold text-sm uppercase tracking-wider">
+        <motion.div variants={item} className=" metais-card-variacao bg-linear-to-t from-slate-900 via-white to-slate-950/10 border border-slate-700 rounded-xl p-6 flex flex-col gap-4">
+          <h2 className="text-black font-semibold border-b border-black0 text-sm uppercase tracking-wider">
             Variação nos 30 dias
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -150,7 +183,7 @@ export default function MetaisPage() {
                 <motion.div
                   key={key}
                   whileHover={{ y: -4 }}
-                  className="bg-slate-800 border border-slate-700 rounded-lg p-4 flex flex-col gap-3"
+                  className="metais-subcard-variacao border cursor-zoom-in border-slate-700 rounded-lg p-4 flex flex-col gap-3"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -159,7 +192,7 @@ export default function MetaisPage() {
                     </div>
                     <span className={`flex items-center gap-1 text-sm font-bold ${tone}`}>
                       <Icon size={15} />
-                      {up ? '+' : ''}{pct.toFixed(2)}%
+                      {up ? '+' : ''}{pct.toFixed(2)}
                     </span>
                   </div>
 
