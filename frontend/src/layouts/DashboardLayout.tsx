@@ -166,8 +166,8 @@ export default function DashboardLayout() {
       <div className="flex flex-1 overflow-hidden">
 
         {/* Sidebar */}
-        <aside className="w-60 shrink-0 bg-slate-900 border-r border-slate-800
-                          flex flex-col overflow-y-auto">
+        <aside className="w-60 shrink-0 layout-dashboard-aside border-r border-slate-800
+                          flex flex-col overflow-y-auto ">
 
           <nav className="flex-1 p-3 flex flex-col gap-0.5 pt-4">
             {/* Seção Admin — visível apenas para administradores */}
