@@ -169,24 +169,24 @@ export default function MetaisPage() {
 
       {/* Variação 30 dias — início vs. fim da série (USD/toz) */}
       {variations.length > 0 && (
-        <motion.div variants={item} className=" metais-card-variacao bg-linear-to-t from-slate-900 via-white to-slate-950/10 border border-slate-700 rounded-xl p-6 flex flex-col gap-4">
-          <h2 className="text-black font-semibold border-b border-black0 text-sm uppercase tracking-wider">
+        <motion.div variants={item} className="metais-cards-varicao-preco-oficial bg-linear-to-t from-slate-900/50 via-white to-slate-950/10 border border-slate-700 rounded-xl p-6 flex flex-col gap-4">
+          <h2 className="text-black font-semibold border-b border-black0 text-sm uppercase tracking-wider ">
             Variação nos 30 dias
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 ">
             {variations.map(({ key, label, emoji, first, last, diff, pct }) => {
               const up   = pct > 0;
               const flat = pct === 0;
-              const tone = flat ? 'text-slate-400' : up ? 'text-green-400' : 'text-red-400';
+              const tone = flat ? 'text-slate-400 ' : up ? 'text-green-400' : 'text-red-400';
               const Icon = flat ? Minus : up ? TrendingUp : TrendingDown;
               return (
                 <motion.div
                   key={key}
                   whileHover={{ y: -4 }}
-                  className="metais-subcard-variacao border cursor-zoom-in border-slate-700 rounded-lg p-4 flex flex-col gap-3"
+                  className="metais-subcard-variacao-preco border  cursor-zoom-in border-slate-700 rounded-lg p-4 flex flex-col gap-3"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-between ">
+                    <div className="flex items-center gap-2 ">
                       <span className="text-lg">{emoji}</span>
                       <span className="text-slate-300 text-sm font-medium">{label}</span>
                     </div>
@@ -218,9 +218,9 @@ export default function MetaisPage() {
       )}
 
       {/* Histórico — últimos 30 dias (USD/toz) */}
-      <motion.div variants={item} whileHover={{ y: -4 }} className="bg-slate-900 border border-slate-700 rounded-xl p-6 flex flex-col gap-4">
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <h2 className="text-yellow-500 font-semibold text-sm uppercase tracking-wider">
+      <motion.div variants={item} whileHover={{ y: -4 }} className="metais-grafico-historico-30 border border-slate-700 rounded-xl p-6 flex flex-col gap-4">
+        <div className="flex items-center  justify-between flex-wrap gap-3">
+          <h2 className="text-yellow-500  font-semibold text-sm uppercase tracking-wider">
             Histórico — 30 dias
           </h2>
           <div className="flex items-center gap-2">
@@ -252,9 +252,9 @@ export default function MetaisPage() {
       </motion.div>
 
       {/* Fixing oficial LBMA (AM/PM) — USD/toz */}
-      <motion.div variants={item} whileHover={{ y: -4 }} className="bg-slate-900 border border-slate-700 rounded-xl p-6 flex flex-col gap-4">
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <h2 className="text-yellow-500 font-semibold text-sm uppercase tracking-wider">
+      <motion.div variants={item} whileHover={{ y: -4 }} className="metais-cards-varicao-preco-oficial bg-linear-to-t from-slate-900/50 via-white to-slate-950/10 border border-slate-700 rounded-xl p-6 flex flex-col gap-4">
+        <div className="flex items-center justify-between flex-wrap gap-3 ">
+          <h2 className="text-yellow-800 font-semibold text-sm uppercase tracking-wider border-b">
             Preço oficial LBMA (AM/PM)
           </h2>
           <div className="flex items-center gap-3">
@@ -275,10 +275,13 @@ export default function MetaisPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {LBMA_FIXINGS.map(({ label, emoji, am, pm }) => (
               <div
+              
                 key={label}
-                className="bg-slate-800 border border-slate-700 rounded-lg p-4 flex flex-col gap-2"
+                className="metais-subcard-variacao-preco border cursor-zoom-in border-slate-700 rounded-lg p-4 flex flex-col gap-2 
+                          transition-all duration-500
+                          hover:-translate-y-2"
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 ">
                   <span className="text-lg">{emoji}</span>
                   <span className="text-slate-300 text-sm font-medium">{label}</span>
                 </div>
@@ -292,7 +295,7 @@ export default function MetaisPage() {
                 </div>
               </div>
             ))}
-            <div className="bg-slate-800 border border-slate-700 rounded-lg p-4 flex flex-col gap-2">
+            <div className="metais-subcard-variacao-preco border border-slate-700 rounded-lg p-4 flex flex-col gap-2 transition-all duration-500 hover:-translate-y-2 cursor-zoom-in">
               <div className="flex items-center gap-2">
                 <span className="text-lg">🥈</span>
                 <span className="text-slate-300 text-sm font-medium">Prata</span>
