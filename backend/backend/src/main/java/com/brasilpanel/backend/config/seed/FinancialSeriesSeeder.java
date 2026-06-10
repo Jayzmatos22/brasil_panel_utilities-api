@@ -156,6 +156,96 @@ public class FinancialSeriesSeeder implements ApplicationRunner {
         FinancialSeries.builder()
                 .code("DEPIS_POPMP").source("IPEA").name("Projeção população mulheres")
                 .unit("pessoas").description("Projeção da população - mulheres")
+                .build(),
+
+        // Balanço de Pagamentos
+
+        FinancialSeries.builder()
+                .code("BPAG12_AR12")
+                .source("IPEA")
+                .name("Ativos de Reserva")
+                .unit("US$ milhões")
+                .description("Ativos de reserva internacionais")
+                .build(),
+
+        FinancialSeries.builder()
+                .code("BPAG12_TC12")
+                .source("IPEA")
+                .name("Transações Correntes")
+                .unit("US$ milhões")
+                .description("Saldo das transações correntes")
+                .build(),
+
+        FinancialSeries.builder()
+                .code("BPAG12_BC12")
+                .source("IPEA")
+                .name("Balança Comercial")
+                .unit("US$ milhões")
+                .description("Saldo da balança comercial")
+                .build(),
+
+        FinancialSeries.builder()
+                .code("BPAG12_SER12")
+                .source("IPEA")
+                .name("Serviços")
+                .unit("US$ milhões")
+                .description("Balanço de serviços")
+                .build(),
+
+        FinancialSeries.builder()
+                .code("BPAG12_RP12")
+                .source("IPEA")
+                .name("Renda Primária")
+                .unit("US$ milhões")
+                .description("Fluxos de renda primária")
+                .build(),
+
+        FinancialSeries.builder()
+                .code("BPAG12_IDE12")
+                .source("IPEA")
+                .name("Investimento Direto")
+                .unit("US$ milhões")
+                .description("Investimento direto no país")
+                .build(),
+
+        FinancialSeries.builder()
+                .code("BPAG12_CK12")
+                .source("IPEA")
+                .name("Conta Capital")
+                .unit("US$ milhões")
+                .description("Conta capital")
+                .build(),
+
+        FinancialSeries.builder()
+                .code("BPAG12_CF12")
+                .source("IPEA")
+                .name("Conta Financeira")
+                .unit("US$ milhões")
+                .description("Conta financeira")
+                .build(),
+
+        FinancialSeries.builder()
+                .code("BPAG12_ICAAA12")
+                .source("IPEA")
+                .name("Investimento em Carteira")
+                .unit("US$ milhões")
+                .description("Investimento em carteira registrado no balanço de pagamentos")
+                .build(),
+
+        FinancialSeries.builder()
+                .code("BPAG12_SERD12")
+                .source("IPEA")
+                .name("Serviços - Despesas")
+                .unit("US$ milhões")
+                .description("Despesas da conta de serviços do balanço de pagamentos")
+                .build(),
+
+        FinancialSeries.builder()
+                .code("BPAG12_IDPI12")
+                .source("IPEA")
+                .name("Investimento Direto no País - Ingressos")
+                .unit("US$ milhões")
+                .description("Ingressos de investimento direto no país")
                 .build()
     );
 
