@@ -61,6 +61,33 @@ public class IpeaService {
     private static final String PROJECAO_HOMENS = "DEPIS_POPHP";
     private static final String PROJECAO_MULHERES = "DEPIS_POPMP";
 
+    // --- Balanço de Pagamentos ---
+
+    //Ativos de Reserva
+    private static final String ATIVOS_RESERVA = "BPAG12_AR12";
+    private static final String TRANSACOES_CORRENTES = "BPAG12_TC12";
+    private static final String BALANCA_COMERCIAL = "BPAG12_BC12";
+    private static final String SERVICOS = "BPAG12_SER12";
+    private static final String RENDA_PRIMARIA = "BPAG12_RP12";
+    private static final String INVESTIMENTO_DIRETO = "BPAG12_IDE12";
+    private static final String CONTA_CAPITAL = "BPAG12_CK12";
+    private static final String CONTA_FINANCEIRA = "BPAG12_CF12";
+    private static final String INVESTIMENTO_CARTEIRA = "BPAG12_ICAAA12";
+    private static final String SERVICOS_DESPESA = "BPAG12_SERD12";
+    private static final String INVESTIMENTO_DIRETO_INGRESSOS = "BPAG12_IDPI12";
+
+
+
+    private static final List<String> ALL_CODES = List.of(
+            DESOCUPACAO, OCUPACAO,
+            SALARIO_MINIMO_REAL, SALARIO_MINIMO_PPC, RENDA_PER_CAPITA,
+            GINI, POBREZA,  PIB, INVESTIMENTO, DESEMPREGO_FMI, SELIC, RESERVAS, ARRECADACAO,
+            INPC, IGPM,  POPULACAO, PROJECAO_TOTAL, PROJECAO_HOMENS, PROJECAO_MULHERES, TRANSACOES_CORRENTES,
+            BALANCA_COMERCIAL,  SERVICOS,  RENDA_PRIMARIA, INVESTIMENTO_DIRETO_INGRESSOS,
+            INVESTIMENTO_DIRETO,  CONTA_CAPITAL,  CONTA_FINANCEIRA,
+            ATIVOS_RESERVA, INVESTIMENTO_CARTEIRA, SERVICOS_DESPESA
+    );
+
 
     @Cacheable("ipea-emprego")
     public List<IpeaSerieDTO> getEmprego() {
@@ -122,14 +149,7 @@ public class IpeaService {
         );
     }
 
-    private static final List<String> ALL_CODES = List.of(
-            DESOCUPACAO, OCUPACAO,
-            SALARIO_MINIMO_REAL, SALARIO_MINIMO_PPC, RENDA_PER_CAPITA,
-            GINI, POBREZA,
-            PIB, INVESTIMENTO, DESEMPREGO_FMI, SELIC, RESERVAS, ARRECADACAO,
-            INPC, IGPM,
-            POPULACAO, PROJECAO_TOTAL, PROJECAO_HOMENS, PROJECAO_MULHERES
-    );
+
 
     /**
      * Força a busca de todas as séries na API e persiste os pontos novos
@@ -177,6 +197,90 @@ public class IpeaService {
             financialDataService.savePoint(codigo, SOURCE, item.data().toLocalDate(), item.valor(), null);
         }
     }
+
+
+    // BALANÇA DE PAGAMENTOS - (BPM6) (BCB / BP (BPM6))
+
+    @Cacheable("ipea-reservas-ativos")
+    public List<IpeaSerieDTO> getReserveAssets() {
+        return List.of(
+                serie(ATIVOS_RESERVA, "Ativos de Reserva Internacional")
+        );
+    }
+
+    @Cacheable("ipea-transacoes-correntes")
+    public List<IpeaSerieDTO> getCurrentTransactions() {
+        return List.of(
+                serie(TRANSACOES_CORRENTES, "Saldo em Transações Correntes")
+        );
+    }
+
+    @Cacheable("ipea-balanca-comercial")
+    public List<IpeaSerieDTO> getTradeBalance() {
+        return List.of(
+                serie(BALANCA_COMERCIAL, "Saldo da Balança Comercial")
+        );
+    }
+
+    @Cacheable("ipea-servicos")
+    public List<IpeaSerieDTO> getServicesBalance() {
+        return List.of(
+                serie(SERVICOS, "Saldo da Conta de Serviços")
+        );
+    }
+
+    @Cacheable("ipea-renda-primaria")
+    public List<IpeaSerieDTO> getPrimaryIncome() {
+        return List.of(
+                serie(RENDA_PRIMARIA, "Saldo da Renda Primária")
+        );
+    }
+
+    @Cacheable("ipea-investimento-direto")
+    public List<IpeaSerieDTO> getDirectInvestment() {
+        return List.of(
+                serie(INVESTIMENTO_DIRETO, "Investimento Direto no País")
+        );
+    }
+
+    @Cacheable("ipea-conta-capital")
+    public List<IpeaSerieDTO> getCapitalAccount() {
+        return List.of(
+                serie(CONTA_CAPITAL, "Saldo da Conta Capital")
+        );
+    }
+
+    @Cacheable("ipea-conta-financeira")
+    public List<IpeaSerieDTO> getFinancialAccount() {
+        return List.of(
+                serie(CONTA_FINANCEIRA, "Saldo da Conta Financeira")
+        );
+    }
+
+
+    @Cacheable("ipea-investimento-carteira")
+    public List<IpeaSerieDTO> getInvestmentWallet() {
+        return List.of(
+                serie(INVESTIMENTO_CARTEIRA, "Investimento em Carteira")
+        );
+    }
+
+
+    @Cacheable("ipea-servicos-despesa")
+    public List<IpeaSerieDTO> getServicesExpense() {
+        return List.of(
+                serie(SERVICOS_DESPESA, "Serviços - Despesa")
+        );
+    }
+
+    @Cacheable("ipea-investimento-direto-ingressos")
+    public List<IpeaSerieDTO> getDirectInvestmentInflows() {
+        return List.of(
+                serie(INVESTIMENTO_DIRETO_INGRESSOS,
+                        "Investimento Direto no País - Ingressos")
+        );
+    }
+
 
     // Requisição feita à API baseada no código.
     // As requisições abaixo reutilizam essa função, só o código de série muda.
