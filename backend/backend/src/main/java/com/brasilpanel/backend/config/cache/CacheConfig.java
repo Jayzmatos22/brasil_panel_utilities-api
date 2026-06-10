@@ -41,6 +41,17 @@ public class CacheConfig {
                 build("ipea-macro",              24,  TimeUnit.HOURS,   10),
                 build("ipea-precos",             24,  TimeUnit.HOURS,   10),
                 build("ipea-populacao",          24,  TimeUnit.HOURS,   10),
+                build("ipea-reservas-ativos",    24, TimeUnit.HOURS, 10),
+                build("ipea-transacoes-correntes", 24, TimeUnit.HOURS, 10),
+                build("ipea-balanca-comercial", 24, TimeUnit.HOURS, 10),
+                build("ipea-servicos", 24, TimeUnit.HOURS, 10),
+                build("ipea-renda-primaria", 24, TimeUnit.HOURS, 10),
+                build("ipea-investimento-direto", 24, TimeUnit.HOURS, 10),
+                build("ipea-conta-capital", 24, TimeUnit.HOURS, 10),
+                build("ipea-conta-financeira", 24, TimeUnit.HOURS, 10),
+                build("ipea-investimento-carteira", 24, TimeUnit.HOURS, 10),
+                build("ipea-servicos-despesa", 24, TimeUnit.HOURS, 10),
+                build("ipea-investimento-direto-ingressos", 24, TimeUnit.HOURS, 10),
 
                 // ── World Bank ───────────────────────────────────────────────────
                 // PIB atualizado anualmente; 24h evita chamadas repetidas
