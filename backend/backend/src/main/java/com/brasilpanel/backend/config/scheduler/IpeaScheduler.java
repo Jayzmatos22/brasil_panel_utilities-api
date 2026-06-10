@@ -23,8 +23,24 @@ import java.util.List;
 public class IpeaScheduler {
 
     private static final List<String> CACHES = List.of(
-            "ipea-emprego", "ipea-renda", "ipea-desigualdade",
-            "ipea-macro", "ipea-precos", "ipea-populacao"
+            "ipea-emprego",
+            "ipea-renda",
+            "ipea-desigualdade",
+            "ipea-macro",
+            "ipea-precos",
+            "ipea-populacao",
+
+            "ipea-reservas-ativos",
+            "ipea-transacoes-correntes",
+            "ipea-balanca-comercial",
+            "ipea-servicos",
+            "ipea-renda-primaria",
+            "ipea-investimento-direto",
+            "ipea-conta-capital",
+            "ipea-conta-financeira",
+            "ipea-investimento-carteira",
+            "ipea-servicos-despesa",
+            "ipea-investimento-direto-ingressos"
     );
 
     private final IpeaService ipeaService;
