@@ -77,15 +77,58 @@ public class IpeaService {
     private static final String INVESTIMENTO_DIRETO_INGRESSOS = "BPAG12_IDPI12";
 
 
+    // --- Comércio Exterior (FUNCEX) ---
+
+    // Exportações - Total (FOB)
+    private static final String EXPORTACOES_TOTAL_FOB = "FUNCEX12_XVTXGCE12";
+
+    // Índice de Quantum das Exportações - Total Geral
+    private static final String INDICE_QUANTUM_EXPORTACOES = "FUNCEX12_XQT12";
+
+    // Exportações FOB -
+    private static final String EXPORTACOES_PRODUTOS_BASICOS = "FUNCEX12_XVB12";
+
+
+    // Grandes Categorias Econômicas (Exportações)
+
+    private static final String AGRICULTURA_E_PECUARIA_QUANTUM = "FUNCEX12_XQAGP2N12";
+    private static final String EXPORTACOES_BENS_CONSUMO = "SECEX12_XBENCONGCE12";
+    private static final String INDICE_PRECOS_BENS_CAPITAL = "FUNCEX12_XPBKGCE12";
+    private static final String INDICE_PRECOS_BENS_DURAVEIS = "FUNCEX12_XPBCDGCE12";
+    private static final String INDICE_PRECOS_BENS_NAO_DURAVEIS = "FUNCEX12_XPBCNDGCE12";
+    private static final String VALOR_FOB_BENS_INTERMEDIARIOS = "FUNCEX12_XVBIGCE12";
+    private static final String INDICE_QUANTUM_BENS_INTERMEDIARIOS = "FUNCEX12_XQBIGCE12";
+    private static final String VALOR_FOB_COMBUSTIVEIS = "FUNCEX12_XVCOMBGCE12";
+
+
+    // Brasil - Ibovespa
+    // Mercado Financeiro / Índices
+    private static final String IBOVESPA_FECHAMENTO = "GM366_IBVSP366";
+
+
+
+    // IMPOSTOS
+    private static final String IMPOSTO_II = "SRF12_II12";
+    private static final String IMPOSTO_IRPF = "SRF12_IRPF12";
+    private static final String IMPOSTO_IRPJ = "SRF12_IRPJ12";
+    private static final String IMPOSTO_IR_TOTAL = "SRF12_IR12";
+    private static final String IMPOSTO_IOF = "SRF12_IOF12";
+    private static final String IMPOSTO_IPI = "SRF12_IPI12";
+
+
+
+
 
     private static final List<String> ALL_CODES = List.of(
-            DESOCUPACAO, OCUPACAO,
-            SALARIO_MINIMO_REAL, SALARIO_MINIMO_PPC, RENDA_PER_CAPITA,
+            DESOCUPACAO, OCUPACAO, EXPORTACOES_TOTAL_FOB, INDICE_QUANTUM_EXPORTACOES,
+            SALARIO_MINIMO_REAL, SALARIO_MINIMO_PPC, RENDA_PER_CAPITA, AGRICULTURA_E_PECUARIA_QUANTUM,
             GINI, POBREZA,  PIB, INVESTIMENTO, DESEMPREGO_FMI, SELIC, RESERVAS, ARRECADACAO,
             INPC, IGPM,  POPULACAO, PROJECAO_TOTAL, PROJECAO_HOMENS, PROJECAO_MULHERES, TRANSACOES_CORRENTES,
             BALANCA_COMERCIAL,  SERVICOS,  RENDA_PRIMARIA, INVESTIMENTO_DIRETO_INGRESSOS,
-            INVESTIMENTO_DIRETO,  CONTA_CAPITAL,  CONTA_FINANCEIRA,
-            ATIVOS_RESERVA, INVESTIMENTO_CARTEIRA, SERVICOS_DESPESA
+            INVESTIMENTO_DIRETO,  CONTA_CAPITAL,  CONTA_FINANCEIRA, EXPORTACOES_BENS_CONSUMO,
+            ATIVOS_RESERVA, INVESTIMENTO_CARTEIRA, SERVICOS_DESPESA, EXPORTACOES_PRODUTOS_BASICOS,
+            INDICE_PRECOS_BENS_CAPITAL, INDICE_PRECOS_BENS_DURAVEIS, INDICE_PRECOS_BENS_NAO_DURAVEIS,
+            VALOR_FOB_BENS_INTERMEDIARIOS, INDICE_QUANTUM_BENS_INTERMEDIARIOS, VALOR_FOB_COMBUSTIVEIS, IBOVESPA_FECHAMENTO
     );
 
 
@@ -199,6 +242,8 @@ public class IpeaService {
     }
 
 
+
+
     // BALANÇA DE PAGAMENTOS - (BPM6) (BCB / BP (BPM6))
 
     @Cacheable("ipea-reservas-ativos")
@@ -280,6 +325,119 @@ public class IpeaService {
                         "Investimento Direto no País - Ingressos")
         );
     }
+
+
+
+
+    // EXPORTAÇÕES - Comércio Exterior (FUNCEX)
+    @Cacheable("ipea-exportacoes-total")
+    public List<IpeaSerieDTO> getTotalExports() {
+        return List.of(
+                serie(EXPORTACOES_TOTAL_FOB,
+                        "Exportações Totais (FOB)")
+        );
+    }
+
+    @Cacheable("ipea-quantum-exportacoes")
+    public List<IpeaSerieDTO> getExportQuantumIndex() {
+        return List.of(
+                serie(INDICE_QUANTUM_EXPORTACOES,
+                        "Índice de Quantum das Exportações")
+        );
+    }
+
+    @Cacheable("ipea-exportacoes-produtos-basicos")
+    public List<IpeaSerieDTO> getBasicProductsExports() {
+        return List.of(
+                serie(EXPORTACOES_PRODUTOS_BASICOS,
+                        "Exportações de Produtos Básicos (FOB)")
+        );
+    }
+
+    // - Categorias grandes.
+    @Cacheable("ipea-exportacoes-agricultura-pecuaria-quantum")
+    public List<IpeaSerieDTO> getAgricultureLivestockQuantumExports() {
+        return List.of(serie(AGRICULTURA_E_PECUARIA_QUANTUM, "Índice de Quantum - Agricultura e Pecuária"));
+    }
+
+    @Cacheable("ipea-exportacoes-bens-consumo")
+    public List<IpeaSerieDTO> getConsumerGoodsExports() {
+        return List.of(serie(EXPORTACOES_BENS_CONSUMO, "Exportações de Bens de Consumo (FOB)"));
+    }
+
+    @Cacheable("ipea-exportacoes-precos-bens-capital")
+    public List<IpeaSerieDTO> getCapitalGoodsPriceIndex() {
+        return List.of(serie(INDICE_PRECOS_BENS_CAPITAL, "Índice de Preços - Bens de Capital"));
+    }
+
+    @Cacheable("ipea-exportacoes-precos-bens-duraveis")
+    public List<IpeaSerieDTO> getDurableConsumerGoodsPriceIndex() {
+        return List.of(serie(INDICE_PRECOS_BENS_DURAVEIS, "Índice de Preços - Bens de Consumo Duráveis"));
+    }
+
+    @Cacheable("ipea-exportacoes-precos-bens-nao-duraveis")
+    public List<IpeaSerieDTO> getNonDurableConsumerGoodsPriceIndex() {
+        return List.of(serie(INDICE_PRECOS_BENS_NAO_DURAVEIS, "Índice de Preços - Bens de Consumo Não Duráveis"));
+    }
+
+    @Cacheable("ipea-exportacoes-valor-bens-intermediarios")
+    public List<IpeaSerieDTO> getIntermediateGoodsFobValue() {
+        return List.of(serie(VALOR_FOB_BENS_INTERMEDIARIOS, "Valor FOB - Bens Intermediários"));
+    }
+
+    @Cacheable("ipea-exportacoes-quantum-bens-intermediarios")
+    public List<IpeaSerieDTO> getIntermediateGoodsQuantumIndex() {
+        return List.of(serie(INDICE_QUANTUM_BENS_INTERMEDIARIOS, "Índice de Quantum - Bens Intermediários"));
+    }
+
+    @Cacheable("ipea-exportacoes-valor-combustiveis")
+    public List<IpeaSerieDTO> getFuelsFobValue() {
+        return List.of(serie(VALOR_FOB_COMBUSTIVEIS, "Valor FOB - Combustíveis"));
+    }
+
+
+    // Brasil - Ibovespa
+    @Cacheable("ipea-ibovespa-fechamento")
+    public List<IpeaSerieDTO> getIbovespaClosingIndex() {
+        return List.of(serie(IBOVESPA_FECHAMENTO, "Índice de ações: Ibovespa - fechamento"));
+    }
+
+
+
+
+    // -- IMPOSTOS --
+    @Cacheable("ipea-imposto-ii")
+    public List<IpeaSerieDTO> getImportTax() {
+        return List.of(serie(IMPOSTO_II, "Imposto sobre a Importação (II) - Receita Bruta"));
+    }
+
+    @Cacheable("ipea-imposto-irpf")
+    public List<IpeaSerieDTO> getPersonalIncomeTax() {
+        return List.of(serie(IMPOSTO_IRPF, "Imposto de Renda (IRPF) - Receita Bruta"));
+    }
+
+    @Cacheable("ipea-imposto-irpj")
+    public List<IpeaSerieDTO> getCorporateIncomeTax() {
+        return List.of(serie(IMPOSTO_IRPJ, "Imposto de Renda (IRPJ) - Receita Bruta"));
+    }
+
+    @Cacheable("ipea-imposto-ir-total")
+    public List<IpeaSerieDTO> getTotalIncomeTax() {
+        return List.of(serie(IMPOSTO_IR_TOTAL, "Imposto de Renda Total - Receita Bruta"));
+    }
+
+    @Cacheable("ipea-imposto-iof")
+    public List<IpeaSerieDTO> getIofTax() {
+        return List.of(serie(IMPOSTO_IOF, "Imposto sobre Operações Financeiras (IOF) - Receita Bruta"));
+    }
+
+    @Cacheable("ipea-imposto-ipi")
+    public List<IpeaSerieDTO> getIpiTax() {
+        return List.of(serie(IMPOSTO_IPI, "Imposto sobre Produtos Industrializados (IPI) - Receita Bruta"));
+    }
+
+
+
 
 
     // Requisição feita à API baseada no código.
