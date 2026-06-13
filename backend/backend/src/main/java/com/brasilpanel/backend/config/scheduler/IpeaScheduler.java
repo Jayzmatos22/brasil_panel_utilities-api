@@ -23,6 +23,7 @@ import java.util.List;
 public class IpeaScheduler {
 
     private static final List<String> CACHES = List.of(
+            // Geral
             "ipea-emprego",
             "ipea-renda",
             "ipea-desigualdade",
@@ -30,6 +31,7 @@ public class IpeaScheduler {
             "ipea-precos",
             "ipea-populacao",
 
+            // Câmbio Contratado e Taxas de Câmbio
             "ipea-reservas-ativos",
             "ipea-transacoes-correntes",
             "ipea-balanca-comercial",
@@ -40,7 +42,32 @@ public class IpeaScheduler {
             "ipea-conta-financeira",
             "ipea-investimento-carteira",
             "ipea-servicos-despesa",
-            "ipea-investimento-direto-ingressos"
+            "ipea-investimento-direto-ingressos",
+
+            // Exportações (Valores FOB, Índices de Preço e Quantum)
+            "ipea-exportacoes-total",
+            "ipea-exportacoes-quantum",
+            "ipea-exportacoes-produtos-basicos",
+            "ipea-exportacoes-agricultura-pecuaria-quantum",
+            "ipea-exportacoes-bens-consumo",
+            "ipea-exportacoes-precos-bens-capital",
+            "ipea-exportacoes-precos-bens-duraveis",
+            "ipea-exportacoes-precos-bens-nao-duraveis",
+            "ipea-exportacoes-valor-bens-intermediarios",
+            "ipea-exportacoes-quantum-bens-intermediarios",
+            "ipea-exportacoes-valor-combustiveis",
+
+            // Mercado
+            "ipea-ibovespa-fechamento",
+
+
+            // IMPOSTOS
+            "ipea-imposto-ii",
+            "ipea-imposto-irpf",
+            "ipea-imposto-irpj",
+            "ipea-imposto-ir-total",
+            "ipea-imposto-iof",
+            "ipea-imposto-ipi"
     );
 
     private final IpeaService ipeaService;
