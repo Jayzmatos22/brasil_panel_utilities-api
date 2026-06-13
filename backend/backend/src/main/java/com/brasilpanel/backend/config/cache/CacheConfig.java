@@ -41,6 +41,8 @@ public class CacheConfig {
                 build("ipea-macro",              24,  TimeUnit.HOURS,   10),
                 build("ipea-precos",             24,  TimeUnit.HOURS,   10),
                 build("ipea-populacao",          24,  TimeUnit.HOURS,   10),
+
+                // Câmbio Contratado e Taxas de Câmbio
                 build("ipea-reservas-ativos",    24, TimeUnit.HOURS, 10),
                 build("ipea-transacoes-correntes", 24, TimeUnit.HOURS, 10),
                 build("ipea-balanca-comercial", 24, TimeUnit.HOURS, 10),
@@ -52,6 +54,32 @@ public class CacheConfig {
                 build("ipea-investimento-carteira", 24, TimeUnit.HOURS, 10),
                 build("ipea-servicos-despesa", 24, TimeUnit.HOURS, 10),
                 build("ipea-investimento-direto-ingressos", 24, TimeUnit.HOURS, 10),
+
+                // Exportações (Totais, Básicos e Grandes Categorias Econômicas)
+                build("ipea-exportacoes-total", 24, TimeUnit.HOURS, 10),
+                build("ipea-exportacoes-quantum", 24, TimeUnit.HOURS, 10),
+                build("ipea-exportacoes-produtos-basicos", 24, TimeUnit.HOURS, 10),
+                build("ipea-exportacoes-agricultura-pecuaria-quantum", 24, TimeUnit.HOURS, 10),
+                build("ipea-exportacoes-bens-consumo", 24, TimeUnit.HOURS, 10),
+                build("ipea-exportacoes-precos-bens-capital", 24, TimeUnit.HOURS, 10),
+                build("ipea-exportacoes-precos-bens-duraveis", 24, TimeUnit.HOURS, 10),
+                build("ipea-exportacoes-precos-bens-nao-duraveis", 24, TimeUnit.HOURS, 10),
+                build("ipea-exportacoes-valor-bens-intermediarios", 24, TimeUnit.HOURS, 10),
+                build("ipea-exportacoes-quantum-bens-intermediarios", 24, TimeUnit.HOURS, 10),
+                build("ipea-exportacoes-valor-combustiveis", 24, TimeUnit.HOURS, 10),
+
+
+                // Mercado - Ibovespa
+                build("ipea-ibovespa-fechamento", 24, TimeUnit.HOURS, 10),
+
+
+                // Impostos Federais
+                build("ipea-imposto-ii", 24, TimeUnit.HOURS, 10),
+                build("ipea-imposto-irpf", 24, TimeUnit.HOURS, 10),
+                build("ipea-imposto-irpj", 24, TimeUnit.HOURS, 10),
+                build("ipea-imposto-ir-total", 24, TimeUnit.HOURS, 10),
+                build("ipea-imposto-iof", 24, TimeUnit.HOURS, 10),
+                build("ipea-imposto-ipi", 24, TimeUnit.HOURS, 10),
 
                 // ── World Bank ───────────────────────────────────────────────────
                 // PIB atualizado anualmente; 24h evita chamadas repetidas
