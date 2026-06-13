@@ -64,19 +64,40 @@ public class FinancialDataService {
         try {
             FinancialSeries series = findSeries(seriesCode, source);
 
-            if (dataPointRepository.existsBySeriesAndReferenceDate(series, date)) {
-                log.debug("Ponto já existe: série={} data={}", seriesCode, date);
+            // 1. Busca o ponto exato no banco pela série e data
+            Optional<FinancialDataPoint> existingPoint = dataPointRepository.findBySeriesAndReferenceDate(series, date);
+
+            if (existingPoint.isPresent()) {
+                FinancialDataPoint point = existingPoint.get();
+
+                // 2. Se o valor for diferente, fazemos o UPDATE
+                if (point.getValue().doubleValue() != value) {
+                    point.setValue(BigDecimal.valueOf(value));
+
+                    if (secondaryValue != null) {
+                        point.setSecondaryValue(BigDecimal.valueOf(secondaryValue));
+                    } else {
+                        point.setSecondaryValue(null);
+                    }
+
+                    dataPointRepository.save(point);
+                    log.debug("Ponto atualizado: série={} data={} novo_valor={}", seriesCode, date, value);
+                } else {
+                    // 3. Se for exatamente o mesmo valor, ignoramos para poupar o banco
+                    log.debug("Ponto ignorado (já existe com o mesmo valor): série={} data={}", seriesCode, date);
+                }
                 return;
             }
 
-            FinancialDataPoint point = FinancialDataPoint.builder()
+            // 4. Se não existe registro para esta data, fazemos o INSERT
+            FinancialDataPoint newPoint = FinancialDataPoint.builder()
                     .series(series)
                     .referenceDate(date)
                     .value(BigDecimal.valueOf(value))
                     .secondaryValue(secondaryValue != null ? BigDecimal.valueOf(secondaryValue) : null)
                     .build();
 
-            dataPointRepository.save(point);
+            dataPointRepository.save(newPoint);
             log.debug("Ponto salvo: série={} data={} valor={}", seriesCode, date, value);
 
         } catch (Exception e) {
