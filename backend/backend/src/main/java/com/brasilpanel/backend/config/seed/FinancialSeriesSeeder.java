@@ -246,6 +246,156 @@ public class FinancialSeriesSeeder implements ApplicationRunner {
                 .name("Investimento Direto no País - Ingressos")
                 .unit("US$ milhões")
                 .description("Ingressos de investimento direto no país")
+                .build(),
+
+        // EXPORTAÇÕES
+
+        FinancialSeries.builder()
+                .code("FUNCEX12_XVTXGCE12")
+                .source("IPEA")
+                .name("Exportações Totais (FOB)")
+                .unit("US$ (milhões)")
+                .description("Exportações - total (FOB)")
+                .build(),
+
+        FinancialSeries.builder()
+                .code("FUNCEX12_XQT12")
+                .source("IPEA")
+                .name("Índice de Quantum das Exportações")
+                .unit("US$ (milhões)")
+                .description("Índice de quantum das exportações: total geral")
+                .build(),
+
+        FinancialSeries.builder()
+                .code("FUNCEX12_XVB12")
+                .source("IPEA")
+                .name("Exportações de Produtos Básicos (FOB)")
+                .unit("US$ (milhões)")
+                .description("Valor FOB das exportações por classe de produto: produtos básicos")
+                .build(),
+
+        FinancialSeries.builder()
+                .code("FUNCEX12_XQAGP2N12")
+                .source("IPEA")
+                .name("Índice de Quantum - Agricultura e Pecuária")
+                .unit("US$ (milhões)")
+                .description("Exportações - agricultura e pecuária - quantum: índice")
+                .build(),
+
+        FinancialSeries.builder()
+                .code("SECEX12_XBENCONGCE12")
+                .source("IPEA")
+                .name("Exportações de Bens de Consumo (FOB)")
+                .unit("US$ (milhões)")
+                .description("Exportações - grandes categorias econômicas - bens de consumo - (FOB)")
+                .build(),
+
+        FinancialSeries.builder()
+                .code("FUNCEX12_XPBKGCE12")
+                .source("IPEA")
+                .name("Índice de Preços - Bens de Capital")
+                .unit("US$ (milhões)")
+                .description("Índice de preços das exportações - grandes categorias econômicas - bens de capital")
+                .build(),
+
+        FinancialSeries.builder()
+                .code("FUNCEX12_XPBCDGCE12")
+                .source("IPEA")
+                .name("Índice de Preços - Bens Duráveis")
+                .unit("US$ (milhões)")
+                .description("Índice de preços das exportações - grandes categorias econômicas - bens de consumo duráveis")
+                .build(),
+
+        FinancialSeries.builder()
+                .code("FUNCEX12_XPBCNDGCE12")
+                .source("IPEA")
+                .name("Índice de Preços - Bens Não Duráveis")
+                .unit("US$ (milhões)")
+                .description("Índice de preços das exportações - grandes categorias econômicas - bens de consumo não duráveis")
+                .build(),
+
+        FinancialSeries.builder()
+                .code("FUNCEX12_XVBIGCE12")
+                .source("IPEA")
+                .name("Valor FOB - Bens Intermediários")
+                .unit("US$ (milhões)")
+                .description("Valor FOB das exportações - grandes categorias econômicas - bens de consumo intermediários")
+                .build(),
+
+        FinancialSeries.builder()
+                .code("FUNCEX12_XQBIGCE12")
+                .source("IPEA")
+                .name("Índice de Quantum - Bens Intermediários")
+                .unit("US$ (milhões)")
+                .description("Índice de quantum das exportações - grandes categorias econômicas - bens intermediários")
+                .build(),
+
+        FinancialSeries.builder()
+                .code("FUNCEX12_XVCOMBGCE12")
+                .source("IPEA")
+                .name("Valor FOB - Combustíveis")
+                .unit("US$ (milhões)")
+                .description("Valor FOB das exportações - grandes categorias econômicas - combustíveis")
+                .build(),
+
+
+            // Mercado
+        FinancialSeries.builder()
+                .code("GM366_IBVSP366")
+                .source("IPEA")
+                .name("Ibovespa - Fechamento")
+                .unit("Pontos")
+                .description("Índice de ações: Ibovespa - fechamento diário")
+                .build(),
+
+
+        // IMPOSTOS
+        FinancialSeries.builder()
+                .code("SRF12_II12")
+                .source("IPEA")
+                .name("Imposto sobre a Importação (II)")
+                .unit("R$ Milhões")
+                .description("Imposto sobre a importação - total - receita bruta")
+                .build(),
+
+        FinancialSeries.builder()
+                .code("SRF12_IRPF12")
+                .source("IPEA")
+                .name("IRPF - Receita Bruta")
+                .unit("R$ Milhões")
+                .description("Imposto sobre a renda (IR) - pessoas físicas - total")
+                .build(),
+
+        FinancialSeries.builder()
+                .code("SRF12_IRPJ12")
+                .source("IPEA")
+                .name("IRPJ - Receita Bruta")
+                .unit("R$ Milhões")
+                .description("Imposto sobre a renda (IR) - pessoas jurídicas - total")
+                .build(),
+
+        FinancialSeries.builder()
+                .code("SRF12_IR12")
+                .source("IPEA")
+                .name("Imposto de Renda Total")
+                .unit("R$ Milhões")
+                .description("Imposto sobre a renda (IR) - total - receita bruta")
+                .build(),
+
+        FinancialSeries.builder()
+                .code("SRF12_IOF12")
+                .source("IPEA")
+                .name("IOF - Receita Bruta")
+                .unit("R$ Milhões")
+                .description("Imposto sobre operações financeiras (IOF) - total")
+                .build(),
+
+        FinancialSeries.builder()
+                .code("SRF12_IPI12")
+                .source("IPEA")
+                .name("IPI - Receita Bruta")
+                .unit("R$ Milhões")
+                .description("Imposto sobre produtos industrializados (IPI) - total")
                 .build()
     );
 
