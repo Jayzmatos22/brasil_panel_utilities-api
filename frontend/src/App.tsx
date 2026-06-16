@@ -1,5 +1,6 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'; // Adicionado useLocation
 import { Toaster } from 'react-hot-toast';
+import SettingsAuthPage from './pages/auth/SettingsAuthPage';
 
 // Layouts
 import HeaderApp from './components/Header';
@@ -37,6 +38,8 @@ import BancosPage from './pages/dashboard/brasil/BancosPage';
 // Dashboard — Admin
 import AdminUsersPage from './pages/dashboard/admin/AdminUsersPage';
 
+import { AnimatePresence } from 'motion/react';
+
 import './App.css';
 
 // ─── Onboarding layout (header + fundo) ──────────────────────────────────────
@@ -54,7 +57,52 @@ function OnboardingLayout() {
   );
 }
 
-// ─── Root ────────────────────────────────────────────────────────────────────
+// ─── Componente de Rotas Animadas ────────────────────────────────────────────
+function AppRoutes() {
+  const location = useLocation(); // Captura a URL atual para o Framer Motion saber quando mudou
+
+  return (
+    // mode="wait" garante que a página antiga suma completamente antes da nova entrar
+    <AnimatePresence mode="wait">
+      {/* Passar location e key é obrigatório para o AnimatePresence funcionar */}
+      <Routes location={location} key={location.pathname}>
+
+        {/* ── Dashboard (requer autenticação) ── */}
+        <Route element={<PrivateRoute />}>
+          <Route path="/dashboard" element={<DashboardLayout />}>
+            <Route path="economia"         element={<EconomiaPage />} />
+            <Route path="economia/salario" element={<SalarioPage />} />
+            <Route path="economia/pib"     element={<PibPage />} />
+            <Route path="mercado/acoes"     element={<AcoesPage />} />
+            <Route path="mercado/metais"   element={<MetaisPage />} />
+            <Route path="moedas/cambio"    element={<CambioPage />} />
+            <Route path="moedas/cripto"    element={<CriptoPage />} />
+            <Route path="brasil/ibge"      element={<IbgePage />} />
+            <Route path="brasil/ipea"      element={<IpeaPage />} />
+            <Route path="brasil/bancos"    element={<BancosPage />} />
+            <Route path="settings"         element={<SettingsAuthPage />} />
+
+            <Route element={<AdminRoute />}>
+              <Route path="admin/usuarios" element={<AdminUsersPage />} />
+            </Route>
+          </Route>
+        </Route>
+
+        {/* ── Auth — split-screen standalone ── */}
+        <Route path="/"                 element={<RegisterPage />} />
+        <Route path="/registro-usuario" element={<RegisterPage />} />
+        <Route path="/login-usuario"    element={<LoginPage />} />
+        <Route path="/verificar-email"  element={<VerifyEmailPage />} />
+
+        {/* ── Onboarding (com header Brasil Panel) ── */}
+        <Route path="/*" element={<OnboardingLayout />} />
+
+      </Routes>
+    </AnimatePresence>
+  );
+}
+
+// ─── Root (Inalterado, apenas chama o AppRoutes) ─────────────────────────────
 export default function App() {
   return (
     <BrowserRouter>
@@ -72,40 +120,9 @@ export default function App() {
           success: { duration: 4000 },
         }}
       />
-
-      <Routes>
-
-        {/* ── Dashboard (requer autenticação) ── */}
-        <Route element={<PrivateRoute />}>
-          <Route path="/dashboard" element={<DashboardLayout />}>
-            <Route path="economia"         element={<EconomiaPage />} />
-            <Route path="economia/salario" element={<SalarioPage />} />
-            <Route path="economia/pib"     element={<PibPage />} />
-            <Route path="mercado/acoes"    element={<AcoesPage />} />
-            <Route path="mercado/metais"   element={<MetaisPage />} />
-            <Route path="moedas/cambio"    element={<CambioPage />} />
-            <Route path="moedas/cripto"    element={<CriptoPage />} />
-            <Route path="brasil/ibge"      element={<IbgePage />} />
-            <Route path="brasil/ipea"      element={<IpeaPage />} />
-            <Route path="brasil/bancos"    element={<BancosPage />} />
-
-            {/* ── Rotas admin — dupla proteção: PrivateRoute + AdminRoute ── */}
-            <Route element={<AdminRoute />}>
-              <Route path="admin/usuarios" element={<AdminUsersPage />} />
-            </Route>
-          </Route>
-        </Route>
-
-        {/* ── Auth — split-screen standalone ── */}
-        <Route path="/"                 element={<RegisterPage />} />
-        <Route path="/registro-usuario" element={<RegisterPage />} />
-        <Route path="/login-usuario"    element={<LoginPage />} />
-        <Route path="/verificar-email"  element={<VerifyEmailPage />} />
-
-        {/* ── Onboarding (com header Brasil Panel) ── */}
-        <Route path="/*" element={<OnboardingLayout />} />
-
-      </Routes>
+      
+      {/* Renderiza as rotas controladas pelo Router */}
+      <AppRoutes /> 
     </BrowserRouter>
   );
 }
