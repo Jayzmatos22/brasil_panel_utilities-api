@@ -372,25 +372,39 @@
 }
 
 
-.acoes-card-resultado-busca{
+.acoes-card-resultado-busca {
     background: rgba(225, 143, 2, 0.882);
-    animation: card-acoes 2s linear infinite;
+    animation: card-acoes-glow 3s ease-in-out infinite; /* só glow em todos */
 }
 
-@keyframes card-acoes{
-    0% { transform: translateX(0); filter: drop-shadow(0 0 5px rgb(85, 76, 0)); }
-    50% { transform: translateX(25px); filter: drop-shadow(0 0 5px rgb(19, 13, 0)); }
-    100% { transform: translateX(0px);  }
+@keyframes card-acoes-glow {
+    0%,  100% { filter: drop-shadow(0 0 5px rgb(85, 76, 0)); }
+    50%       { filter: drop-shadow(0 0 12px rgb(180, 140, 0)); }
 }
 
-.acoes-historico-ticker{
+/* translateX só em telas >= 1024px (lg) */
+@media (min-width: 1024px) {
+    .acoes-card-resultado-busca {
+        animation: card-acoes 2s linear infinite;
+    }
+
+    @keyframes card-acoes {
+        0%   { transform: translateX(0);    filter: drop-shadow(0 0 5px rgb(85, 76, 0));  }
+        50%  { transform: translateX(25px); filter: drop-shadow(0 0 5px rgb(19, 13, 0));  }
+        100% { transform: translateX(0px); }
+    }
+}
+
+
+.acoes-historico-ticker {
   background: linear-gradient(
-  90deg,
-  rgba(8, 63, 28, 0.1) 0%,
-  rgba(19, 116, 55, 0.25) 35%,
-  rgba(22, 163, 74, 0.12) 70%,
-  rgba(22, 163, 74, 0.04) 100%
-    );
+    90deg,
+    rgba(8, 63, 28, 0.1) 0%,
+    rgba(19, 116, 55, 0.25) 35%,
+    rgba(22, 163, 74, 0.12) 70%,
+    rgba(22, 163, 74, 0.04) 100%
+  );
+  min-height: 320px; /* ← adiciona isso */
 }
 
 .metais-grafico-historico-30{
@@ -404,7 +418,18 @@
 }
 
 .layout-dashboard-aside{
-    background-color: rgba(1, 44, 15, 0.454);
+    background-color: rgba(1, 17, 6, 0.664);
     
 }
+
+
+
+.img-estado{
+    object-fit: cover;
+    object-position: center;
+    transition: transform 0.7s ease, filter 0.5s ease;
+    animation: pulse-color 7s linear infinite;
+
+}
+
 
