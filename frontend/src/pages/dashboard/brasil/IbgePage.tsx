@@ -10,6 +10,20 @@ import { useStates, useCitiesByState, useStatesRanking } from '../../../hooks/Us
 import { BarChartEcharts } from '../../../components/charts/BarChartEcharts';
 import { container, item } from '../../../lib/motion/presets';
 
+// ============================================================================
+// 1. IMPORTAÇÃO DINÂMICA DE IMAGENS
+// ============================================================================
+const IBGE_IMAGES = import.meta.glob('../../../assets/ibge/*.{jpeg,jpg,png,webp,avif}', { 
+  eager: true, 
+  import: 'default' 
+}) as Record<string, string>;
+
+// Função para buscar imagens específicas por palavra-chave no nome do arquivo
+function findIbgeImage(term: string): string | undefined {
+  const match = Object.entries(IBGE_IMAGES).find(([path]) => path.toLowerCase().includes(term));
+  return match?.[1];
+}
+
 export default function IbgePage() {
   const [selectedState, setSelectedState] = useState('');
   const [filtro,        setFiltro]        = useState('');
@@ -21,11 +35,44 @@ export default function IbgePage() {
   const selectClass =
     'h-10 px-3 rounded-md bg-slate-800 text-white border border-slate-600 outline-none focus:ring-2 focus:ring-yellow-500 transition-all text-sm';
 
-  return (
-    <motion.div className="flex flex-col gap-6" variants={container} initial="hidden" animate="show">
-      <motion.h1 variants={item} className="text-2xl font-bold text-green-500">IBGE — Estados e Municípios</motion.h1>
+  // Busca a imagem estado-img dinamicamente
+  const bannerImage = findIbgeImage('estado-img') || Object.values(IBGE_IMAGES)[0];
 
-      {/* Ranking de estados por nº de municípios */}
+  return (
+    <motion.div 
+      className="flex flex-col gap-6 estado-img" 
+      variants={container} 
+      initial="hidden" 
+      animate="show"
+      exit="exit"
+    >
+      <motion.h1 variants={item} className="text-2xl font-bold text-green-500">
+        IBGE — Estados e Municípios
+      </motion.h1>
+
+      {/* ── Imagem de Banner Animada ── */}
+      {bannerImage && (
+        <motion.div variants={item} className="w-full h-48 md:h-64 rounded-xl overflow-hidden border border-slate-700 shadow-lg relative">
+          <motion.img 
+            src={bannerImage} 
+            alt="Estados e Municípios" 
+            className="absolute inset-0 w-full h-full object-cover opacity-80 scale-110" 
+            animate={{ 
+              x: ["-2%", "2%"], 
+              y: ["-1%", "1%"]  
+            }}
+            transition={{
+              repeat: Infinity,       
+              repeatType: "reverse",  
+              duration: 25,           
+              ease: "linear"          
+            }}
+          />
+          <div className="absolute inset-0 bg-linear-to-t from-slate-900/60 to-transparent pointer-events-none" />
+        </motion.div>
+      )}
+
+      {/* ── Ranking de estados por nº de municípios ── */}
       <motion.div variants={item} whileHover={{ y: -4 }} className="bg-slate-900 border border-slate-700 rounded-xl p-5 flex flex-col gap-4">
         <div className="flex items-center gap-2">
           <span className="text-yellow-500"><BarChart3 size={15} /></span>
@@ -50,7 +97,7 @@ export default function IbgePage() {
         )}
       </motion.div>
 
-      {/* Controles */}
+      {/* ── Controles ── */}
       <motion.div variants={item} className="flex items-end gap-3 flex-wrap">
         <div className="flex flex-col gap-1">
           <label className="text-slate-400 text-xs">Estado</label>
@@ -89,7 +136,7 @@ export default function IbgePage() {
         )}
       </motion.div>
 
-      {/* Resumo do estado selecionado */}
+      {/* ── Resumo do estado selecionado ── */}
       {selectedState && states && (
         <motion.div variants={item} whileHover={{ y: -4 }} className="bg-slate-900 border border-slate-700 rounded-xl p-4 max-w-sm">
           {(() => {
@@ -106,7 +153,7 @@ export default function IbgePage() {
         </motion.div>
       )}
 
-      {/* Lista de municípios */}
+      {/* ── Lista de municípios ── */}
       {selectedState && (
         <motion.div variants={item} whileHover={{ y: -4 }} className="bg-slate-900 border border-slate-700 rounded-xl p-5">
           <h2 className="text-yellow-500 font-semibold text-sm uppercase tracking-wider mb-4">Municípios</h2>
