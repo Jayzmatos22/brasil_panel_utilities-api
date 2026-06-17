@@ -78,16 +78,21 @@ export default function PibPage() {
   const { data: pibEstados, isLoading: isEstadosLoading,    error: estadosError    } = usePibPorEstado();
 
   const stats = useMemo(() => {
-    if (!series || series.length < 2) return null;
-    const points = [...series]
-      .map((p) => ({ date: p.year, value: p.value }))
-      .sort((a, b) => a.date.localeCompare(b.date));
+  if (!series || series.length < 2) return null;
+  const points = [...series]
+    .map((p) => ({ date: String(p.year), value: Number(p.value) }))
+    .filter((p) => p.value > 0 && parseInt(p.date) >= 1995)
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+    if (points.length < 2) return null;
+
     const first = points[0];
     const last = points[points.length - 1];
     const change = last.value - first.value;
-    const pct = first.value !== 0 ? (change / first.value) * 100 : 0;
+    const pct = (change / first.value) * 100;  // first.value > 0 garantido agora
     return { points, first, last, change, pct };
   }, [series]);
+  
 
   // 3. ARRAY DE CONFIGURAÇÃO PARA OS BLOCOS DE ESTATÍSTICA (Data-Driven)
   const statBlocks = useMemo(() => {
