@@ -396,6 +396,14 @@ public class FinancialSeriesSeeder implements ApplicationRunner {
                 .name("IPI - Receita Bruta")
                 .unit("R$ Milhões")
                 .description("Imposto sobre produtos industrializados (IPI) - total")
+                .build(),
+
+        FinancialSeries.builder()
+                .code("BPAG12_TCPIB12")
+                .source("IPEA")
+                .name("Transações correntes - % PIB")
+                .unit("% PIB")
+                .description("Resultado das Transações Correntes em relação ao PIB")
                 .build()
     );
 
