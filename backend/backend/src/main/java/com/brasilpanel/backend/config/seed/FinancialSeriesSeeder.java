@@ -404,6 +404,70 @@ public class FinancialSeriesSeeder implements ApplicationRunner {
                 .name("Transações correntes - % PIB")
                 .unit("% PIB")
                 .description("Resultado das Transações Correntes em relação ao PIB")
+                .build(),
+
+
+        // Câmbio contratado - comercial
+        FinancialSeries.builder()
+                .code("BM12_SBCCC12")
+                .source("IPEA")
+                .name("Câmbio contratado - comercial")
+                .unit("US$ (milhões)")
+                .description("Resultado líquido de contratações de câmbio comercial de exportação e de importação")
+                .build(),
+
+        // Câmbio contratado - comercial - exportação
+        FinancialSeries.builder()
+                .code("BM12_XCC12")
+                .source("IPEA")
+                .name("Câmbio contratado - comercial - exportação")
+                .unit("US$ (milhões)")
+                .description("Contratações de compra de moeda estrangeira relativas a exportação de bens")
+                .build(),
+
+        // Câmbio contratado - comercial - importação
+        FinancialSeries.builder()
+                .code("BM12_MCC12")
+                .source("IPEA")
+                .name("Câmbio contratado - comercial - importação")
+                .unit("US$ (milhões)")
+                .description("Contratações de venda de moeda relativas a importações de bens")
+                .build(),
+
+        // Câmbio contratado - comercial e financeiro
+        FinancialSeries.builder()
+                .code("BM12_SGCC12")
+                .source("IPEA")
+                .name("Câmbio contratado - comercial e financeiro")
+                .unit("US$ (milhões)")
+                .description("Soma dos resultados líquidos de câmbio contratado com clientes no país e com instituições no exterior")
+                .build(),
+
+        // Câmbio contratado - financeiro
+        FinancialSeries.builder()
+                .code("BM12_SFCC12")
+                .source("IPEA")
+                .name("Câmbio contratado - financeiro")
+                .unit("US$ (milhões)")
+                .description("Resultado líquido de contratações de câmbio financeiro de compra e venda")
+                .build(),
+
+        // Câmbio contratado - financeiro - compra
+        FinancialSeries.builder()
+                .code("BM12_CFCC12")
+                .source("IPEA")
+                .name("Câmbio contratado - financeiro - compra")
+                .unit("US$ (milhões)")
+                .description("Contratações de compra de moeda estrangeira relativas a exportação de serviços e ingressos de capitais estrangeiros")
+                .build(),
+
+        // Câmbio contratado - financeiro - venda
+        FinancialSeries.builder()
+                .code("BM12_VFCC12")
+                .source("IPEA")
+                .name("Câmbio contratado - financeiro - venda")
+                .unit("US$ (milhões)")
+                .description("Contratações de venda de moeda estrangeira relativas a importação de serviços e ingressos de capitais estrangeiros")
                 .build()
     );
 
