@@ -20,6 +20,10 @@ import java.util.List;
 public class IpeaController {
     private final IpeaService ipeaService;
 
+    // ==========================================
+    // ECONOMIA GERAL
+    // ==========================================
+
     @Operation(summary = "Emprego", description = "Taxa de desocupação e nível de ocupação — PNAD Contínua mensal")
     @ApiResponse(responseCode = "200", description = "Séries retornadas com sucesso")
     @ApiResponse(responseCode = "502", description = "Erro na comunicação com IPEA")
@@ -70,7 +74,9 @@ public class IpeaController {
 
 
 
+    // ==========================================
     // Balança de pagamentos
+    // ==========================================
 
     @Operation(summary = "Ativos de Reserva", description = "Ativos de reserva compreendem as operações com os ativos " +
             "externos que estão à disposição imediata e sob controle da autoridade monetária para satisfazer suas necessidades " +
@@ -89,7 +95,7 @@ public class IpeaController {
     )
     @ApiResponse(responseCode = "200", description = "Séries retornadas com sucesso")
     @ApiResponse(responseCode = "502", description = "Erro na comunicação com IPEA")
-    @GetMapping("/balanca/transacoes-correntes")
+    @GetMapping("/balanca/transacoes-correntes-pib")
     ResponseEntity<List<IpeaSerieDTO>> getTransacoesCorrentes() {
         return ResponseEntity.ok(ipeaService.getCurrentTransactionsBalance());
     }
@@ -214,8 +220,9 @@ public class IpeaController {
     }
 
 
-
+    // ==========================================
     // Exportações
+    // ==========================================
     @Operation(
             summary = "Exportações Totais (FOB)",
             description = "Valor total das exportações brasileiras em base FOB."
@@ -340,8 +347,9 @@ public class IpeaController {
         return ResponseEntity.ok(ipeaService.getFuelsFobValue());
     }
 
-
+    // ==========================================
     // Brasil - Ibovespa
+    // ==========================================
     @Operation(
             summary = "Ibovespa - Fechamento",
             description = "Índice da Bolsa de Valores de São Paulo (IBOVESPA) - fechamento diário."
@@ -355,8 +363,9 @@ public class IpeaController {
 
 
 
-
-    // IMPOSTOS
+    // ==========================================
+    // IMPOSTOS -  VÁRIOS
+    // ==========================================
     @Operation(
             summary = "Imposto sobre a Importação (II)",
             description = "Total da receita bruta de arrecadação do Imposto sobre a Importação."
@@ -421,6 +430,88 @@ public class IpeaController {
     @GetMapping("/impostos/ipi")
     public ResponseEntity<List<IpeaSerieDTO>> getIpiTax() {
         return ResponseEntity.ok(ipeaService.getIpiTax());
+    }
+
+
+
+    // ==========================================
+    // CÂMBIO CONTRATADO
+    // ==========================================
+    @Operation(
+            summary = "Câmbio Contratado - Comercial",
+            description = "Resultado líquido de contratações de câmbio comercial de exportação e de importação."
+    )
+    @ApiResponse(responseCode = "200", description = "Série retornada com sucesso")
+    @ApiResponse(responseCode = "502", description = "Erro na comunicação com IPEA")
+    @GetMapping("/cambio/comercial")
+    public ResponseEntity<List<IpeaSerieDTO>> getContractedExchangeCommercial() {
+        return ResponseEntity.ok(ipeaService.getContractedExchangeCommercial());
+    }
+
+    @Operation(
+            summary = "Câmbio Contratado - Comercial (Exportação)",
+            description = "Contratações de compra de moeda estrangeira relativas a exportação de bens."
+    )
+    @ApiResponse(responseCode = "200", description = "Série retornada com sucesso")
+    @ApiResponse(responseCode = "502", description = "Erro na comunicação com IPEA")
+    @GetMapping("/cambio/comercial/exportacao")
+    public ResponseEntity<List<IpeaSerieDTO>> getContractedExchangeCommercialExports() {
+        return ResponseEntity.ok(ipeaService.getContractedExchangeCommercialExports());
+    }
+
+    @Operation(
+            summary = "Câmbio Contratado - Comercial (Importação)",
+            description = "Contratações de venda de moeda relativas a importações de bens."
+    )
+    @ApiResponse(responseCode = "200", description = "Série retornada com sucesso")
+    @ApiResponse(responseCode = "502", description = "Erro na comunicação com IPEA")
+    @GetMapping("/cambio/comercial/importacao")
+    public ResponseEntity<List<IpeaSerieDTO>> getContractedExchangeCommercialImports() {
+        return ResponseEntity.ok(ipeaService.getContractedExchangeCommercialImports());
+    }
+
+    @Operation(
+            summary = "Câmbio Contratado - Comercial e Financeiro",
+            description = "Soma dos resultados líquidos de câmbio contratado com clientes no país e com instituições no exterior."
+    )
+    @ApiResponse(responseCode = "200", description = "Série retornada com sucesso")
+    @ApiResponse(responseCode = "502", description = "Erro na comunicação com IPEA")
+    @GetMapping("/cambio/comercial-financeiro")
+    public ResponseEntity<List<IpeaSerieDTO>> getContractedExchangeTotal() {
+        return ResponseEntity.ok(ipeaService.getContractedExchangeTotal());
+    }
+
+    @Operation(
+            summary = "Câmbio Contratado - Financeiro",
+            description = "Resultado líquido de contratações de câmbio financeiro de compra e venda. Não inclui operações junto ao BCB."
+    )
+    @ApiResponse(responseCode = "200", description = "Série retornada com sucesso")
+    @ApiResponse(responseCode = "502", description = "Erro na comunicação com IPEA")
+    @GetMapping("/cambio/financeiro")
+    public ResponseEntity<List<IpeaSerieDTO>> getContractedExchangeFinancial() {
+        return ResponseEntity.ok(ipeaService.getContractedExchangeFinancial());
+    }
+
+    @Operation(
+            summary = "Câmbio Contratado - Financeiro (Compra)",
+            description = "Contratações de compra de moeda estrangeira relativas a exportação de serviços e ingressos/retorno de capitais."
+    )
+    @ApiResponse(responseCode = "200", description = "Série retornada com sucesso")
+    @ApiResponse(responseCode = "502", description = "Erro na comunicação com IPEA")
+    @GetMapping("/cambio/financeiro/compra")
+    public ResponseEntity<List<IpeaSerieDTO>> getContractedExchangeFinancialPurchases() {
+        return ResponseEntity.ok(ipeaService.getContractedExchangeFinancialPurchases());
+    }
+
+    @Operation(
+            summary = "Câmbio Contratado - Financeiro (Venda)",
+            description = "Contratações de venda de moeda estrangeira relativas a importação de serviços e ingressos/retorno de capitais."
+    )
+    @ApiResponse(responseCode = "200", description = "Série retornada com sucesso")
+    @ApiResponse(responseCode = "502", description = "Erro na comunicação com IPEA")
+    @GetMapping("/cambio/financeiro/venda")
+    public ResponseEntity<List<IpeaSerieDTO>> getContractedExchangeFinancialSales() {
+        return ResponseEntity.ok(ipeaService.getContractedExchangeFinancialSales());
     }
 
 }
