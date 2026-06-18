@@ -54,6 +54,8 @@ public class CacheConfig {
                 build("ipea-investimento-carteira", 24, TimeUnit.HOURS, 10),
                 build("ipea-servicos-despesa", 24, TimeUnit.HOURS, 10),
                 build("ipea-investimento-direto-ingressos", 24, TimeUnit.HOURS, 10),
+                build("ipea-balanca-transacoes-correntes-pib",24, TimeUnit.HOURS, 10),
+
 
                 // Exportações (Totais, Básicos e Grandes Categorias Econômicas)
                 build("ipea-exportacoes-total", 24, TimeUnit.HOURS, 10),
