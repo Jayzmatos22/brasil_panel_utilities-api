@@ -66,6 +66,9 @@ export const ipeaService = {
   getInvestimentoDiretoIngressos: () =>
     apiClient.get<IpeaSerie[]>('/ipea/balanca/investimento-direto-ingressos').then((res) => res.data),
 
+  getTransacoesCorrentesPib: () =>
+  apiClient.get<IpeaSerie[]>('/ipea/balanca/transacoes-correntes-pib').then((res) => res.data),
+
 
 
 
