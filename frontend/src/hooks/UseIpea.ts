@@ -318,4 +318,66 @@ export function useIpiTax() {
 
 
 
+// ==========================================
+// HOOKS: CÂMBIO CONTRATADO
+// ==========================================
+
+export function useContractedExchangeCommercial() {
+  return useQuery({
+    queryKey: ['ipea', 'cambio', 'comercial'],
+    queryFn: ipeaService.getContractedExchangeCommercial,
+    ...HISTORICAL,
+  });
+}
+
+export function useContractedExchangeCommercialExports() {
+  return useQuery({
+    queryKey: ['ipea', 'cambio', 'comercial', 'exportacao'],
+    queryFn: ipeaService.getContractedExchangeCommercialExports,
+    ...HISTORICAL,
+  });
+}
+
+export function useContractedExchangeCommercialImports() {
+  return useQuery({
+    queryKey: ['ipea', 'cambio', 'comercial', 'importacao'],
+    queryFn: ipeaService.getContractedExchangeCommercialImports,
+    ...HISTORICAL,
+  });
+}
+
+export function useContractedExchangeTotal() {
+  return useQuery({
+    queryKey: ['ipea', 'cambio', 'comercial-financeiro'],
+    queryFn: ipeaService.getContractedExchangeTotal,
+    ...HISTORICAL,
+  });
+}
+
+export function useContractedExchangeFinancial() {
+  return useQuery({
+    queryKey: ['ipea', 'cambio', 'financeiro'],
+    queryFn: ipeaService.getContractedExchangeFinancial,
+    ...HISTORICAL,
+  });
+}
+
+export function useContractedExchangeFinancialPurchases() {
+  return useQuery({
+    queryKey: ['ipea', 'cambio', 'financeiro', 'compra'],
+    queryFn: ipeaService.getContractedExchangeFinancialPurchases,
+    ...HISTORICAL,
+  });
+}
+
+export function useContractedExchangeFinancialSales() {
+  return useQuery({
+    queryKey: ['ipea', 'cambio', 'financeiro', 'venda'],
+    queryFn: ipeaService.getContractedExchangeFinancialSales,
+    ...HISTORICAL,
+  });
+}
+
+
+
 
