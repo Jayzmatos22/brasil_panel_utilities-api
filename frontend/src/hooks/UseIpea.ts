@@ -157,6 +157,15 @@ export function useInvestimentoDiretoIngressos() {
 }
 
 
+export function useTransacoesCorrentesPib() {
+  return useQuery({
+    queryKey: ['ipea', 'balanca', 'transacoes-correntes'],
+    queryFn: ipeaService.getTransacoesCorrentes,
+    ...HISTORICAL,
+  });
+}
+
+
 
 
 // ==========================================
@@ -305,5 +314,8 @@ export function useIpiTax() {
     ...HISTORICAL,
   });
 }
+
+
+
 
 
