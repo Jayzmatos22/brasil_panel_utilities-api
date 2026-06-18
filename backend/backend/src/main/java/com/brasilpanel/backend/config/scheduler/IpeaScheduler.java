@@ -31,7 +31,7 @@ public class IpeaScheduler {
             "ipea-precos",
             "ipea-populacao",
 
-            // Câmbio Contratado e Taxas de Câmbio
+            // Balanço de pagamentos
             "ipea-reservas-ativos",
             "ipea-transacoes-correntes",
             "ipea-balanca-comercial",
@@ -43,6 +43,7 @@ public class IpeaScheduler {
             "ipea-investimento-carteira",
             "ipea-servicos-despesa",
             "ipea-investimento-direto-ingressos",
+            "ipea-balanca-transacoes-correntes-pib",
 
             // Exportações (Valores FOB, Índices de Preço e Quantum)
             "ipea-exportacoes-total",
