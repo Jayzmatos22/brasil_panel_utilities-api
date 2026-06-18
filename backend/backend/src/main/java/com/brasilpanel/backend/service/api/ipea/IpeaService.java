@@ -65,7 +65,7 @@ public class IpeaService {
 
     //Ativos de Reserva
     private static final String ATIVOS_RESERVA = "BPAG12_AR12";
-    private static final String TRANSACOES_CORRENTES = "BPAG12_TC12";
+    private static final String TRANSACOES_CORRENTES_SALDO = "BPAG12_TC12";
     private static final String BALANCA_COMERCIAL = "BPAG12_BC12";
     private static final String SERVICOS = "BPAG12_SER12";
     private static final String RENDA_PRIMARIA = "BPAG12_RP12";
@@ -75,6 +75,7 @@ public class IpeaService {
     private static final String INVESTIMENTO_CARTEIRA = "BPAG12_ICAAA12";
     private static final String SERVICOS_DESPESA = "BPAG12_SERD12";
     private static final String INVESTIMENTO_DIRETO_INGRESSOS = "BPAG12_IDPI12";
+    private static final String TRANSACOES_CORRENTES_PIB = "BPAG12_TCPIB12";
 
 
     // --- Comércio Exterior (FUNCEX) ---
@@ -123,15 +124,17 @@ public class IpeaService {
             DESOCUPACAO, OCUPACAO, EXPORTACOES_TOTAL_FOB, INDICE_QUANTUM_EXPORTACOES,
             SALARIO_MINIMO_REAL, SALARIO_MINIMO_PPC, RENDA_PER_CAPITA, AGRICULTURA_E_PECUARIA_QUANTUM,
             GINI, POBREZA,  PIB, INVESTIMENTO, DESEMPREGO_FMI, SELIC, RESERVAS, ARRECADACAO,
-            INPC, IGPM,  POPULACAO, PROJECAO_TOTAL, PROJECAO_HOMENS, PROJECAO_MULHERES, TRANSACOES_CORRENTES,
+            INPC, IGPM,  POPULACAO, PROJECAO_TOTAL, PROJECAO_HOMENS, PROJECAO_MULHERES, TRANSACOES_CORRENTES_SALDO,
             BALANCA_COMERCIAL,  SERVICOS,  RENDA_PRIMARIA, INVESTIMENTO_DIRETO_INGRESSOS,
             INVESTIMENTO_DIRETO,  CONTA_CAPITAL,  CONTA_FINANCEIRA, EXPORTACOES_BENS_CONSUMO,
             ATIVOS_RESERVA, INVESTIMENTO_CARTEIRA, SERVICOS_DESPESA, EXPORTACOES_PRODUTOS_BASICOS,
             INDICE_PRECOS_BENS_CAPITAL, INDICE_PRECOS_BENS_DURAVEIS, INDICE_PRECOS_BENS_NAO_DURAVEIS,
-            VALOR_FOB_BENS_INTERMEDIARIOS, INDICE_QUANTUM_BENS_INTERMEDIARIOS, VALOR_FOB_COMBUSTIVEIS, IBOVESPA_FECHAMENTO
+            VALOR_FOB_BENS_INTERMEDIARIOS, INDICE_QUANTUM_BENS_INTERMEDIARIOS, VALOR_FOB_COMBUSTIVEIS, IBOVESPA_FECHAMENTO,
+            IMPOSTO_II, IMPOSTO_IRPF, IMPOSTO_IRPJ, IMPOSTO_IR_TOTAL, IMPOSTO_IOF, IMPOSTO_IPI
     );
 
 
+    // MACRO ECONOMIA
     @Cacheable("ipea-emprego")
     public List<IpeaSerieDTO> getEmprego() {
         return List.of(
@@ -254,9 +257,9 @@ public class IpeaService {
     }
 
     @Cacheable("ipea-transacoes-correntes")
-    public List<IpeaSerieDTO> getCurrentTransactions() {
+    public List<IpeaSerieDTO> getCurrentTransactionsBalance() {
         return List.of(
-                serie(TRANSACOES_CORRENTES, "Saldo em Transações Correntes")
+                serie(TRANSACOES_CORRENTES_SALDO, "Saldo em Transações Correntes")
         );
     }
 
@@ -324,6 +327,11 @@ public class IpeaService {
                 serie(INVESTIMENTO_DIRETO_INGRESSOS,
                         "Investimento Direto no País - Ingressos")
         );
+    }
+
+    @Cacheable("ipea-balanca-transacoes-correntes-pib")
+    public List<IpeaSerieDTO> getCurrentTransactionsPib() {
+        return List.of(serie(TRANSACOES_CORRENTES_PIB, "Balanço de pagamentos: transações correntes (% PIB)"));
     }
 
 
