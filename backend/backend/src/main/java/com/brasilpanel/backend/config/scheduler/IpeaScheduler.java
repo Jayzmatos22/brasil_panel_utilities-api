@@ -68,7 +68,17 @@ public class IpeaScheduler {
             "ipea-imposto-irpj",
             "ipea-imposto-ir-total",
             "ipea-imposto-iof",
-            "ipea-imposto-ipi"
+            "ipea-imposto-ipi",
+
+
+            // Câmbio Contratado
+            "ipea-cambio-comercial",
+            "ipea-cambio-comercial-exportacao",
+            "ipea-cambio-comercial-importacao",
+            "ipea-cambio-comercial-financeiro",
+            "ipea-cambio-financeiro",
+            "ipea-cambio-financeiro-compra",
+            "ipea-cambio-financeiro-venda"
     );
 
     private final IpeaService ipeaService;

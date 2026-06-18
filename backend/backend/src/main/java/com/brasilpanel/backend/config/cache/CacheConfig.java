@@ -83,6 +83,16 @@ public class CacheConfig {
                 build("ipea-imposto-iof", 24, TimeUnit.HOURS, 10),
                 build("ipea-imposto-ipi", 24, TimeUnit.HOURS, 10),
 
+
+                // Câmbio Contratado
+                build("ipea-cambio-comercial", 24, TimeUnit.HOURS, 10),
+                build("ipea-cambio-comercial-exportacao", 24, TimeUnit.HOURS, 10),
+                build("ipea-cambio-comercial-importacao", 24, TimeUnit.HOURS, 10),
+                build("ipea-cambio-comercial-financeiro", 24, TimeUnit.HOURS, 10),
+                build("ipea-cambio-financeiro", 24, TimeUnit.HOURS, 10),
+                build("ipea-cambio-financeiro-compra", 24, TimeUnit.HOURS, 10),
+                build("ipea-cambio-financeiro-venda", 24, TimeUnit.HOURS, 10),
+
                 // ── World Bank ───────────────────────────────────────────────────
                 // PIB atualizado anualmente; 24h evita chamadas repetidas
                 build("worldbank-pib-current",   24,  TimeUnit.HOURS,    5),
