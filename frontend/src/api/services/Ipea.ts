@@ -130,6 +130,33 @@ export const ipeaService = {
 
   getIpiTax: () =>
     apiClient.get<IpeaSerie[]>('/ipea/impostos/ipi').then((res) => res.data),
+
+
+
+
+  // ==========================================
+  // CÂMBIO CONTRATADO
+  // ==========================================
+  getContractedExchangeCommercial: () =>
+    apiClient.get<IpeaSerie[]>('/ipea/cambio/comercial').then((res) => res.data),
+
+  getContractedExchangeCommercialExports: () =>
+    apiClient.get<IpeaSerie[]>('/ipea/cambio/comercial/exportacao').then((res) => res.data),
+
+  getContractedExchangeCommercialImports: () =>
+    apiClient.get<IpeaSerie[]>('/ipea/cambio/comercial/importacao').then((res) => res.data),
+
+  getContractedExchangeTotal: () =>
+    apiClient.get<IpeaSerie[]>('/ipea/cambio/comercial-financeiro').then((res) => res.data),
+
+  getContractedExchangeFinancial: () =>
+    apiClient.get<IpeaSerie[]>('/ipea/cambio/financeiro').then((res) => res.data),
+
+  getContractedExchangeFinancialPurchases: () =>
+    apiClient.get<IpeaSerie[]>('/ipea/cambio/financeiro/compra').then((res) => res.data),
+
+  getContractedExchangeFinancialSales: () =>
+    apiClient.get<IpeaSerie[]>('/ipea/cambio/financeiro/venda').then((res) => res.data),
 };
 
 
