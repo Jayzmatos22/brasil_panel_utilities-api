@@ -117,6 +117,16 @@ public class IpeaService {
     private static final String IMPOSTO_IPI = "SRF12_IPI12";
 
 
+    // CÂMBIO CONTRATADO
+    private static final String CAMBIO_COMERCIAL = "BM12_SBCCC12";
+    private static final String CAMBIO_COMERCIAL_EXP = "BM12_XCC12";
+    private static final String CAMBIO_COMERCIAL_IMP = "BM12_MCC12";
+    private static final String CAMBIO_COMERCIAL_FINANC = "BM12_SGCC12";
+    private static final String CAMBIO_FINANCEIRO = "BM12_SFCC12";
+    private static final String CAMBIO_FINANCEIRO_COMPRA = "BM12_CFCC12";
+    private static final String CAMBIO_FINANCEIRO_VENDA = "BM12_VFCC12";
+
+
 
 
 
@@ -442,6 +452,44 @@ public class IpeaService {
     @Cacheable("ipea-imposto-ipi")
     public List<IpeaSerieDTO> getIpiTax() {
         return List.of(serie(IMPOSTO_IPI, "Imposto sobre Produtos Industrializados (IPI) - Receita Bruta"));
+    }
+
+
+
+    // Câmbio Contratado
+    @Cacheable("ipea-cambio-comercial")
+    public List<IpeaSerieDTO> getContractedExchangeCommercial() {
+        return List.of(serie(CAMBIO_COMERCIAL, "Câmbio contratado - comercial (US$ milhões)"));
+    }
+
+    @Cacheable("ipea-cambio-comercial-exportacao")
+    public List<IpeaSerieDTO> getContractedExchangeCommercialExports() {
+        return List.of(serie(CAMBIO_COMERCIAL_EXP, "Câmbio contratado - comercial - exportação (US$ milhões)"));
+    }
+
+    @Cacheable("ipea-cambio-comercial-importacao")
+    public List<IpeaSerieDTO> getContractedExchangeCommercialImports() {
+        return List.of(serie(CAMBIO_COMERCIAL_IMP, "Câmbio contratado - comercial - importação (US$ milhões)"));
+    }
+
+    @Cacheable("ipea-cambio-comercial-financeiro")
+    public List<IpeaSerieDTO> getContractedExchangeTotal() {
+        return List.of(serie(CAMBIO_COMERCIAL_FINANC, "Câmbio contratado - comercial e financeiro (US$ milhões)"));
+    }
+
+    @Cacheable("ipea-cambio-financeiro")
+    public List<IpeaSerieDTO> getContractedExchangeFinancial() {
+        return List.of(serie(CAMBIO_FINANCEIRO, "Câmbio contratado - financeiro (US$ milhões)"));
+    }
+
+    @Cacheable("ipea-cambio-financeiro-compra")
+    public List<IpeaSerieDTO> getContractedExchangeFinancialPurchases() {
+        return List.of(serie(CAMBIO_FINANCEIRO_COMPRA, "Câmbio contratado - financeiro - compra (US$ milhões)"));
+    }
+
+    @Cacheable("ipea-cambio-financeiro-venda")
+    public List<IpeaSerieDTO> getContractedExchangeFinancialSales() {
+        return List.of(serie(CAMBIO_FINANCEIRO_VENDA, "Câmbio contratado - financeiro - venda (US$ milhões)"));
     }
 
 
