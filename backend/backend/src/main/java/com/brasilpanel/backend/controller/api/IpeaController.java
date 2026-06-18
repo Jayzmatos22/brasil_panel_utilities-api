@@ -68,12 +68,16 @@ public class IpeaController {
         return ResponseEntity.ok(ipeaService.getPopulacao());
     }
 
+
+
+    // Balança de pagamentos
+
     @Operation(summary = "Ativos de Reserva", description = "Ativos de reserva compreendem as operações com os ativos " +
             "externos que estão à disposição imediata e sob controle da autoridade monetária para satisfazer suas necessidades " +
             "de financiamento de balanço de pagamentos, intervir no mercado de câmbio e outros fins conexos")
     @ApiResponse(responseCode = "200", description = "Séries retornadas com sucesso")
     @ApiResponse(responseCode = "502", description = "Erro na comunicação com IPEA")
-    @GetMapping("/ativos-reservas")
+    @GetMapping("/balanca/ativos-reservas")
     ResponseEntity<List<IpeaSerieDTO>> getAtvosDeReservas(){
         return ResponseEntity.ok(ipeaService.getReserveAssets());
     }
@@ -85,9 +89,9 @@ public class IpeaController {
     )
     @ApiResponse(responseCode = "200", description = "Séries retornadas com sucesso")
     @ApiResponse(responseCode = "502", description = "Erro na comunicação com IPEA")
-    @GetMapping("/transacoes-correntes")
+    @GetMapping("/balanca/transacoes-correntes")
     ResponseEntity<List<IpeaSerieDTO>> getTransacoesCorrentes() {
-        return ResponseEntity.ok(ipeaService.getCurrentTransactions());
+        return ResponseEntity.ok(ipeaService.getCurrentTransactionsBalance());
     }
 
 
@@ -97,7 +101,7 @@ public class IpeaController {
     )
     @ApiResponse(responseCode = "200", description = "Séries retornadas com sucesso")
     @ApiResponse(responseCode = "502", description = "Erro na comunicação com IPEA")
-        @GetMapping("/balanca-comercial")
+    @GetMapping("/balanca/comercial")
     ResponseEntity<List<IpeaSerieDTO>> getBalancaComercial() {
         return ResponseEntity.ok(ipeaService.getTradeBalance());
     }
@@ -109,7 +113,7 @@ public class IpeaController {
     )
     @ApiResponse(responseCode = "200", description = "Séries retornadas com sucesso")
     @ApiResponse(responseCode = "502", description = "Erro na comunicação com IPEA")
-    @GetMapping("/servicos")
+    @GetMapping("/balanca/servicos")
     ResponseEntity<List<IpeaSerieDTO>> getServicos() {
         return ResponseEntity.ok(ipeaService.getServicesBalance());
     }
@@ -121,7 +125,7 @@ public class IpeaController {
     )
     @ApiResponse(responseCode = "200", description = "Séries retornadas com sucesso")
     @ApiResponse(responseCode = "502", description = "Erro na comunicação com IPEA")
-    @GetMapping("/renda-primaria")
+    @GetMapping("/balanca/renda-primaria")
     ResponseEntity<List<IpeaSerieDTO>> getRendaPrimaria() {
         return ResponseEntity.ok(ipeaService.getPrimaryIncome());
     }
@@ -133,7 +137,7 @@ public class IpeaController {
     )
     @ApiResponse(responseCode = "200", description = "Séries retornadas com sucesso")
     @ApiResponse(responseCode = "502", description = "Erro na comunicação com IPEA")
-    @GetMapping("/investimento-direto")
+    @GetMapping("/balanca/investimento-direto")
     ResponseEntity<List<IpeaSerieDTO>> getInvestimentoDireto() {
         return ResponseEntity.ok(ipeaService.getDirectInvestment());
     }
@@ -145,7 +149,7 @@ public class IpeaController {
     )
     @ApiResponse(responseCode = "200", description = "Séries retornadas com sucesso")
     @ApiResponse(responseCode = "502", description = "Erro na comunicação com IPEA")
-    @GetMapping("/conta-capital")
+    @GetMapping("/balanca/conta-capital")
     ResponseEntity<List<IpeaSerieDTO>> getContaCapital() {
         return ResponseEntity.ok(ipeaService.getCapitalAccount());
     }
@@ -157,7 +161,7 @@ public class IpeaController {
     )
     @ApiResponse(responseCode = "200", description = "Séries retornadas com sucesso")
     @ApiResponse(responseCode = "502", description = "Erro na comunicação com IPEA")
-    @GetMapping("/conta-financeira")
+    @GetMapping("/balanca/conta-financeira")
     ResponseEntity<List<IpeaSerieDTO>> getContaFinanceira() {
         return ResponseEntity.ok(ipeaService.getFinancialAccount());
     }
@@ -169,7 +173,7 @@ public class IpeaController {
     )
     @ApiResponse(responseCode = "200", description = "Séries retornadas com sucesso")
     @ApiResponse(responseCode = "502", description = "Erro na comunicação com IPEA")
-    @GetMapping("/investimento-carteira")
+    @GetMapping("/balanca/investimento-carteira")
     ResponseEntity<List<IpeaSerieDTO>> getInvestmentWallet() {
         return ResponseEntity.ok(ipeaService.getInvestmentWallet());
     }
@@ -181,7 +185,7 @@ public class IpeaController {
     )
     @ApiResponse(responseCode = "200", description = "Séries retornadas com sucesso")
     @ApiResponse(responseCode = "502", description = "Erro na comunicação com IPEA")
-    @GetMapping("/servicos-despesas")
+    @GetMapping("/balanca/servicos-despesas")
     ResponseEntity<List<IpeaSerieDTO>> getServicesExpense() {
         return ResponseEntity.ok(ipeaService.getServicesExpense());
     }
@@ -193,10 +197,23 @@ public class IpeaController {
     )
     @ApiResponse(responseCode = "200", description = "Séries retornadas com sucesso")
     @ApiResponse(responseCode = "502", description = "Erro na comunicação com IPEA")
-    @GetMapping("/investimento-direto-ingressos")
+    @GetMapping("/balanca/investimento-direto-ingressos")
     ResponseEntity<List<IpeaSerieDTO>> getDirectInvestmentInflows() {
         return ResponseEntity.ok(ipeaService.getDirectInvestmentInflows());
     }
+
+    @Operation(
+            summary = "Transações Correntes (% do PIB)",
+            description = "A conta transações correntes mostra os fluxos de bens, serviços, renda primária e renda secundária entre residentes e não residentes do país em relação ao PIB."
+    )
+    @ApiResponse(responseCode = "200", description = "Série retornada com sucesso")
+    @ApiResponse(responseCode = "502", description = "Erro na comunicação com IPEA")
+    @GetMapping("/balanca/transacoes-correntes")
+    public ResponseEntity<List<IpeaSerieDTO>> getCurrentTransactionsPib() {
+        return ResponseEntity.ok(ipeaService.getCurrentTransactionsPib());
+    }
+
+
 
     // Exportações
     @Operation(
@@ -241,7 +258,7 @@ public class IpeaController {
     )
     @ApiResponse(responseCode = "200", description = "Séries retornadas com sucesso")
     @ApiResponse(responseCode = "502", description = "Erro na comunicação com IPEA")
-    @GetMapping("/exportacoes/agricultura-pecuaria-quantum")
+    @GetMapping("/exportacoes/quantum-agricultura-pecuaria")
     public ResponseEntity<List<IpeaSerieDTO>> getAgricultureLivestockQuantumExports() {
         return ResponseEntity.ok(ipeaService.getAgricultureLivestockQuantumExports());
     }
