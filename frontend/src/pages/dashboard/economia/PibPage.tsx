@@ -186,59 +186,70 @@ export default function PibPage() {
          ══════════════════════════════════════════════════════════════════ */}
       <motion.header
         variants={item}
-        className="relative overflow-hidden rounded-2xl border border-slate-800 min-h-[260px] flex items-end"
+        // - Removed border and distinct background to dissolve the card edges.
+        // - Added 3D perspective and a slight rotateX to make it "lean out" of the screen.
+        // - The background matches the assumed page background (#020617 / slate-950) to blend seamlessly.
+        className="group relative min-h-[260px] flex items-end bg-[#020617] rounded-2xl overflow-hidden"
+        style={{ 
+          transform: 'perspective(1200px) rotateX(2deg)', 
+          transformOrigin: 'bottom center' 
+        }}
       >
         {bannerImage ? (
           <>
+            {/* Massive ambient glow behind the flag to simulate it projecting off the screen */}
+            <div 
+              className="absolute inset-0 z-0 scale-150 translate-y-10 blur-3xl opacity-50"
+              style={{ background: 'radial-gradient(circle at 60% 40%, #009C3B 0%, #FFDF00 25%, #002776 50%, transparent 75%)' }}
+            />
+
+            {/* The Flag Image */}
             <img
               src={bannerImage}
               alt="Brasil — referência visual institucional"
-              className="absolute inset-0 w-full h-full object-cover object-center scale-105 transition-transform duration-[1400ms] ease-out group-hover:scale-110"
-              style={{ filter: 'brightness(0.92) contrast(1.05) saturate(1.05)' }}
+              // Image is scaled up significantly so we can fade the edges without seeing the image boundaries
+              className="absolute inset-0 w-full h-full object-cover object-center scale-125 transition-transform duration-[1400ms] ease-out group-hover:scale-[1.35] z-[1] drop-shadow-[0_25px_50px_rgba(0,0,0,0.8)]"
+              style={{ filter: 'brightness(1.05) contrast(1.1) saturate(1.2)' }}
             />
-            {/* refined overlays — image stays vivid, copy stays readable */}
-            <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/55 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/10 to-transparent" />
-            {/* soft BR-blue color wash for cohesion */}
-            <div
-              className="absolute inset-0 mix-blend-multiply opacity-40"
-              style={{ background: 'radial-gradient(120% 80% at 0% 100%, #002776 0%, transparent 55%)' }}
+            
+            {/* 
+              The Merging Mask: 
+              This is the crucial part. It uses radial gradients matching the exact background color (#020617)
+              to dissolve the edges of the flag so it looks like it's materializing out of the void.
+            */}
+            <div 
+              className="absolute inset-0 z-[2]"
+              style={{ background: 'radial-gradient(ellipse 65% 60% at 65% 40%, transparent 0%, rgba(2,6,23,0.6) 40%, #020617 75%)' }}
             />
-            {/* fine grid texture for institutional feel */}
-            <div
-              className="absolute inset-0 opacity-[0.06] pointer-events-none"
-              style={{
-                backgroundImage:
-                  'linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)',
-                backgroundSize: '40px 40px',
-              }}
-            />
+            
+            {/* Subtle bottom gradient just to guarantee text readability without blocking the emerging effect */}
+            <div className="absolute bottom-0 left-0 right-0 h-[50%] z-[2] bg-gradient-to-t from-[#020617] via-[#020617]/60 to-transparent" />
           </>
         ) : (
-          <div className="absolute inset-0 bg-slate-950" />
+          <div className="absolute inset-0 bg-[#020617]" />
         )}
 
-        {/* tricolor rail — green / yellow / blue */}
-        <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-[#009C3B] via-[#FFDF00] to-[#002776]" />
+        {/* Tricolor rail — glowing to match the projection effect */}
+        <div className="absolute left-0 top-0 bottom-0 w-[3px] z-[3] bg-gradient-to-b from-[#009C3B] via-[#FFDF00] to-[#002776] shadow-[0_0_18px_rgba(255,223,0,0.6)]" />
 
         <div className="relative z-10 p-6 sm:p-10 w-full">
           <div className="flex flex-wrap items-center gap-2 mb-4">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-300 backdrop-blur-sm">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-300 backdrop-blur-md">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
               World Bank · Live
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-yellow-400/30 bg-yellow-400/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-yellow-200 backdrop-blur-sm">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-yellow-400/30 bg-yellow-400/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-yellow-200 backdrop-blur-md">
               IBGE · SIDRA
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-200 backdrop-blur-sm">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-200 backdrop-blur-md">
               República Federativa do Brasil
             </span>
           </div>
 
-          <h1 className="text-3xl sm:text-5xl font-semibold tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.5)]">
+          <h1 className="text-3xl sm:text-5xl font-semibold tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)]">
             PIB do <span className="text-[#FFDF00]">Brasil</span>
           </h1>
-          <p className="mt-3 max-w-2xl text-sm sm:text-base text-slate-200/90 leading-relaxed">
+          <p className="mt-3 max-w-2xl text-sm sm:text-base text-slate-200/90 leading-relaxed drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
             Produto Interno Bruto a preços correntes (R$). Série histórica, recorte anual e
             distribuição por unidade federativa — inteligência econômica em tempo real.
           </p>
@@ -269,15 +280,6 @@ export default function PibPage() {
           <div
             className="absolute -top-24 -right-24 w-96 h-96 rounded-full opacity-30 blur-3xl"
             style={{ background: 'radial-gradient(circle, #009C3B 0%, transparent 70%)' }}
-          />
-          {/* faint grid */}
-          <div
-            className="absolute inset-0 opacity-[0.05] pointer-events-none"
-            style={{
-              backgroundImage:
-                'linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)',
-              backgroundSize: '32px 32px',
-            }}
           />
 
           <div className="relative p-6 sm:p-8">
