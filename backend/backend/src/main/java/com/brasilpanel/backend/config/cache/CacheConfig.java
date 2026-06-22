@@ -93,6 +93,9 @@ public class CacheConfig {
                 build("ipea-cambio-financeiro-compra", 24, TimeUnit.HOURS, 10),
                 build("ipea-cambio-financeiro-venda", 24, TimeUnit.HOURS, 10),
 
+                // Pib
+                build("ipea-pib-mensal", 24, TimeUnit.HOURS, 10),
+
                 // ── World Bank ───────────────────────────────────────────────────
                 // PIB atualizado anualmente; 24h evita chamadas repetidas
                 build("worldbank-pib-current",   24,  TimeUnit.HOURS,    5),
