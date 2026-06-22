@@ -468,6 +468,15 @@ public class FinancialSeriesSeeder implements ApplicationRunner {
                 .name("Câmbio contratado - financeiro - venda")
                 .unit("US$ (milhões)")
                 .description("Contratações de venda de moeda estrangeira relativas a importação de serviços e ingressos de capitais estrangeiros")
+                .build(),
+
+        // Pib mensal ipea
+        FinancialSeries.builder()
+                .code("BM12_PIB12")
+                .source("IPEA")
+                .name("Pib mensal do Brasil por mês")
+                .unit("RS$ (milhões)")
+                .description("Cálculo mensal é feito uma vez que o PIB calculado oficialmente no Brasil pelo IBGE")
                 .build()
     );
 
