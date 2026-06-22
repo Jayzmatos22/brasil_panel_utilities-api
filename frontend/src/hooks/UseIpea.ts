@@ -378,6 +378,15 @@ export function useContractedExchangeFinancialSales() {
   });
 }
 
+//Pib
+export function useMonthlyPib() {
+  return useQuery({
+    queryKey: ['ipea', 'pib', 'mensal'],
+    queryFn: ipeaService.getMonthlyPib,
+    ...HISTORICAL,
+  });
+}
+
 
 
 
