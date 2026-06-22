@@ -514,4 +514,16 @@ public class IpeaController {
         return ResponseEntity.ok(ipeaService.getContractedExchangeFinancialSales());
     }
 
+    // Pib mensal
+    @Operation(
+            summary = "PIB Mensal",
+            description = "Produto Interno Bruto (PIB) mensal do Brasil em R$ (milhões)."
+    )
+    @ApiResponse(responseCode = "200", description = "Série retornada com sucesso")
+    @ApiResponse(responseCode = "502", description = "Erro na comunicação com IPEA")
+    @GetMapping("/pib/mensal")
+    public ResponseEntity<List<IpeaSerieDTO>> getMonthlyPib() {
+        return ResponseEntity.ok(ipeaService.getMonthlyPib());
+    }
+
 }
