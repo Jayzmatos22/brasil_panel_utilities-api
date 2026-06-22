@@ -157,6 +157,11 @@ export const ipeaService = {
 
   getContractedExchangeFinancialSales: () =>
     apiClient.get<IpeaSerie[]>('/ipea/cambio/financeiro/venda').then((res) => res.data),
+
+
+  // pib
+  getMonthlyPib: () =>
+    apiClient.get<IpeaSerie[]>('/ipea/pib/mensal').then((res) => res.data),
 };
 
 
