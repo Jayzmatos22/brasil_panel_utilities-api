@@ -78,7 +78,10 @@ public class IpeaScheduler {
             "ipea-cambio-comercial-financeiro",
             "ipea-cambio-financeiro",
             "ipea-cambio-financeiro-compra",
-            "ipea-cambio-financeiro-venda"
+            "ipea-cambio-financeiro-venda",
+
+            // Pib
+            "ipea-pib-mensal"
     );
 
     private final IpeaService ipeaService;
