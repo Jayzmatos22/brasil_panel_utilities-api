@@ -127,6 +127,11 @@ public class IpeaService {
     private static final String CAMBIO_FINANCEIRO_VENDA = "BM12_VFCC12";
 
 
+    // PIB por mês
+    private static final String PIB_MENSAL = "BM12_PIB12";
+
+
+
 
 
 
@@ -140,8 +145,16 @@ public class IpeaService {
             ATIVOS_RESERVA, INVESTIMENTO_CARTEIRA, SERVICOS_DESPESA, EXPORTACOES_PRODUTOS_BASICOS,
             INDICE_PRECOS_BENS_CAPITAL, INDICE_PRECOS_BENS_DURAVEIS, INDICE_PRECOS_BENS_NAO_DURAVEIS,
             VALOR_FOB_BENS_INTERMEDIARIOS, INDICE_QUANTUM_BENS_INTERMEDIARIOS, VALOR_FOB_COMBUSTIVEIS, IBOVESPA_FECHAMENTO,
-            IMPOSTO_II, IMPOSTO_IRPF, IMPOSTO_IRPJ, IMPOSTO_IR_TOTAL, IMPOSTO_IOF, IMPOSTO_IPI
+            IMPOSTO_II, IMPOSTO_IRPF, IMPOSTO_IRPJ, IMPOSTO_IR_TOTAL, IMPOSTO_IOF, IMPOSTO_IPI, PIB_MENSAL
     );
+
+    // Pib
+    @Cacheable("ipea-pib-mensal")
+    public List<IpeaSerieDTO> getMonthlyPib(){
+        return List.of(
+                serie(PIB_MENSAL, "PIB mensal do Brasil R$ (milhôes)")
+        );
+    }
 
 
     // MACRO ECONOMIA
