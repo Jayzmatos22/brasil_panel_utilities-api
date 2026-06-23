@@ -1,34 +1,9 @@
-// API: Banco Central do Brasil (BCB)
-import { memo, type ReactNode } from 'react';
+// API: Banco Central do Brasil (BCB) & IPEA (Ibovespa)
+import { memo, useMemo, type ReactNode } from 'react';
 import { motion } from 'motion/react';
-import { DollarSign, TrendingUp, BarChart3, Percent, AlertCircle, RefreshCw } from 'lucide-react';
+import { DollarSign, TrendingUp, BarChart3, Percent, AlertCircle, RefreshCw, Activity } from 'lucide-react';
 import { useDollarPtax, useSelic, useCdiRate, useIpca } from '../../../hooks/UseEconomy';
-
-// ─── TypeScript Interfaces ──────────────────────────────────────────────────
-interface DollarPtaxData {
-  value: number;
-  date: string;
-}
-
-interface SelicData {
-  currentRate: number;
-  accumulatedMonth: number;
-  accumulatedYear: number;
-  last12MonthsCompound: number;
-}
-
-interface CdiData {
-  annualRate: number;
-  dailyRate: number;
-  date: string;
-}
-
-interface IpcaData {
-  currentMonth: number;
-  accumulatedYear: number;
-  last12MonthsSum: number;
-  last12MonthsCompound: number;
-}
+import { useIbovespa } from '../../../hooks/UseIpea';
 
 interface IndicatorCardProps {
   imageKey: string;
@@ -62,7 +37,7 @@ const containerVariants = {
   show: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.15, // Replaces the manual setTimeout delays
+      staggerChildren: 0.15,
     },
   },
 };
@@ -83,17 +58,18 @@ const itemVariants = {
 const pct = (v: number) => `${v.toFixed(2)}%`;
 const brl = (v: number) =>
   v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const formatPts = (v: number) =>
+  v.toLocaleString('pt-BR', { maximumFractionDigits: 0 });
 
 // ─── Sub-Components (Memoized) ──────────────────────────────────────────────
-
 const Skeleton = memo(({ className }: { className?: string }) => (
   <div className={`animate-pulse bg-slate-700/40 rounded-md ${className}`} aria-hidden="true" />
 ));
 
-const DataRow = memo(({ label, value }: { label: string; value: string }) => (
+const DataRow = memo(({ label, value, valueClass = "text-slate-200" }: { label: string; value: string; valueClass?: string }) => (
   <div className="flex justify-between items-center text-sm py-2 border-b border-white/5 last:border-0">
     <span className="text-slate-400">{label}</span>
-    <span className="text-slate-200 font-mono font-medium">{value}</span>
+    <span className={`font-mono font-medium ${valueClass}`}>{value}</span>
   </div>
 ));
 
@@ -132,15 +108,13 @@ const IndicatorCard = memo(({
     >
       {/* ── Visual Panel (Image + Gradient Emerging Effect) ── */}
       <div className="relative lg:w-2/5 aspect-video lg:aspect-auto shrink-0 overflow-hidden">
-        {/* Base Gradient Fallback */}
         <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
 
-        {/* Image Overlay with CSS Masking to "emerge" */}
         {img && (
           <img
             src={img}
             alt=""
-            role="presentation" // Decorative, title is provided in text below
+            role="presentation"
             loading="lazy"
             className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
             style={{ 
@@ -151,10 +125,8 @@ const IndicatorCard = memo(({
           />
         )}
 
-        {/* Deep Readability Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#020617] via-[#020617]/60 to-transparent" />
 
-        {/* Title Seal */}
         <div className="absolute bottom-0 left-0 p-6 flex flex-col gap-2 z-10">
           <div className="flex items-center gap-3">
             <span className="w-9 h-9 rounded-xl bg-amber-500/90 text-slate-950 flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/20 backdrop-blur-sm" aria-hidden="true">
@@ -197,11 +169,44 @@ const IndicatorCard = memo(({
 
 // ─── Main Page ──────────────────────────────────────────────────────────────
 export default function EconomiaPage() {
-  // Data fetching triggers immediately. Framer Motion handles visual stagger.
-  const { data: dollar, isLoading: l0, error: e0, refetch: r0 } = useDollarPtax();
-  const { data: selic,  isLoading: l1, error: e1, refetch: r1 } = useSelic();
-  const { data: cdi,    isLoading: l2, error: e2, refetch: r2 } = useCdiRate();
-  const { data: ipca,   isLoading: l3, error: e3, refetch: r3 } = useIpca();
+  const { data: ibovData, isLoading: lIbov, error: eIbov, refetch: rIbov } = useIbovespa();
+  const { data: dollar,   isLoading: l0,    error: e0,    refetch: r0 } = useDollarPtax();
+  const { data: selic,    isLoading: l1,    error: e1,    refetch: r1 } = useSelic();
+  const { data: cdi,      isLoading: l2,    error: e2,    refetch: r2 } = useCdiRate();
+  const { data: ipca,     isLoading: l3,    error: e3,    refetch: r3 } = useIpca();
+
+  // Processamento do Ibovespa para pegar o último fechamento válido (geralmente D-1)
+  const ibovespaLatest = useMemo(() => {
+    if (!ibovData || ibovData.length === 0) return null;
+    const rawData = ibovData[0].dados;
+    if (!rawData || rawData.length === 0) return null;
+
+    // Remove valores nulos e ordena da data mais recente para a mais antiga
+    const validData = rawData
+      .filter((item) => item.valor !== null)
+      .sort((a, b) => b.data.localeCompare(a.data));
+
+    if (validData.length === 0) return null;
+
+    const latest = validData[0];
+    const previous = validData.length > 1 ? validData[1] : null;
+    
+    // Calcula variação diária se houver dado do pregão anterior
+    let variation = null;
+    if (previous && previous.valor) {
+      variation = ((latest.valor - previous.valor) / previous.valor) * 100;
+    }
+
+    // Formata a data ISO para DD/MM/YYYY
+    const dateParts = latest.data.substring(0, 10).split('-');
+    const formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+
+    return {
+      value: latest.valor,
+      date: formattedDate,
+      variation
+    };
+  }, [ibovData]);
 
   return (
     <motion.section
@@ -215,9 +220,44 @@ export default function EconomiaPage() {
           Indicadores <span className="text-[#FFDF00]">Econômicos</span>
         </h1>
         <p className="text-slate-400 text-sm mt-2 max-w-xl">
-          Dados oficiais do Banco Central do Brasil, atualizados diariamente.
+          Dados oficiais do Banco Central do Brasil e da B3, atualizados diariamente.
         </p>
       </motion.div>
+
+      {/* ── Ibovespa (Fechamento D-1) ── */}
+      <IndicatorCard
+        imageKey="ibovespa"
+        gradient="from-indigo-900 to-violet-800"
+        icon={<Activity size={18} />}
+        title="Ibovespa"
+        badge="B3 · IPEA"
+        isLoading={lIbov}
+        error={eIbov}
+        refetch={rIbov}
+        description={
+          'Principal índice de ações da bolsa de valores brasileira (B3). ' +
+          'Reflete o desempenho médio das cotações das empresas mais negociadas e representativas do mercado. ' +
+          'Os dados exibidos referem-se ao último fechamento de mercado consolidado.'
+        }
+      >
+        {ibovespaLatest && (
+          <div className="flex flex-col gap-2">
+            <p className="text-5xl font-bold text-indigo-400 tracking-tight drop-shadow-[0_2px_10px_rgba(129,140,248,0.3)]">
+              {formatPts(ibovespaLatest.value)} <span className="text-2xl text-indigo-400/50">pts</span>
+            </p>
+            <div className="flex flex-col mt-2">
+              {ibovespaLatest.variation !== null && (
+                <DataRow 
+                  label="Variação Diária (D/D-1)" 
+                  value={`${ibovespaLatest.variation > 0 ? '+' : ''}${ibovespaLatest.variation.toFixed(2)}%`}
+                  valueClass={ibovespaLatest.variation >= 0 ? "text-emerald-400" : "text-red-400"}
+                />
+              )}
+              <DataRow label="Data do Fechamento" value={ibovespaLatest.date} />
+            </div>
+          </div>
+        )}
+      </IndicatorCard>
 
       {/* ── Dólar PTAX ── */}
       <IndicatorCard
