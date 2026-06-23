@@ -28,6 +28,7 @@ export const ipeaService = {
   getIbovespaClosing: () =>
     apiClient.get<IpeaSerie[]>('/ipea/mercado/ibovespa').then((res) => res.data),
 
+
   
 
   // ==========================================
