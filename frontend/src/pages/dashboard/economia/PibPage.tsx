@@ -23,12 +23,13 @@ import { LineChartEcharts } from '../../../components/charts/LineChartEcharts';
 import { BarChartEcharts } from '../../../components/charts/BarChartEcharts';
 import { AnimatedNumber } from '../../../components/AnimatedNumber';
 import { container, item } from '../../../lib/motion/presets';
+import type { SectionCardProps } from '../../../types/utilities/Economy'
 
 // ============================================================================
 // Brazilian palette tokens
 // ============================================================================
 //  BR_GREEN  = #009C3B
-//  BR_YELLOW = #FFDF00 
+//  BR_YELLOW = #FFDF00
 //  BR_BLUE   = #002776
 
 // ============================================================================
@@ -44,18 +45,7 @@ function findPibImage(term: string): string | undefined {
   return match?.[1];
 }
 
-// ============================================================================
-// 2. HELPERS
-// ============================================================================
-interface SectionCardProps {
-  title: string;
-  subtitle?: string;
-  icon: ReactNode;
-  badge?: ReactNode;
-  children: ReactNode;
-  className?: string;
-  contentClassName?: string;
-}
+
 
 function SectionCard({
   title, subtitle, icon, badge, children, className = '', contentClassName = '',
@@ -393,7 +383,7 @@ export default function PibPage() {
                 </span>
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">Indicador principal</p>
-                  <h2 className="text-sm font-medium text-white mt-0.5">PIB anual (finalizado) mais recente</h2>
+                  <h2 className="text-sm font-medium text-white mt-1">PIB anual (finalizado) mais recente</h2>
                 </div>
               </div>
               {currentPib && (
