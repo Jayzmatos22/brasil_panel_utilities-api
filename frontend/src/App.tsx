@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'; // Adicionado useLocation
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import SettingsAuthPage from './pages/auth/SettingsAuthPage';
 
@@ -21,6 +21,7 @@ import BankPage    from './pages/onboarding/BankPage';
 import EconomiaPage from './pages/dashboard/economia/EconomiaPage';
 import SalarioPage  from './pages/dashboard/economia/SalarioPage';
 import PibPage      from './pages/dashboard/economia/PibPage';
+import ImpostosPage from './pages/dashboard/economia/ImpostosPage'; // <-- Novo Import
 
 // Dashboard — Mercado
 import AcoesPage  from './pages/dashboard/mercado/AcoesPage';
@@ -59,12 +60,10 @@ function OnboardingLayout() {
 
 // ─── Componente de Rotas Animadas ────────────────────────────────────────────
 function AppRoutes() {
-  const location = useLocation(); // Captura a URL atual para o Framer Motion saber quando mudou
+  const location = useLocation();
 
   return (
-    // mode="wait" garante que a página antiga suma completamente antes da nova entrar
     <AnimatePresence mode="wait">
-      {/* Passar location e key é obrigatório para o AnimatePresence funcionar */}
       <Routes location={location} key={location.pathname}>
 
         {/* ── Dashboard (requer autenticação) ── */}
@@ -73,7 +72,8 @@ function AppRoutes() {
             <Route path="economia"         element={<EconomiaPage />} />
             <Route path="economia/salario" element={<SalarioPage />} />
             <Route path="economia/pib"     element={<PibPage />} />
-            <Route path="mercado/acoes"     element={<AcoesPage />} />
+            <Route path="economia/impostos" element={<ImpostosPage />} /> {/* <-- Nova Rota Inserida */}
+            <Route path="mercado/acoes"    element={<AcoesPage />} />
             <Route path="mercado/metais"   element={<MetaisPage />} />
             <Route path="moedas/cambio"    element={<CambioPage />} />
             <Route path="moedas/cripto"    element={<CriptoPage />} />
@@ -102,7 +102,7 @@ function AppRoutes() {
   );
 }
 
-// ─── Root (Inalterado, apenas chama o AppRoutes) ─────────────────────────────
+// ─── Root ─────────────────────────────────────────────────────────────
 export default function App() {
   return (
     <BrowserRouter>
@@ -120,8 +120,6 @@ export default function App() {
           success: { duration: 4000 },
         }}
       />
-      
-      {/* Renderiza as rotas controladas pelo Router */}
       <AppRoutes /> 
     </BrowserRouter>
   );
