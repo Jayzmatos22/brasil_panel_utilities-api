@@ -49,3 +49,26 @@ export interface User {
   address: UserAddress;
   bank: DataBank;
 }
+
+
+export interface UpdateNameRequest {
+  name: string;
+}
+
+export interface UpdatePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export interface DeleteAccountRequest {
+  password: string;
+}
+
+
+export interface UserRow {
+  id:        string;
+  name:      string;
+  email:     string;
+  role:      'USER' | 'ADMIN';
+  createdAt: string;
+}
