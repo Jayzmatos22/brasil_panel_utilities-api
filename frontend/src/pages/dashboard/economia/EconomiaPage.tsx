@@ -1,5 +1,5 @@
 // API: Banco Central do Brasil (BCB) & IPEA (Ibovespa)
-import { memo, useMemo, useState, useEffect, type ReactNode } from 'react';
+import { memo, useMemo, useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import {
   DollarSign, TrendingUp, BarChart3, Percent, AlertCircle, RefreshCw, Activity,
@@ -8,19 +8,9 @@ import {
 import { useDollarPtax, useSelic, useCdiRate, useIpca } from '../../../hooks/UseEconomy';
 import { useIbovespa } from '../../../hooks/UseIpea';
 import { LineChartEcharts, type LinePoint } from '../../../components/charts/LineChartEcharts';
+import type { IndicatorCardProps, NavItem, ClosingRow, ChartPanelProps, PeriodStats, IbovespaMetrics } from '../../../types/utilities/Economy'
+import type { IpeaSerie, IpeaItem } from '../../../types/IpeaType';
 
-interface IndicatorCardProps {
-  imageKey: string;
-  gradient: string;
-  icon: ReactNode;
-  title: string;
-  badge: string;
-  description: string;
-  isLoading: boolean;
-  error: Error | null;
-  refetch?: () => void;
-  children: ReactNode;
-}
 
 // ─── Image Management ───────────────────────────────────────────────────────
 const IMAGES = import.meta.glob(
@@ -100,15 +90,17 @@ const ErrorState = memo(({ error, refetch }: { error: Error | null; refetch?: ()
 ));
 
 const IndicatorCard = memo(({
-  imageKey, gradient, icon, title, badge, description, isLoading, error, refetch, children
+  imageKey, gradient, icon, title, badge, description, isLoading, error, refetch, children, id
 }: IndicatorCardProps) => {
   const img = findImage(imageKey);
 
   return (
     <motion.article
+      id={id}
       variants={itemVariants}
       className="group relative flex flex-col lg:flex-row overflow-hidden bg-white/[0.02]
-                 backdrop-blur-md border border-white/10 rounded-2xl shadow-[0_8px_40px_-15px_rgba(0,0,0,0.5)]"
+                 backdrop-blur-md border border-white/10 rounded-2xl shadow-[0_8px_40px_-15px_rgba(0,0,0,0.5)]
+                 scroll-mt-24"
     >
       {/* ── Visual Panel (Image + Gradient Emerging Effect) ── */}
       <div className="relative lg:w-2/5 aspect-video lg:aspect-auto shrink-0 overflow-hidden">
@@ -172,12 +164,155 @@ const IndicatorCard = memo(({
 });
 
 // ════════════════════════════════════════════════════════════════════════════
-// Ibovespa Dashboard — containers independentes (fora do IndicatorCard)
-// Sem fetch. Consome `ibovData` (IpeaSerie[]) já disponível no escopo da página.
+// QuickNav — barra de navegação rápida entre seções
+// - Cada item sabe o `id` da seção de destino e sua cor temática.
+// - Click → scroll suave até o topo da seção (via scrollIntoView).
+// - Secão ativa destacada via IntersectionObserver (rastreia qual está visível).
+// - Responsivo: horizontal scroll no mobile, wrap centrado no desktop.
 // ════════════════════════════════════════════════════════════════════════════
 
-interface IpeaItem { data: string; valor: number | null; }
-interface IpeaSerie { codigo: string; nome: string; dados: IpeaItem[]; }
+
+const NAV_ITEMS: NavItem[] = [
+  { id: 'sec-ibovespa',  label: 'Ibovespa',    color: '#818cf8' },
+  { id: 'sec-hist-5y',   label: '5 Anos',      color: '#c084fc' },
+  { id: 'sec-hist-6m',   label: '6 Meses',     color: '#38bdf8' },
+  { id: 'sec-explorer',  label: 'Explorador',  color: '#a78bfa' },
+  { id: 'sec-closings',  label: 'Fechamentos', color: '#a5b4fc' },
+  { id: 'sec-insights',  label: 'Insights',    color: '#c084fc' },
+  { id: 'sec-dollar',    label: 'Dólar',       color: '#4ade80' },
+  { id: 'sec-selic',     label: 'Selic',       color: '#f87171' },
+  { id: 'sec-cdi',       label: 'CDI',         color: '#60a5fa' },
+  { id: 'sec-ipca',      label: 'IPCA',        color: '#cbd5e1' },
+];
+
+/**
+ * Rastreia qual seção está atualmente visível no viewport.
+ * Usa IntersectionObserver com rootMargin enxugado ao "centro vertical"
+ * para que a seção ativa seja aquela que ocupa a faixa central da tela.
+ */
+function useActiveSection(ids: string[]): string {
+  const [active, setActive] = useState<string>(ids[0] ?? '');
+
+  useEffect(() => {
+    const visible = new Map<string, number>();
+    const observers: IntersectionObserver[] = [];
+
+    const pick = () => {
+      let best: string | null = null;
+      let bestRatio = 0;
+      for (const [id, ratio] of visible) {
+        if (ratio > bestRatio) {
+          bestRatio = ratio;
+          best = id;
+        }
+      }
+      if (best) setActive(best);
+    };
+
+    for (const id of ids) {
+      const el = document.getElementById(id);
+      if (!el) continue;
+      const obs = new IntersectionObserver(
+        (entries) => {
+          for (const e of entries) {
+            visible.set(id, e.isIntersecting ? e.intersectionRatio : 0);
+          }
+          pick();
+        },
+        {
+          threshold: [0.05, 0.15, 0.3, 0.5, 0.75],
+          rootMargin: '-15% 0px -55% 0px',
+        },
+      );
+      obs.observe(el);
+      observers.push(obs);
+    }
+
+    return () => observers.forEach((o) => o.disconnect());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ids.join('|')]);
+
+  return active;
+}
+
+const QuickNav = memo(({ items }: { items: NavItem[] }) => {
+  const ids = useMemo(() => items.map((i) => i.id), [items]);
+  const active = useActiveSection(ids);
+
+  const handleClick = (id: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Atualiza a URL sem causar jump nativo (mantém histórico limpo).
+      history.replaceState(null, '', `#${id}`);
+    }
+  };
+
+  return (
+    <motion.nav
+      variants={itemVariants}
+      aria-label="Navegação rápida entre indicadores"
+      className="sticky top-3 z-30"
+    >
+      <div
+        className="
+          flex gap-1.5 overflow-x-auto pb-1
+          sm:flex-wrap sm:justify-center sm:overflow-visible sm:pb-0
+          rounded-2xl border border-white/10 bg-slate-950/80 p-2 backdrop-blur-md
+          shadow-[0_8px_30px_-12px_rgba(0,0,0,0.6)]
+        "
+      >
+        {items.map((item) => {
+          const isActive = active === item.id;
+          return (
+            <a
+              key={item.id}
+              href={`#${item.id}`}
+              onClick={handleClick(item.id)}
+              aria-current={isActive ? 'true' : undefined}
+              className="
+                group flex shrink-0 items-center gap-1.5 whitespace-nowrap
+                rounded-lg px-2.5 py-1.5 text-xs font-medium
+                transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40
+              "
+              style={{
+                background: isActive ? `${item.color}1f` : 'transparent',
+                color: isActive ? item.color : '#94a3b8',
+                boxShadow: isActive ? `inset 0 0 0 1px ${item.color}40` : 'none',
+              }}
+              onMouseEnter={(e) => {
+                if (isActive) return;
+                e.currentTarget.style.backgroundColor = `${item.color}14`;
+                e.currentTarget.style.color = item.color;
+              }}
+              onMouseLeave={(e) => {
+                if (isActive) return;
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = '#94a3b8';
+              }}
+            >
+              <span
+                aria-hidden
+                className="h-1.5 w-1.5 rounded-full transition-all duration-200"
+                style={{
+                  background: item.color,
+                  opacity: isActive ? 1 : 0.55,
+                  boxShadow: isActive ? `0 0 8px ${item.color}` : 'none',
+                }}
+              />
+              <span>{item.label}</span>
+            </a>
+          );
+        })}
+      </div>
+    </motion.nav>
+  );
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// Ibovespa Dashboard — containers independentes (fora do IndicatorCard)
+
 
 const MS_DAY = 86_400_000;
 const MS_5Y = 5 * 365 * MS_DAY;
@@ -211,11 +346,6 @@ const fmtBRDate = (iso: string): string => {
 
 const fmtPctSigned = (v: number): string => `${v > 0 ? '+' : ''}${v.toFixed(2)}%`;
 
-interface ClosingRow {
-  date: string;
-  value: number;
-  variation: number | null;
-}
 
 const computeClosingsWithVariation = (items: IpeaItem[]): ClosingRow[] => {
   const sorted = sortAsc(filterValid(items));
@@ -231,23 +361,8 @@ const computeClosingsWithVariation = (items: IpeaItem[]): ClosingRow[] => {
   });
 };
 
-// ─── Métricas agregadas para insights dinâmicos ────────────────────────────
-interface IbovespaMetrics {
-  fiveYearPoints: LinePoint[];
-  sixMonthPoints: LinePoint[];
-  closings: ClosingRow[];
-  fiveYearReturn: number | null;
-  sixMonthReturn: number | null;
-  fiveYearHigh: { date: string; value: number } | null;
-  fiveYearLow: { date: string; value: number } | null;
-  avgDailyAbsVar6m: number | null;
-  positiveDays6m: number;
-  negativeDays6m: number;
-  last5Trend: 'up' | 'down' | 'flat' | null;
-  last5NetPct: number | null;
-  // Série completa válida asc — reutilizada pelo Explorador por Período
-  validAsc: IpeaItem[];
-}
+
+
 
 const computeMetrics = (data: IpeaSerie[] | undefined): IbovespaMetrics | null => {
   if (!data || data.length === 0) return null;
@@ -396,21 +511,14 @@ const describeSelicCorrelation = (
   return 'Historicamente, períodos de alta da taxa Selic tendem a comprimir a valuation das ações por elevar o custo de oportunidade da renda fixa; o movimento inverso costuma ocorrer em ciclos de queda da Selic — correlação macroeconômica observável, mas não determinística ponto a ponto';
 };
 
-// ─── Container de gráfico reutilizável ─────────────────────────────────────
-interface ChartPanelProps {
-  title: string;
-  subtitle: string;
-  icon: ReactNode;
-  accent: string; // hex ex. "#c084fc"
-  points: LinePoint[];
-  emptyHint: string;
-}
 
-const ChartPanel = memo(({ title, subtitle, icon, accent, points, emptyHint }: ChartPanelProps) => (
+
+const ChartPanel = memo(({ title, subtitle, icon, accent, points, emptyHint, id }: ChartPanelProps) => (
   <motion.div
+    id={id}
     variants={itemVariants}
     className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]
-               backdrop-blur-md p-6 shadow-[0_8px_40px_-15px_rgba(0,0,0,0.5)]"
+               backdrop-blur-md p-6 shadow-[0_8px_40px_-15px_rgba(0,0,0,0.5)] scroll-mt-24"
   >
     <div
       aria-hidden
@@ -451,21 +559,11 @@ const ChartPanel = memo(({ title, subtitle, icon, accent, points, emptyHint }: C
 
 // ════════════════════════════════════════════════════════════════════════════
 // Explorador por Período — filtro de Ano (obrigatório) + Mês (opcional)
-// Fluxo: seleciona ano → vê todos os pregões do ano.
-//        seleciona mês → filtra só aquele mês dentro do ano.
-//        botão "← Ano inteiro" → limpa o mês e volta ao ano completo.
 // ════════════════════════════════════════════════════════════════════════════
 
-interface PeriodStats {
-  count: number;
-  ret: number;
-  hi: { date: string; value: number };
-  lo: { date: string; value: number };
-  first: number;
-  last: number;
-}
 
-const PeriodExplorerChart = memo(({ validAsc }: { validAsc: IpeaItem[] }) => {
+
+const PeriodExplorerChart = memo(({ validAsc, id }: { validAsc: IpeaItem[]; id?: string }) => {
   const [selectedYear, setSelectedYear] = useState<string>('');
   const [selectedMonth, setSelectedMonth] = useState<string>(''); // '' = ano inteiro
 
@@ -537,9 +635,10 @@ const PeriodExplorerChart = memo(({ validAsc }: { validAsc: IpeaItem[] }) => {
 
   return (
     <motion.div
+      id={id}
       variants={itemVariants}
       className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]
-                 backdrop-blur-md p-6 shadow-[0_8px_40px_-15px_rgba(0,0,0,0.5)]"
+                 backdrop-blur-md p-6 shadow-[0_8px_40px_-15px_rgba(0,0,0,0.5)] scroll-mt-24"
     >
       <div
         aria-hidden
@@ -682,14 +781,15 @@ const VariationPill = memo(({ variation }: { variation: number | null }) => {
   );
 });
 
-const RecentClosingsTable = memo(({ rows }: { rows: ClosingRow[] }) => {
+const RecentClosingsTable = memo(({ rows, id }: { rows: ClosingRow[]; id?: string }) => {
   const last5 = useMemo(() => [...rows].slice(-5).reverse(), [rows]);
 
   return (
     <motion.div
+      id={id}
       variants={itemVariants}
       className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]
-                 backdrop-blur-md shadow-[0_8px_40px_-15px_rgba(0,0,0,0.5)]"
+                 backdrop-blur-md shadow-[0_8px_40px_-15px_rgba(0,0,0,0.5)] scroll-mt-24"
     >
       <div className="flex items-center gap-3 border-b border-white/5 px-6 py-4">
         <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-indigo-500/10 text-indigo-300">
@@ -752,7 +852,7 @@ const InsightItem = memo(({ label, value, tone }: { label: string; value: string
   );
 });
 
-const EducationalInsightsPanel = memo(({ metrics }: { metrics: IbovespaMetrics }) => {
+const EducationalInsightsPanel = memo(({ metrics, id }: { metrics: IbovespaMetrics; id?: string }) => {
   const {
     fiveYearReturn, sixMonthReturn,
     fiveYearHigh, fiveYearLow,
@@ -782,10 +882,11 @@ const EducationalInsightsPanel = memo(({ metrics }: { metrics: IbovespaMetrics }
 
   return (
     <motion.div
+      id={id}
       variants={itemVariants}
       className="relative overflow-hidden rounded-2xl border border-white/10
                  bg-gradient-to-br from-indigo-950/40 via-violet-950/20 to-slate-950/40
-                 backdrop-blur-md p-6 shadow-[0_8px_40px_-15px_rgba(0,0,0,0.5)]"
+                 backdrop-blur-md p-6 shadow-[0_8px_40px_-15px_rgba(0,0,0,0.5)] scroll-mt-24"
     >
       <div className="mb-5 flex items-center gap-3">
         <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-indigo-400/30 bg-indigo-500/10 text-indigo-300">
@@ -870,6 +971,7 @@ export default function EconomiaPage() {
     // Calcula variação diária se houver dado do pregão anterior
     let variation = null;
     if (previous && previous.valor) {
+      
       variation = ((latest.valor - previous.valor) / previous.valor) * 100;
     }
 
@@ -903,8 +1005,12 @@ export default function EconomiaPage() {
         </p>
       </motion.div>
 
+      {/* ── Navegação Rápida (sticky, responsiva, com seção ativa) ── */}
+      <QuickNav items={NAV_ITEMS} />
+
       {/* ── Ibovespa (Fechamento D-1) — card original, sem os gráficos dentro ── */}
       <IndicatorCard
+        id="sec-ibovespa"
         imageKey="ibovespa"
         gradient="from-indigo-900 to-violet-800"
         icon={<Activity size={18} />}
@@ -942,6 +1048,7 @@ export default function EconomiaPage() {
       {ibovMetrics && (
         <>
           <ChartPanel
+            id="sec-hist-5y"
             title="Histórico de 5 Anos"
             subtitle="Fechamento Ibovespa · longo prazo"
             icon={<Activity size={18} />}
@@ -951,6 +1058,7 @@ export default function EconomiaPage() {
           />
 
           <ChartPanel
+            id="sec-hist-6m"
             title="Recente — 6 Meses"
             subtitle="Volatilidade e tendência de curto prazo"
             icon={<Sparkles size={18} />}
@@ -960,16 +1068,17 @@ export default function EconomiaPage() {
           />
 
           {/* Explorador por Período — Ano + Mês (opcional) */}
-          <PeriodExplorerChart validAsc={ibovMetrics.validAsc} />
+          <PeriodExplorerChart id="sec-explorer" validAsc={ibovMetrics.validAsc} />
 
-          <RecentClosingsTable rows={ibovMetrics.closings} />
+          <RecentClosingsTable id="sec-closings" rows={ibovMetrics.closings} />
 
-          <EducationalInsightsPanel metrics={ibovMetrics} />
+          <EducationalInsightsPanel id="sec-insights" metrics={ibovMetrics} />
         </>
       )}
 
       {/* ── Dólar PTAX ── */}
       <IndicatorCard
+        id="sec-dollar"
         imageKey="dollar"
         gradient="from-green-900 to-emerald-700"
         icon={<DollarSign size={18} />}
@@ -996,6 +1105,7 @@ export default function EconomiaPage() {
 
       {/* ── Selic ── */}
       <IndicatorCard
+        id="sec-selic"
         imageKey="selic"
         gradient="from-red-900 to-rose-700"
         icon={<TrendingUp size={18} />}
@@ -1026,6 +1136,7 @@ export default function EconomiaPage() {
 
       {/* ── CDI ── */}
       <IndicatorCard
+        id="sec-cdi"
         imageKey="cdi"
         gradient="from-blue-900 to-sky-700"
         icon={<BarChart3 size={18} />}
@@ -1055,6 +1166,7 @@ export default function EconomiaPage() {
 
       {/* ── IPCA ── */}
       <IndicatorCard
+        id="sec-ipca"
         imageKey="ipca"
         gradient="from-slate-800 to-slate-600"
         icon={<Percent size={18} />}
