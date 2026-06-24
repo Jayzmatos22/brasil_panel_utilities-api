@@ -30,14 +30,8 @@ const SOURCES = [
 ] as const;
 
 type SourceKey = (typeof SOURCES)[number]["key"];
+import type { StatCardProps } from '../../../types/utilities/Economy'
 
-interface StatCardProps {
-  title: string;
-  value: string;
-  icon: ReactNode;
-  trendClass: string;
-  floatDelay?: string;
-}
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 function computeStats(points: LinePoint[]) {
