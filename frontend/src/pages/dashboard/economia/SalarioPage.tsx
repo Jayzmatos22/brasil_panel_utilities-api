@@ -1,5 +1,5 @@
 // APIs: Banco Central do Brasil (BCB) + IPEA
-import { useMemo, useState, memo, type ReactNode } from "react";
+import { useMemo, useState, memo } from "react";
 import { motion } from "motion/react";
 import { LoaderCircle, TrendingUp, TrendingDown, Minus, AlertCircle, RefreshCw } from "lucide-react";
 import {
@@ -83,7 +83,6 @@ export default function SalarioPage() {
     data: current,
     isLoading: loadingCurrent,
     error: errCurrent,
-    refetch: refetchCurrent,
   } = useMinimumWage();
   
   const {
