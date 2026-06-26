@@ -69,6 +69,7 @@ public class IpeaScheduler {
             "ipea-imposto-ir-total",
             "ipea-imposto-iof",
             "ipea-imposto-ipi",
+            "ipea-imposto-itr",
 
 
             // Câmbio Contratado
