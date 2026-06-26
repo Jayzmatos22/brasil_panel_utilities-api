@@ -406,6 +406,14 @@ public class FinancialSeriesSeeder implements ApplicationRunner {
                 .description("Resultado das Transações Correntes em relação ao PIB")
                 .build(),
 
+        FinancialSeries.builder()
+                .code("SRF12_ITR12")
+                .source("IPEA")
+                .name("Imposto sobre a propriedade territorial rural")
+                .unit("R$ milhões")
+                .description("Incide sobre a propriedade territorial rural")
+                .build(),
+
 
         // Câmbio contratado - comercial
         FinancialSeries.builder()
