@@ -82,6 +82,7 @@ public class CacheConfig {
                 build("ipea-imposto-ir-total", 24, TimeUnit.HOURS, 10),
                 build("ipea-imposto-iof", 24, TimeUnit.HOURS, 10),
                 build("ipea-imposto-ipi", 24, TimeUnit.HOURS, 10),
+                build("ipea-imposto-itr", 24, TimeUnit.HOURS, 10),
 
 
                 // Câmbio Contratado
