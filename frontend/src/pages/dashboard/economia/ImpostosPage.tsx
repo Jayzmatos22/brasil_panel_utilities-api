@@ -24,10 +24,8 @@ import {
   EducationalInsightsPanel,
   AggregatedTotalPanel,
   QuickNav,
-  fmtPctSigned,
-  fmtBRLCompact,
-  fmtBRDate,
-  MONTHS_PT,
+  fmtPctSigned, fmtBRLTax, 
+  fmtBRDate, MONTHS_PT,
   computeMetrics,
   computeLatestSummary,
   computeAggregatedTotal,
@@ -42,6 +40,10 @@ import type {
   ComparativoGridProps,
   TaxHookResult,
 } from "../../../types/utilities/Economy";
+
+// Formatação de tela baseado no dispositivo
+import { useResponsiveValue } from '../../../components/indicators/parts/Atoms'
+import { getResponsiveGridCols, GRID_COLS_CLASS } from '../../../constants/indicators/Formatters'
 
 // 1. Dados estáticos dos tributos (array + derivados)
 import {
@@ -133,7 +135,7 @@ const buildTaxObservations = (
   });
 
   // ── Obs 1: valor + variações M/M e YoY com thresholds
-  const lastVal = fmtBRLCompact(latest.value);
+  const lastVal = fmtBRLTax(latest.value);
   observations.push(
     `Arrecadação mais recente de ${spec.shortName}: ${lastVal} (referência ${fmtBRDate(latest.date)}).` +
       (latest.variationMM !== null
@@ -185,7 +187,7 @@ const buildTaxObservations = (
   // ── Obs 3: amplitude 5 anos
   if (metrics.fiveYearHigh && metrics.fiveYearLow) {
     observations.push(
-      `${describeAmplitude(metrics.fiveYearHigh, metrics.fiveYearLow, fmtBRLCompact)}, evidenciando os ciclos de arrecadação do tributo.`,
+      `${describeAmplitude(metrics.fiveYearHigh, metrics.fiveYearLow, fmtBRLTax)}, evidenciando os ciclos de arrecadação do tributo.`,
     );
   }
 
@@ -255,11 +257,15 @@ const buildTaxObservations = (
 // ════════════════════════════════════════════════════════════════════════════
 // Componente: ComparativoGrid — grid 2x3 de mini-gráficos
 // ════════════════════════════════════════════════════════════════════════════
+// Mapa estático para Tailwind purge funcionar.
+
+
 const ComparativoGrid = memo(function ComparativoGrid({
   series,
   id,
 }: ComparativoGridProps & { id?: string }) {
-  // Últimos 12 pontos de cada série — fallback para 6 meses se faltar dado.
+  const cols = useResponsiveValue(() => getResponsiveGridCols(series.length));
+
   const panels = useMemo(() => {
     return series.map((s) => {
       const metrics = computeMetrics(s.data);
@@ -290,35 +296,33 @@ const ComparativoGrid = memo(function ComparativoGrid({
       <div
         aria-hidden
         className="pointer-events-none absolute -top-20 -right-20 h-48 w-48 rounded-full blur-3xl opacity-25"
-        style={{ background: "#a78bfa" }}
+        style={{ background: '#a78bfa' }}
       />
       <div className="relative mb-5 flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <span
             className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10"
-            style={{ background: "#a78bfa1a", color: "#a78bfa" }}
+            style={{ background: '#a78bfa1a', color: '#a78bfa' }}
             aria-hidden
           >
             <Layers size={18} />
           </span>
           <div>
-            <h4 className="text-base font-semibold tracking-tight text-slate-100">
-              Comparativo — últimos 12 meses
-            </h4>
+            <h4 className="text-base font-semibold tracking-tight text-slate-100">Comparativo — últimos 12 meses</h4>
             <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
-              6 tributos · escalas independentes
+              {series.length} tributos · {cols} coluna(s) no tamanho atual
             </p>
           </div>
         </div>
         <span
           className="rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider"
-          style={{ background: "#a78bfa1a", color: "#a78bfa" }}
+          style={{ background: '#a78bfa1a', color: '#a78bfa' }}
         >
-          2 × 3
+          {series.length} itens
         </span>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className={`${GRID_COLS_CLASS[cols] ?? GRID_COLS_CLASS[3]} gap-3`}>
         {panels.map((p) => (
           <ChartGridPanel
             key={p.key}
@@ -327,7 +331,7 @@ const ComparativoGrid = memo(function ComparativoGrid({
             accent={p.accent}
             points={p.points}
             emptyHint="Sem dados para este tributo."
-            valueFormatter={fmtBRLCompact}
+            valueFormatter={fmtBRLTax}
           />
         ))}
       </div>
@@ -360,7 +364,7 @@ const PeriodExplorerWithSelector = memo(function PeriodExplorerWithSelector({
     <motion.div
       id={id}
       variants={itemVariants}
-      className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]
+      className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/2
                  backdrop-blur-md p-6 shadow-[0_8px_40px_-15px_rgba(0,0,0,0.5)] scroll-mt-24"
     >
       <div
@@ -409,10 +413,10 @@ const PeriodExplorerWithSelector = memo(function PeriodExplorerWithSelector({
         <PeriodExplorer
           validAsc={metrics.validAsc}
           accent={selectedSpec.accent}
-          valueFormatter={fmtBRLCompact}
+          valueFormatter={fmtBRLTax}
         />
       ) : (
-        <div className="flex h-[300px] items-center justify-center text-center text-xs text-slate-500">
+        <div className="flex h-75 items-center justify-center text-center text-xs text-slate-500">
           Sem dados válidos para {selectedSpec.shortName}.
         </div>
       )}
@@ -431,6 +435,10 @@ function ImpostosPage() {
   const irTotal = useTotalIncomeTax();
   const iof = useIofTax();
   const ipi = useIpiTax();
+  
+
+
+
 
   // Mapa key → resultado do hook, para lookup por spec
   const resultsByKey: Record<string, TaxHookResult> = {
@@ -543,7 +551,7 @@ function ImpostosPage() {
                     className="text-4xl font-bold tracking-tight"
                     style={{ color: spec.accent }}
                   >
-                    {fmtBRLCompact(latest.value)}
+                    {fmtBRLTax(latest.value)}
                   </p>
                   <p className="text-slate-300 text-xs mt-1 font-mono">
                     Referência: {fmtBRDate(latest.date)}
@@ -584,7 +592,7 @@ function ImpostosPage() {
                 accent={spec.accent}
                 points={metrics.fiveYearPoints}
                 emptyHint="Sem dados válidos no intervalo de 5 anos."
-                valueFormatter={fmtBRLCompact}
+                valueFormatter={fmtBRLTax}
               />
             )}
 
@@ -596,7 +604,7 @@ function ImpostosPage() {
                 accent={spec.accent}
                 points={metrics.sixMonthPoints}
                 emptyHint="Sem dados válidos nos últimos 6 meses."
-                valueFormatter={fmtBRLCompact}
+                valueFormatter={fmtBRLTax}
               />
             )}
 
@@ -605,7 +613,7 @@ function ImpostosPage() {
                 rows={metrics.closings}
                 title={`${spec.shortName} — Últimos Fechamentos`}
                 subtitle="5 períodos · variação D/D-1"
-                valueFormatter={fmtBRLCompact}
+                valueFormatter={fmtBRLTax}
               />
             )}
 
