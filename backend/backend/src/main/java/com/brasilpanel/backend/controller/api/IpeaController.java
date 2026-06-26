@@ -432,6 +432,17 @@ public class IpeaController {
         return ResponseEntity.ok(ipeaService.getIpiTax());
     }
 
+    @Operation(
+            summary = "Imposto sobre a propriedade territorial rural (ITR)",
+            description = "Valor mensal referente a cada mês do ITR"
+    )
+    @ApiResponse(responseCode = "200", description = "Série retornada com sucesso")
+    @ApiResponse(responseCode = "502", description = "Erro na comunicação com IPEA")
+    @GetMapping("/impostos/itr")
+    public ResponseEntity<List<IpeaSerieDTO>> getItrTax() {
+        return ResponseEntity.ok(ipeaService.getItrTax());
+    }
+
 
 
     // ==========================================
