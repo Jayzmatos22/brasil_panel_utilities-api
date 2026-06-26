@@ -32,6 +32,7 @@ import {
   describeAmplitude,
   describeVolatility,
   describeLast5Trend,
+  useResponsiveValue
 } from "../../../components/indicators/Indicators";
 
 import type { IpeaSerie } from "../../../types/IpeaType";
@@ -42,7 +43,7 @@ import type {
 } from "../../../types/utilities/Economy";
 
 // Formatação de tela baseado no dispositivo
-import { useResponsiveValue } from '../../../components/indicators/parts/Atoms'
+
 import { getResponsiveGridCols, GRID_COLS_CLASS } from '../../../constants/indicators/Formatters'
 
 // 1. Dados estáticos dos tributos (array + derivados)
@@ -290,7 +291,7 @@ const ComparativoGrid = memo(function ComparativoGrid({
     <motion.div
       id={id}
       variants={itemVariants}
-      className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]
+      className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/2
                  backdrop-blur-md p-6 shadow-[0_8px_40px_-15px_rgba(0,0,0,0.5)] scroll-mt-24"
     >
       <div
