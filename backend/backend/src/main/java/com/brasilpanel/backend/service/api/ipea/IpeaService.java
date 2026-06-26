@@ -115,7 +115,7 @@ public class IpeaService {
     private static final String IMPOSTO_IR_TOTAL = "SRF12_IR12";
     private static final String IMPOSTO_IOF = "SRF12_IOF12";
     private static final String IMPOSTO_IPI = "SRF12_IPI12";
-
+    private static final String IMPOSTO_ITR = "SRF12_ITR12";
 
     // CÂMBIO CONTRATADO
     private static final String CAMBIO_COMERCIAL = "BM12_SBCCC12";
@@ -145,7 +145,9 @@ public class IpeaService {
             ATIVOS_RESERVA, INVESTIMENTO_CARTEIRA, SERVICOS_DESPESA, EXPORTACOES_PRODUTOS_BASICOS,
             INDICE_PRECOS_BENS_CAPITAL, INDICE_PRECOS_BENS_DURAVEIS, INDICE_PRECOS_BENS_NAO_DURAVEIS,
             VALOR_FOB_BENS_INTERMEDIARIOS, INDICE_QUANTUM_BENS_INTERMEDIARIOS, VALOR_FOB_COMBUSTIVEIS, IBOVESPA_FECHAMENTO,
-            IMPOSTO_II, IMPOSTO_IRPF, IMPOSTO_IRPJ, IMPOSTO_IR_TOTAL, IMPOSTO_IOF, IMPOSTO_IPI, PIB_MENSAL
+            IMPOSTO_II, IMPOSTO_IRPF, IMPOSTO_IRPJ, IMPOSTO_IR_TOTAL, IMPOSTO_IOF, IMPOSTO_IPI, PIB_MENSAL,
+            CAMBIO_COMERCIAL, CAMBIO_COMERCIAL_EXP, CAMBIO_COMERCIAL_IMP, CAMBIO_COMERCIAL_FINANC, CAMBIO_FINANCEIRO,
+            CAMBIO_FINANCEIRO, CAMBIO_FINANCEIRO_COMPRA, CAMBIO_FINANCEIRO_VENDA, IMPOSTO_ITR
     );
 
     // Pib
@@ -465,6 +467,11 @@ public class IpeaService {
     @Cacheable("ipea-imposto-ipi")
     public List<IpeaSerieDTO> getIpiTax() {
         return List.of(serie(IMPOSTO_IPI, "Imposto sobre Produtos Industrializados (IPI) - Receita Bruta"));
+    }
+
+    @Cacheable("ipea-imposto-itr")
+    public List<IpeaSerieDTO> getItrTax() {
+        return List.of(serie(IMPOSTO_ITR, "Imposto sobre a propriedade territorial rural - R$ mi"));
     }
 
 
