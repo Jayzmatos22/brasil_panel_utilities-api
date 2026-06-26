@@ -9,7 +9,7 @@
 import { memo } from 'react';
 import { AlertCircle, RefreshCw, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { fmtPctSigned } from '../../../constants/indicators/Formatters';
-import { useEffect, useState } from 'react';
+
 
 // ─── Skeleton — placeholder de carregamento ─────────────────────────────────
 export const Skeleton = memo(({ className }: { className?: string }) => (
@@ -89,24 +89,4 @@ export const VariationPill = memo(({ variation }: { variation: number | null }) 
 
 
 
-export function useResponsiveValue<T>(compute: () => T): T {
-  const [value, setValue] = useState<T>(compute);
 
-  useEffect(() => {
-    let frame = 0;
-    const handler = () => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => setValue(compute()));
-    };
-    window.addEventListener('resize', handler);
-    // Computa uma vez no mount para garantir valor atualizado.
-    handler();
-    return () => {
-      window.removeEventListener('resize', handler);
-      cancelAnimationFrame(frame);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  return value;
-}
