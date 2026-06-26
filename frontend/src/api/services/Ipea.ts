@@ -132,6 +132,9 @@ export const ipeaService = {
   getIpiTax: () =>
     apiClient.get<IpeaSerie[]>('/ipea/impostos/ipi').then((res) => res.data),
 
+  getItrTax: () =>
+    apiClient.get<IpeaSerie[]>('/ipea/impostos/itr').then((res) => res.data),
+
 
 
 
