@@ -315,6 +315,14 @@ export function useIpiTax() {
   });
 }
 
+export function useItrTax() {
+  return useQuery({
+    queryKey: ['ipea', 'impostos', 'itr'],
+    queryFn: ipeaService.getItrTax,
+    ...HISTORICAL
+  })
+}
+
 
 
 
