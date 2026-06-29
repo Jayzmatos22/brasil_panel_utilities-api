@@ -320,7 +320,13 @@ const TAX_IMAGES = import.meta.glob(
 /**
  * Resolve `imageKey` para URL real de imagem.
  *
- * @param key    Chave sem sufixo (ex.: 'ibovespa', 'irpf').
+ * Convenção de nomenclatura aceita (qualquer uma funciona):
+ *  1. `{key}-img.png`         → "irpf-img.png"
+ *  2. `{key}.png`              → "irpf.png"
+ *  3. `prefixo-{key}-img.png`  → "exportacoes-total-img.png"
+ *  4. `prefixo-{key}.png`      → "exportacoes-bens-consumo.png"
+ *
+ * @param key    Slug da imagem (ex: 'total', 'irpf', 'bens-consumo-valor')
  * @param folder Qual pasta de assets buscar. Default: 'indicadores'.
  */
 export const findImage = (
@@ -333,8 +339,12 @@ export const findImage = (
   const k = key.toLowerCase();
   const match = Object.entries(map).find(([path]) => {
     const filename = path.toLowerCase().split('/').pop() ?? '';
-    // Aceita "prefixo-{key}-img.ext" ou "prefixo-{key}.ext"
-    return filename.includes(`-${k}-img.`) || filename.includes(`-${k}.`);
+    // Remove a extensão para comparar só o "nome base"
+    const basename = filename.replace(/\.(jpe?g|png|webp|avif)$/, '');
+    // Remove prefixos conhecidos (exportacoes-, impostos-, indicadores-)
+    const cleaned = basename.replace(/^(exportacoes|impostos|indicadores)-/, '');
+    // Comparações diretas: aceita {key}, {key}-img
+    return cleaned === k || cleaned === `${k}-img`;
   });
   return match?.[1];
 };
