@@ -37,3 +37,5 @@ export * from './Helpers';
 export * from '../../constants/indicators/Motion';
 export * from '../../constants/indicators/TimeWindows';
 export * from '../../constants/indicators/Formatters';
+// Adicione no Indicators.tsx
+export * from './hooks/UseResponsiveValue';
