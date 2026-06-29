@@ -92,3 +92,19 @@ export const GRID_COLS_CLASS: Record<number, string> = {
   3: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
   4: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4',
 };
+
+
+
+
+/** Para valores em milhões de USD (séries FOB de exportação). */
+export const fmtUSDCompact = (v: number): string => {
+  const abs = Math.abs(v);
+  if (abs >= 1000)    return `US$ ${(v / 1000).toFixed(2)} bi`;
+  if (abs >= 1)       return `US$ ${v.toFixed(2)} mi`;
+  if (abs >= 0.001)   return `US$ ${(v * 1000).toFixed(0)} mil`;
+  return `US$ ${v.toFixed(4)}`;
+};
+
+/** Para índices adimensionais (base 100). */
+export const fmtIndex = (v: number): string =>
+  v.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
