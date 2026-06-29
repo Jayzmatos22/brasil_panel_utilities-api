@@ -164,3 +164,27 @@ export interface SectionCardProps {
   /** Classes adicionais para o container de conteúdo. Default ''. */
   contentClassName?: string;
 }
+
+
+
+
+// ─── Especificação de séries de exportação ──────────────────────────────────
+export type ExportCategory = 'valor' | 'indice';
+
+export interface ExportSpec {
+  key: string;
+  shortName: string;
+  longName: string;
+  badge: string;
+  description: string;
+  imageKey: string;
+  imageFolder?: 'indicadores' | 'impostos' | 'exportacoes';
+  gradient: string;
+  accent: string;
+  iconKey: string;
+  /** Categoria — determina formatador padrão e agrupamento visual. */
+  category: ExportCategory;
+}
+
+/** Alias genérico para o resultado de qualquer hook IPEA. */
+export type SeriesHookResult = TaxHookResult;
