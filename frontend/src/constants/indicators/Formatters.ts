@@ -107,4 +107,4 @@ export const fmtUSDCompact = (v: number): string => {
 
 /** Para índices adimensionais (base 100). */
 export const fmtIndex = (v: number): string =>
-  v.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+  `${v.toLocaleString('pt-BR', { maximumFractionDigits: 2 })} pts`;
