@@ -36,6 +36,9 @@ import IbgePage   from './pages/dashboard/brasil/IbgePage';
 import IpeaPage   from './pages/dashboard/brasil/IpeaPage';
 import BancosPage from './pages/dashboard/brasil/BancosPage';
 
+// Dashboard — Comércio
+import ExportacoesPage from './pages/dashboard/comercio/exportacoes/ExportacoesPage';
+
 // Dashboard — Admin
 import AdminUsersPage from './pages/dashboard/admin/AdminUsersPage';
 
@@ -81,6 +84,7 @@ function AppRoutes() {
             <Route path="brasil/ipea"      element={<IpeaPage />} />
             <Route path="brasil/bancos"    element={<BancosPage />} />
             <Route path="settings"         element={<SettingsAuthPage />} />
+            <Route path="/dashboard/comercio/exportacoes" element={<ExportacoesPage />} />
 
             <Route element={<AdminRoute />}>
               <Route path="admin/usuarios" element={<AdminUsersPage />} />
