@@ -325,12 +325,17 @@ const TAX_IMAGES = import.meta.glob(
  */
 export const findImage = (
   key: string,
-  folder: 'indicadores' | 'impostos' = 'indicadores',
+  folder: 'indicadores' | 'impostos' | 'exportacoes' = 'indicadores',
 ): string | undefined => {
-  const map = folder === 'impostos' ? TAX_IMAGES : INDICATOR_IMAGES;
-  const match = Object.entries(map).find(([path]) =>
-    path.toLowerCase().includes(`${key}-img`),
-  );
+  const map = folder === 'impostos' ? TAX_IMAGES
+            : folder === 'exportacoes' ? EXPORT_IMAGES
+            : INDICATOR_IMAGES;
+  const k = key.toLowerCase();
+  const match = Object.entries(map).find(([path]) => {
+    const filename = path.toLowerCase().split('/').pop() ?? '';
+    // Aceita "prefixo-{key}-img.ext" ou "prefixo-{key}.ext"
+    return filename.includes(`-${k}-img.`) || filename.includes(`-${k}.`);
+  });
   return match?.[1];
 };
 
@@ -442,3 +447,14 @@ export const describeSelicCorrelation = (
   }
   return `Historicamente, períodos de alta da taxa Selic tendem a comprimir a valuation das ações por elevar o custo de oportunidade da renda fixa; o movimento inverso costuma ocorrer em ciclos de queda da Selic — ${tail}`;
 };
+
+
+
+
+
+/** Imagens de exportações (Total, Quantum, Básicos, Combustíveis, etc.). */
+const EXPORT_IMAGES = import.meta.glob(
+  '../../assets/exportacoes/*.{jpeg,jpg,png,webp,avif}',
+  { eager: true, import: 'default' },
+) as Record<string, string>;
+
