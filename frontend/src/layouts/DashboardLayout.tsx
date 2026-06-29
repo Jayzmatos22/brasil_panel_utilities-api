@@ -3,7 +3,7 @@ import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   TrendingUp, BarChart2, Settings, DollarSign, Map, ChevronDown, ChevronRight,
   Activity, Wallet, Globe, Bitcoin, Coins, Users, Building2, LogOut,
-  ShieldCheck, PanelLeftClose, PanelLeftOpen, Receipt, // <-- Importado o Receipt aqui
+  ShieldCheck, PanelLeftClose, PanelLeftOpen, Receipt, Ship,
 } from 'lucide-react';
 import { BrandLogo } from '../components/brand/BrandLogo';
 import { getTokenEmail, isAdmin } from '../lib/auth/jwt';
@@ -12,10 +12,19 @@ const NAV = [
   {
     group: 'Economia', icon: TrendingUp,
     items: [
-      { label: 'Indicadores',  path: '/dashboard/economia',          icon: Activity  },
+      { label: 'Indicadores',   path: '/dashboard/economia',          icon: Activity  },
       { label: 'Salário Mínimo', path: '/dashboard/economia/salario', icon: Wallet    },
       { label: 'PIB Brasil',     path: '/dashboard/economia/pib',     icon: Globe     },
-      { label: 'Impostos',       path: '/dashboard/economia/impostos',icon: Receipt   }, // <-- Rota nova adicionada
+      { label: 'Impostos',       path: '/dashboard/economia/impostos',icon: Receipt   },
+    ],
+  },
+  {
+    group: 'Comércio Exterior', icon: Ship,
+    items: [
+      { label: 'Exportações', path: '/dashboard/comercio/exportacoes', icon: Ship },
+      // Espaço pra futuras expansões:
+      // { label: 'Importações',   path: '/dashboard/comercio/importacoes',   icon: Ship },
+      // { label: 'Balança Comercial', path: '/dashboard/comercio/balanca',  icon: BarChart2 },
     ],
   },
   {
@@ -50,19 +59,20 @@ const ADMIN_NAV = {
 } as const;
 
 const PAGE_TITLES: Record<string, string> = {
-  '/dashboard/economia':          'Indicadores Econômicos',
-  '/dashboard/economia/salario': 'Salário Mínimo',
-  '/dashboard/economia/pib':      'PIB Brasil',
-  '/dashboard/economia/impostos': 'Carga Tributária', // <-- Título da nova página
-  '/dashboard/mercado/acoes':     'Ações',
-  '/dashboard/mercado/metais':   'Metais Preciosos',
-  '/dashboard/moedas/cambio':    'Câmbio',
-  '/dashboard/moedas/cripto':    'Criptomoedas',
-  '/dashboard/brasil/ibge':      'IBGE — Municípios',
-  '/dashboard/brasil/ipea':      'IPEA — Séries',
-  '/dashboard/brasil/bancos':    'Bancos',
-  '/dashboard/admin/usuarios':   'Admin — Usuários',
-  '/dashboard/settings':         'Configurações',
+  '/dashboard/economia':           'Indicadores Econômicos',
+  '/dashboard/economia/salario':   'Salário Mínimo',
+  '/dashboard/economia/pib':       'PIB Brasil',
+  '/dashboard/economia/impostos':  'Carga Tributária',
+  '/dashboard/comercio/exportacoes': 'Exportações Brasileiras',
+  '/dashboard/mercado/acoes':      'Ações',
+  '/dashboard/mercado/metais':     'Metais Preciosos',
+  '/dashboard/moedas/cambio':      'Câmbio',
+  '/dashboard/moedas/cripto':      'Criptomoedas',
+  '/dashboard/brasil/ibge':        'IBGE — Municípios',
+  '/dashboard/brasil/ipea':        'IPEA — Séries',
+  '/dashboard/brasil/bancos':      'Bancos',
+  '/dashboard/admin/usuarios':     'Admin — Usuários',
+  '/dashboard/settings':           'Configurações',
 };
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -81,7 +91,7 @@ export default function DashboardLayout() {
 
   const [sidebarOpen, setSidebarOpen] = useState(() => !isMobile());
   const [open, setOpen] = useState<Record<string, boolean>>({
-    Admin: true, Economia: true, Mercado: true, Moedas: true, Brasil: true,
+    Admin: true, Economia: true, 'Comércio Exterior': true, Mercado: true, Moedas: true, Brasil: true,
   });
 
   const toggle = (group: string) =>
