@@ -57,6 +57,8 @@ public class IpeaScheduler {
             "ipea-exportacoes-valor-bens-intermediarios",
             "ipea-exportacoes-quantum-bens-intermediarios",
             "ipea-exportacoes-valor-combustiveis",
+            "ipea-quantum-exportacoes",
+
 
             // Mercado
             "ipea-ibovespa-fechamento",
