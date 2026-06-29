@@ -8,18 +8,17 @@
  * Os `children` preenchem o espaço de dados (número, variações, etc.).
  */
 
-import { memo, type ReactNode } from 'react';
-import { motion } from 'motion/react';
-import { itemVariants } from '../../../constants/indicators/Motion';
-import { findImage } from '../Helpers';
-import { Skeleton, ErrorState } from './Atoms';
-
+import { memo, type ReactNode } from "react";
+import { motion } from "motion/react";
+import { itemVariants } from "../../../constants/indicators/Motion";
+import { findImage } from "../Helpers";
+import { Skeleton, ErrorState } from "./Atoms";
 
 export interface IndicatorCardProps {
   id?: string;
   imageKey: string;
   /** Em qual pasta de assets buscar a imagem. Default: 'indicadores'. */
-  imageFolder?: 'indicadores' | 'impostos';
+  imageFolder?: 'indicadores' | 'impostos' | 'exportacoes';
   gradient: string;
   /** Ícone lucide já dimensionado. */
   icon: ReactNode;
@@ -32,13 +31,10 @@ export interface IndicatorCardProps {
   children: ReactNode;
 }
 
-
-
-
 export const IndicatorCard = memo(function IndicatorCard({
   id,
   imageKey,
-  imageFolder = 'indicadores',
+  imageFolder = "indicadores",
   gradient,
   icon,
   title,
@@ -51,19 +47,18 @@ export const IndicatorCard = memo(function IndicatorCard({
 }: IndicatorCardProps) {
   const img = findImage(imageKey, imageFolder);
 
-
   return (
     <motion.article
       id={id}
       variants={itemVariants}
       // scroll-mt-24 reserva espaço para a QuickNav sticky ao rolar até aqui.
-      className="group relative flex flex-col lg:flex-row overflow-hidden bg-white/[0.02]
+      className="group relative flex flex-col lg:flex-row overflow-hidden bg-white/2
                  backdrop-blur-md border border-white/10 rounded-2xl
                  shadow-[0_8px_40px_-15px_rgba(0,0,0,0.5)] scroll-mt-24"
     >
       {/* ── Painel visual (esquerda) ── */}
       <div className="relative lg:w-2/5 aspect-video lg:aspect-auto shrink-0 overflow-hidden">
-        <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
+        <div className={`absolute inset-0 bg-linear-to-br ${gradient}`} />
 
         {img && (
           <img
@@ -75,18 +70,18 @@ export const IndicatorCard = memo(function IndicatorCard({
             // Máscara radial: a imagem "emerge" do gradiente em vez de cobri-lo.
             style={{
               WebkitMaskImage:
-                'radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, transparent 70%)',
+                "radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, transparent 70%)",
               maskImage:
-                'radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, transparent 70%)',
+                "radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, transparent 70%)",
             }}
             onError={(e) => {
-              e.currentTarget.style.display = 'none';
+              e.currentTarget.style.display = "none";
             }}
           />
         )}
 
         {/* Gradiente para baixo para legibilidade do título no canto inferior. */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#020617] via-[#020617]/60 to-transparent" />
+        <div className="absolute inset-0 bg-linear-to-t from-[#020617] via-[#020617]/60 to-transparent" />
 
         <div className="absolute bottom-0 left-0 p-6 flex flex-col gap-2 z-10">
           <div className="flex items-center gap-3">
@@ -109,7 +104,7 @@ export const IndicatorCard = memo(function IndicatorCard({
       {/* ── Painel de conteúdo (direita) ── */}
       <div className="flex-1 flex flex-col p-6 lg:p-8 gap-5">
         <div
-          className="min-h-[130px] flex flex-col justify-center"
+          className="min-h-32.5 flex flex-col justify-center"
           role="status"
           aria-live="polite"
           aria-busy={isLoading}
