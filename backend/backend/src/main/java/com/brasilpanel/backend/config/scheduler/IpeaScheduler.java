@@ -88,7 +88,8 @@ public class IpeaScheduler {
     private final IpeaService ipeaService;
     private final CacheManager cacheManager;
 
-    @Scheduled(cron = "0 0 7 * * MON", zone = "America/Sao_Paulo")
+    // Roda todo dia às 05h
+    @Scheduled(cron = "0 0 5 * * *", zone = "America/Sao_Paulo")
     public void refreshIpea() {
         log.info("[IpeaScheduler] Iniciando refresh das séries IPEA...");
         try {
