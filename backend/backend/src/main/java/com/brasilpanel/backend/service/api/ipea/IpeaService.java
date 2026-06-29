@@ -12,15 +12,20 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Serve séries do IPEA priorizando o banco local.
  * DB-first: cache → FinancialDataPoint (source "IPEA") → API externa (fallback + persiste).
  */
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class IpeaService {
     private final RestClient restClient;
@@ -230,9 +235,14 @@ public class IpeaService {
     public void refreshAll() {
         for (String codigo : ALL_CODES) {
             try {
-                persist(codigo, fetchSerie(codigo));
-            } catch (Exception e) {
-                // segue para a próxima série mesmo que uma falhe na API
+
+                List<IpeaItemDTO> fresh = fetchSerie(codigo);
+                log.info("Série {} → {} pontos buscados. Última data: {}",
+                        codigo, fresh.size(),
+                        fresh.isEmpty() ? "—" : fresh.get(0).data());
+                persist(codigo, fresh);
+            } catch (Exception e) { //import org.slf4j.Logger;
+                log.error("Falha ao atualizar série {}: {}", codigo, e.getMessage(), e);
             }
         }
     }
@@ -248,24 +258,57 @@ public class IpeaService {
         List<FinancialDataPoint> points = financialDataService.getAllPoints(codigo, SOURCE);
 
         if (!points.isEmpty()) {
-            return points.stream()
-                    .sorted(Comparator.comparing(FinancialDataPoint::getReferenceDate).reversed())
-                    .map(p -> new IpeaItemDTO(
-                            p.getReferenceDate().atStartOfDay().atOffset(BRT),
-                            p.getValue().doubleValue()))
-                    .toList();
+            FinancialDataPoint last = points.get(points.size() - 1);
+            LocalDate lastDate = last.getReferenceDate();
+            LocalDate today = LocalDate.now();
+
+            // Lógica diferenciada: Ibovespa é diário, outros são mensais/anuais
+            boolean isDaily = codigo.equals(IBOVESPA_FECHAMENTO);
+            boolean desatualizado;
+
+            if (isDaily) {
+                // Se for diário, queremos dados de ontem ou hoje (dependendo do horário)
+                // Consideramos desatualizado se a última data for anterior a ontem
+                desatualizado = lastDate.isBefore(today.minusDays(1));
+            } else {
+                // Lógica original para mensais
+                LocalDate expectedCutoff = today.withDayOfMonth(1).minusMonths(1);
+                desatualizado = lastDate.isBefore(expectedCutoff);
+            }
+
+            if (!desatualizado) {
+                return points.stream()
+                        .sorted(Comparator.comparing(FinancialDataPoint::getReferenceDate).reversed())
+                        .map(p -> new IpeaItemDTO(
+                                p.getReferenceDate().atStartOfDay().atOffset(BRT),
+                                p.getValue().doubleValue()))
+                        .toList();
+            }
+            log.info("Série {} desatualizada (Última: {}). Buscando API...", codigo, lastDate);
         }
 
-        // Cold path: banco vazio → busca na API e persiste para as próximas leituras.
         List<IpeaItemDTO> fresh = fetchSerie(codigo);
         persist(codigo, fresh);
         return fresh;
     }
 
     private void persist(String codigo, List<IpeaItemDTO> dados) {
+        // 1. Pegamos a última data que já temos no banco para esta série
+        Optional<LocalDate> lastInDb = financialDataService.getLastReferenceDate(codigo, SOURCE);
+
         for (IpeaItemDTO item : dados) {
             if (item.data() == null || item.valor() == null) continue;
-            financialDataService.savePoint(codigo, SOURCE, item.data().toLocalDate(), item.valor(), null);
+
+            LocalDate itemDate = item.data().toLocalDate();
+
+            // 2. OTIMIZAÇÃO CRÍTICA: Como a lista 'dados' vem da API ordenada pela data decrescente (mais nova primeiro),
+            // se chegarmos em uma data que já existe no banco, não precisamos processar o resto das 43 mil linhas.
+            if (lastInDb.isPresent() && !itemDate.isAfter(lastInDb.get())) {
+                // Se a data do item não é posterior à última do banco, já temos esse dado e os anteriores.
+                break;
+            }
+
+            financialDataService.savePoint(codigo, SOURCE, itemDate, item.valor(), null);
         }
     }
 
@@ -520,6 +563,7 @@ public class IpeaService {
     // As requisições abaixo reutilizam essa função, só o código de série muda.
     private List<IpeaItemDTO> fetchSerie(String codigo) {
         try {
+
             String url = BASE_URL.replace("{codigo}", codigo);
             IpeaResponseDTO response = restClient.get()
                     .uri(url)
