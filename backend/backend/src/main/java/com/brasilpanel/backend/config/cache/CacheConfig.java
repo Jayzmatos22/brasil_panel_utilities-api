@@ -69,6 +69,7 @@ public class CacheConfig {
                 build("ipea-exportacoes-valor-bens-intermediarios", 24, TimeUnit.HOURS, 10),
                 build("ipea-exportacoes-quantum-bens-intermediarios", 24, TimeUnit.HOURS, 10),
                 build("ipea-exportacoes-valor-combustiveis", 24, TimeUnit.HOURS, 10),
+                build("ipea-quantum-exportacoes", 24, TimeUnit.HOURS, 10),
 
 
                 // Mercado - Ibovespa
