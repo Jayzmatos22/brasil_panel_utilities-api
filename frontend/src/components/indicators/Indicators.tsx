@@ -39,3 +39,5 @@ export * from '../../constants/indicators/TimeWindows';
 export * from '../../constants/indicators/Formatters';
 // Adicione no Indicators.tsx
 export * from './hooks/UseResponsiveValue';
+
+export * from './parts/PageBanner';
