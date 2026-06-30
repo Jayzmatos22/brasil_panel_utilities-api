@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   TrendingUp, BarChart2, Settings, DollarSign, Map, ChevronDown, ChevronRight,
@@ -22,9 +22,6 @@ const NAV = [
     group: 'Comércio Exterior', icon: Ship,
     items: [
       { label: 'Exportações', path: '/dashboard/comercio/exportacoes', icon: Ship },
-      // Espaço pra futuras expansões:
-      // { label: 'Importações',   path: '/dashboard/comercio/importacoes',   icon: Ship },
-      // { label: 'Balança Comercial', path: '/dashboard/comercio/balanca',  icon: BarChart2 },
     ],
   },
   {
@@ -94,6 +91,15 @@ export default function DashboardLayout() {
     Admin: true, Economia: true, 'Comércio Exterior': true, Mercado: true, Moedas: true, Brasil: true,
   });
 
+  // FIX: Travar o scroll do body quando a sidebar mobile estiver aberta
+  useEffect(() => {
+    if (isMobile() && sidebarOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+  }, [sidebarOpen]);
+
   const toggle = (group: string) =>
     setOpen(prev => ({ ...prev, [group]: !prev[group] }));
 
@@ -116,17 +122,13 @@ export default function DashboardLayout() {
 
       {/* ── Header ───────────────────────────────────────────────────────── */}
       <header className="h-14 shrink-0 bg-slate-900 border-b border-slate-800
-                         flex items-center justify-between px-5 z-30">
+                         flex items-center justify-between px-5 z-40">
         <div className="flex items-center gap-3">
           <button
             onClick={() => setSidebarOpen(prev => !prev)}
-            title={sidebarOpen ? 'Ocultar menu' : 'Mostrar menu'}
             className="text-slate-400 hover:text-yellow-400 transition-colors cursor-pointer"
           >
-            {sidebarOpen
-              ? <PanelLeftClose size={18} />
-              : <PanelLeftOpen  size={18} />
-            }
+            {sidebarOpen ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
           </button>
           <BrandLogo variant="sidebar" />
         </div>
@@ -137,94 +139,53 @@ export default function DashboardLayout() {
 
         <div className="flex items-center gap-3">
           <div className="hidden sm:flex flex-col items-end">
-            <span className="text-white text-xs font-medium leading-tight">
-              {userEmail.split('@')[0]}
-            </span>
+            <span className="text-white text-xs font-medium leading-tight">{userEmail.split('@')[0]}</span>
             <span className="text-slate-500 text-[10px] leading-tight">{userEmail}</span>
           </div>
-
-          {/* Avatar */}
-          <div className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center
-                          text-slate-950 text-xs font-bold shrink-0">
+          <div className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center text-slate-950 text-xs font-bold shrink-0">
             {initials}
           </div>
-
-          {/* Settings */}
-          <button
-            onClick={() => navigate('/dashboard/settings')}
-            title="Configurações"
-            className={`flex items-center gap-1.5 transition-colors text-xs cursor-pointer
-              ${location.pathname === '/dashboard/settings'
-                ? 'text-amber-400'
-                : 'text-slate-500 hover:text-amber-400'
-              }`}
-          >
-            <Settings size={15} />
-            <span className="hidden sm:inline">Config</span>
-          </button>
-
-          {/* Logout */}
-          <button
-            onClick={handleLogout}
-            title="Sair"
-            className="flex items-center gap-1.5 text-slate-500 hover:text-rose-400
-                       transition-colors text-xs cursor-pointer"
-          >
-            <LogOut size={15} />
-            <span className="hidden sm:inline">Sair</span>
-          </button>
+          <button onClick={() => navigate('/dashboard/settings')} className="text-slate-500 hover:text-amber-400 transition-colors"><Settings size={15} /></button>
+          <button onClick={handleLogout} className="text-slate-500 hover:text-rose-400 transition-colors"><LogOut size={15} /></button>
         </div>
       </header>
 
       {/* ── Corpo ────────────────────────────────────────────────────────── */}
       <div className="flex flex-1 overflow-hidden relative">
 
-        {/* Backdrop mobile */}
+        {/* Backdrop mobile - Z-45 */}
         {sidebarOpen && (
           <div
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-10 md:hidden"
+            className="fixed inset-0 bg-black/80 backdrop-blur-md z-45 md:hidden"
             onClick={() => setSidebarOpen(false)}
           />
         )}
 
-        {/* Sidebar */}
+        {/* Sidebar - Z-50 e Largura Mobile 280px */}
         <aside
           className={[
-            'flex flex-col overflow-y-auto overflow-x-hidden',
+            'flex flex-col overflow-y-auto overflow-x-hidden aside-bg',
             'transition-all duration-300 ease-in-out',
-            'layout-dashboard-aside border-r border-slate-800',
-            'fixed md:relative top-[56px] md:top-0 bottom-0 z-20',
-            sidebarOpen ? 'w-60' : 'w-0 border-r-0',
+            'border-r border-slate-800',
+            'fixed md:relative top-0 md:top-0 bottom-0 z-50',
+            sidebarOpen ? 'w-[280px]' : 'w-0 border-r-0',
           ].join(' ')}
         >
-          <div className={`transition-opacity duration-200 ${sidebarOpen ? 'opacity-100' : 'opacity-0'}`}>
-            <nav className="flex-1 p-3 flex flex-col gap-0.5 pt-4 w-60">
-
-              {/* Admin */}
+          <div className={`w-[280px] transition-opacity duration-200 ${sidebarOpen ? 'opacity-100' : 'opacity-0'}`}>
+            <nav className="flex-1 p-3 flex flex-col gap-0.5 pt-4">
+              {/* Seção Admin */}
               {admin && (
                 <div className="mb-1">
-                  <button
-                    onClick={() => toggle(ADMIN_NAV.group)}
-                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg
-                               text-amber-400 hover:bg-amber-500/10 transition-all
-                               text-xs font-semibold uppercase tracking-wider cursor-pointer"
-                  >
-                    <ADMIN_NAV.icon size={13} className="shrink-0" />
+                  <button onClick={() => toggle(ADMIN_NAV.group)} className="w-full flex items-center gap-2 px-3 py-2 text-amber-400 text-xs font-semibold uppercase tracking-wider cursor-pointer">
+                    <ADMIN_NAV.icon size={13} />
                     <span className="flex-1 text-left">{ADMIN_NAV.group}</span>
-                    {open[ADMIN_NAV.group]
-                      ? <ChevronDown  size={13} className="text-amber-600" />
-                      : <ChevronRight size={13} className="text-amber-600" />
-                    }
+                    {open[ADMIN_NAV.group] ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
                   </button>
                   {open[ADMIN_NAV.group] && (
-                    <div className="ml-3 mt-0.5 pl-3 border-l border-amber-500/20 flex flex-col gap-0.5">
-                      {ADMIN_NAV.items.map(({ label, path, icon: ItemIcon }) => (
-                        <NavLink
-                          key={path} to={path} end className={linkClass}
-                          onClick={closeSidebarOnMobile}
-                        >
-                          <ItemIcon size={13} className="shrink-0" />
-                          {label}
+                    <div className="ml-3 pl-3 border-l border-amber-500/20">
+                      {ADMIN_NAV.items.map((item) => (
+                        <NavLink key={item.path} to={item.path} end className={linkClass} onClick={closeSidebarOnMobile}>
+                          <item.icon size={13} /> {item.label}
                         </NavLink>
                       ))}
                     </div>
@@ -232,31 +193,19 @@ export default function DashboardLayout() {
                 </div>
               )}
 
-              {/* Grupos */}
+              {/* Grupos de Navegação */}
               {NAV.map(({ group, icon: GroupIcon, items }) => (
                 <div key={group} className="mb-1">
-                  <button
-                    onClick={() => toggle(group)}
-                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg
-                               text-slate-300 hover:bg-slate-800/70 transition-all
-                               text-xs font-semibold uppercase tracking-wider cursor-pointer"
-                  >
-                    <GroupIcon size={13} className="text-amber-400 shrink-0" />
+                  <button onClick={() => toggle(group)} className="w-full flex items-center gap-2 px-3 py-2 text-slate-300 text-xs font-semibold uppercase tracking-wider cursor-pointer">
+                    <GroupIcon size={13} className="text-amber-400" />
                     <span className="flex-1 text-left">{group}</span>
-                    {open[group]
-                      ? <ChevronDown  size={13} className="text-slate-600" />
-                      : <ChevronRight size={13} className="text-slate-600" />
-                    }
+                    {open[group] ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
                   </button>
                   {open[group] && (
-                    <div className="ml-3 mt-0.5 pl-3 border-l border-slate-800 flex flex-col gap-0.5">
-                      {items.map(({ label, path, icon: ItemIcon }) => (
-                        <NavLink
-                          key={path} to={path} end className={linkClass}
-                          onClick={closeSidebarOnMobile}
-                        >
-                          <ItemIcon size={13} className="shrink-0" />
-                          {label}
+                    <div className="ml-3 pl-3 border-l border-slate-800">
+                      {items.map((item) => (
+                        <NavLink key={item.path} to={item.path} end className={linkClass} onClick={closeSidebarOnMobile}>
+                          <item.icon size={13} /> {item.label}
                         </NavLink>
                       ))}
                     </div>
@@ -264,18 +213,13 @@ export default function DashboardLayout() {
                 </div>
               ))}
             </nav>
-
-            <div className="px-4 py-3 border-t border-slate-800 text-[10px] text-slate-700 w-60">
-              Brasil Panel © {new Date().getFullYear()}
-            </div>
           </div>
         </aside>
 
-        {/* Conteúdo principal */}
-        <main className="flex-1 p-6 overflow-y-auto w-full">
+        {/* Conteúdo principal - overflow-y-auto garante scroll independente */}
+        <main className="flex-1 p-4 md:p-6 overflow-y-auto w-full relative z-0">
           <Outlet />
         </main>
-
       </div>
     </div>
   );
