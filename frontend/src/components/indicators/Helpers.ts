@@ -468,3 +468,27 @@ const EXPORT_IMAGES = import.meta.glob(
   { eager: true, import: 'default' },
 ) as Record<string, string>;
 
+
+
+
+// ─── Busca de banner (1 imagem por página) ──────────────────────────────────
+
+const BANNER_IMAGES = import.meta.glob(
+  '../../assets/**/banner-*.{jpeg,jpg,png,webp,avif}',
+  { eager: true, import: 'default' },
+) as Record<string, string>;
+
+/**
+ * Resolve a URL do banner de uma página.
+ * Convenção: arquivo começa com "banner-" (ex: banner-exportacoes-img.jpg).
+ *
+ * @param key Slug após o prefixo "banner-" (ex: 'exportacoes', 'impostos').
+ */
+export const findBannerImage = (key: string): string | undefined => {
+  const k = key.toLowerCase();
+  const match = Object.entries(BANNER_IMAGES).find(([path]) => {
+    const filename = path.toLowerCase().split('/').pop() ?? '';
+    return filename.startsWith(`banner-${k}`);
+  });
+  return match?.[1];
+};
