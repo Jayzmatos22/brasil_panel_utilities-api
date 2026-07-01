@@ -18,7 +18,7 @@ export interface IndicatorCardProps {
   id?: string;
   imageKey: string;
   /** Em qual pasta de assets buscar a imagem. Default: 'indicadores'. */
-  imageFolder?: 'indicadores' | 'impostos' | 'exportacoes' | 'cambioComercial';
+  imageFolder?: 'indicadores' | 'impostos' | 'exportacoes' | 'cambioComercial' | 'balanca';
   gradient: string;
   /** Ícone lucide já dimensionado. */
   icon: ReactNode;
