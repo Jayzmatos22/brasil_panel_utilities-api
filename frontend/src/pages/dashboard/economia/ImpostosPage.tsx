@@ -10,12 +10,14 @@ import {
   useTotalIncomeTax,
   useIofTax,
   useIpiTax,
+  useItrTax,
 } from "../../../hooks/UseIpea";
 
 import {
   containerVariants,
   itemVariants,
   IndicatorCard,
+  PageBanner,
   DataRow,
   ChartPanel,
   ChartGridPanel,
@@ -23,16 +25,17 @@ import {
   PeriodExplorer,
   EducationalInsightsPanel,
   AggregatedTotalPanel,
-  QuickNav,
-  fmtPctSigned, fmtBRLTax, 
-  fmtBRDate, MONTHS_PT,
+  fmtPctSigned,
+  fmtBRLTax,
+  fmtBRDate,
+  MONTHS_PT,
   computeMetrics,
   computeLatestSummary,
   computeAggregatedTotal,
   describeAmplitude,
   describeVolatility,
   describeLast5Trend,
-  useResponsiveValue
+  useResponsiveValue, findBannerImage
 } from "../../../components/indicators/Indicators";
 
 import type { IpeaSerie } from "../../../types/IpeaType";
@@ -42,9 +45,14 @@ import type {
   TaxHookResult,
 } from "../../../types/utilities/Economy";
 
+
+
 // Formatação de tela baseado no dispositivo
 
-import { getResponsiveGridCols, GRID_COLS_CLASS } from '../../../constants/indicators/Formatters'
+import {
+  getResponsiveGridCols,
+  GRID_COLS_CLASS,
+} from "../../../constants/indicators/Formatters";
 
 // 1. Dados estáticos dos tributos (array + derivados)
 import {
@@ -260,7 +268,6 @@ const buildTaxObservations = (
 // ════════════════════════════════════════════════════════════════════════════
 // Mapa estático para Tailwind purge funcionar.
 
-
 const ComparativoGrid = memo(function ComparativoGrid({
   series,
   id,
@@ -297,19 +304,21 @@ const ComparativoGrid = memo(function ComparativoGrid({
       <div
         aria-hidden
         className="pointer-events-none absolute -top-20 -right-20 h-48 w-48 rounded-full blur-3xl opacity-25"
-        style={{ background: '#a78bfa' }}
+        style={{ background: "#a78bfa" }}
       />
       <div className="relative mb-5 flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <span
             className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10"
-            style={{ background: '#a78bfa1a', color: '#a78bfa' }}
+            style={{ background: "#a78bfa1a", color: "#a78bfa" }}
             aria-hidden
           >
             <Layers size={18} />
           </span>
           <div>
-            <h4 className="text-base font-semibold tracking-tight text-slate-100">Comparativo — últimos 12 meses</h4>
+            <h4 className="text-base font-semibold tracking-tight text-slate-100">
+              Comparativo — últimos 12 meses
+            </h4>
             <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
               {series.length} tributos · {cols} coluna(s) no tamanho atual
             </p>
@@ -317,7 +326,7 @@ const ComparativoGrid = memo(function ComparativoGrid({
         </div>
         <span
           className="rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider"
-          style={{ background: '#a78bfa1a', color: '#a78bfa' }}
+          style={{ background: "#a78bfa1a", color: "#a78bfa" }}
         >
           {series.length} itens
         </span>
@@ -436,10 +445,7 @@ function ImpostosPage() {
   const irTotal = useTotalIncomeTax();
   const iof = useIofTax();
   const ipi = useIpiTax();
-  
-
-
-
+  const itr = useItrTax();
 
   // Mapa key → resultado do hook, para lookup por spec
   const resultsByKey: Record<string, TaxHookResult> = {
@@ -449,6 +455,7 @@ function ImpostosPage() {
     "ir-total": irTotal,
     iof: iof,
     ipi: ipi,
+    itr: itr,
   };
 
   // Série por key — usada pelo Explorador
@@ -459,9 +466,9 @@ function ImpostosPage() {
     }
     return map;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [importacao, irpf, irpj, irTotal, iof, ipi]);
+  }, [importacao, irpf, irpj, irTotal, iof, ipi, itr]);
 
-  // Série para o Comparativo 2x3
+  // Série para o Comparativo 2x3 (agora 2x4 com 7 tributos)
   const comparativoSeries = useMemo(
     () =>
       TAX_SPECS.map((spec) => ({
@@ -472,10 +479,11 @@ function ImpostosPage() {
         data: resultsByKey[spec.key]?.data,
       })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [importacao, irpf, irpj, irTotal, iof, ipi],
+    [importacao, irpf, irpj, irTotal, iof, ipi, itr],
   );
 
-  // Agregado (soma dos 6 tributos no último mês disponível comum)
+  // Agregado (soma dos 7 tributos no último mês disponível comum)
+  // Nota: se quiser evitar dupla contagem do IR Total, adicione .filter(spec => spec.key !== 'ir-total')
   const aggregate = useMemo(
     () =>
       computeAggregatedTotal(
@@ -486,7 +494,7 @@ function ImpostosPage() {
         })),
       ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [importacao, irpf, irpj, irTotal, iof, ipi],
+    [importacao, irpf, irpj, irTotal, iof, ipi, itr],
   );
 
   return (
@@ -496,22 +504,20 @@ function ImpostosPage() {
       initial="hidden"
       animate="show"
     >
-      <motion.div variants={itemVariants}>
-        <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.5)]">
-          Indicadores <span className="text-[#FFDF00]">Fiscais</span>
-        </h1>
-        <p className="text-slate-400 text-sm mt-2 max-w-xl">
-          Arrecadação tributária federal — IPEA / Receita Federal. Séries
-          mensais atualizadas conforme calendário de apuração de cada tributo.
-        </p>
-      </motion.div>
-
-      <QuickNav items={NAV_ITEMS_TAXES} />
+      <PageBanner
+        image={findBannerImage("impostos")}
+        badge="IPEA · Receita Federal"
+        title="Indicadores Fiscais"
+        titleAccent="Fiscais"
+        subtitle="Arrecadação tributária federal — séries mensais atualizadas conforme calendário de apuração de cada tributo."
+        navItems={NAV_ITEMS_TAXES}
+        accentColor="#818cf8"
+      />
 
       {/* ── Painel agregado no topo ── */}
       <AggregatedTotalPanel
         id="sec-agregado"
-        title="Arrecadação Total — Soma dos 6 Tributos"
+        title="Arrecadação Total — Soma dos 7 Tributos"
         subtitle="Último mês de referência comum"
         aggregate={aggregate}
         accent="#818cf8"
