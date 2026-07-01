@@ -62,6 +62,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/dashboard/economia/pib':       'PIB Brasil',
   '/dashboard/economia/impostos':  'Carga Tributária',
   '/dashboard/comercio/exportacoes': 'Exportações Brasileiras',
+  '/dashboard/comercio/cambio-comercial': 'Câmbio Contratado',
   '/dashboard/mercado/acoes':      'Ações',
   '/dashboard/mercado/metais':     'Metais Preciosos',
   '/dashboard/moedas/cambio':      'Câmbio',
