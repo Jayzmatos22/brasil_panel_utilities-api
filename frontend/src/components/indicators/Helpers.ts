@@ -339,19 +339,19 @@ const CAMBIO_COMERCIAL_IMAGES = import.meta.glob(
 
 export const findImage = (
   key: string,
-  folder: 'indicadores' | 'impostos' | 'exportacoes' | 'cambioComercial' = 'indicadores',
+  folder: 'indicadores' | 'impostos' | 'exportacoes' | 'cambioComercial' | 'balanca' = 'indicadores',
 ): string | undefined => {
   const map = folder === 'impostos' ? TAX_IMAGES
             : folder === 'exportacoes' ? EXPORT_IMAGES
             : folder === 'cambioComercial' ? CAMBIO_COMERCIAL_IMAGES
+            : folder === 'balanca' ? BALANCA_IMAGES
             : INDICATOR_IMAGES;
   const k = key.toLowerCase();
   const match = Object.entries(map).find(([path]) => {
     const filename = path.toLowerCase().split('/').pop() ?? '';
     const basename = filename.replace(/\.(jpe?g|png|webp|avif)$/, '');
-    // Remove prefixos conhecidos
     const cleaned = basename
-      .replace(/^(exportacoes|impostos|indicadores|cambioComercial)-/, '')
+      .replace(/^(exportacoes|impostos|indicadores|cambioComercial|balanca)-/, '')
       .replace(/^cambio-contratado-/, '');
     return cleaned === k || cleaned === `${k}-img`;
   });
@@ -507,3 +507,9 @@ export const findBannerImage = (key: string): string | undefined => {
   });
   return match?.[1];
 };
+
+
+const BALANCA_IMAGES = import.meta.glob(
+  '../../assets/balanca/*.{jpeg,jpg,png,webp,avif}',
+  { eager: true, import: 'default' },
+) as Record<string, string>;
