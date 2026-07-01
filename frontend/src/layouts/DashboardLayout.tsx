@@ -3,7 +3,7 @@ import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   TrendingUp, BarChart2, Settings, DollarSign, Map, ChevronDown, ChevronRight,
   Activity, Wallet, Globe, Bitcoin, Coins, Users, Building2, LogOut,
-  ShieldCheck, PanelLeftClose, PanelLeftOpen, Receipt, Ship, Banknote
+  ShieldCheck, PanelLeftClose, PanelLeftOpen, Receipt, Ship, Banknote, Landmark
 } from 'lucide-react';
 import { BrandLogo } from '../components/brand/BrandLogo';
 import { getTokenEmail, isAdmin } from '../lib/auth/jwt';
@@ -19,12 +19,13 @@ const NAV = [
     ],
   },
   {
-    group: 'Comércio Exterior', icon: Ship,
-    items: [
-      { label: 'Exportações', path: '/dashboard/comercio/exportacoes', icon: Ship },
-      { label: 'Câmbio',       path: '/dashboard/moedas/cambioComercial',       icon: Banknote },
-    ],
-  },
+  group: 'Comércio Exterior', icon: Ship,
+  items: [
+    { label: 'Exportações',         path: '/dashboard/comercio/exportacoes',         icon: Ship },
+    { label: 'Câmbio Contratado',   path: '/dashboard/comercio/cambioComercial',     icon: Banknote },
+    { label: 'Balança de Pagamentos', path: '/dashboard/comercio/balancaPagamentos', icon: Landmark },
+  ],
+},
   {
     group: 'Mercado', icon: BarChart2,
     items: [
