@@ -328,26 +328,41 @@ const TAX_IMAGES = import.meta.glob(
  *
  * @param key    Slug da imagem (ex: 'total', 'irpf', 'bens-consumo-valor')
  * @param folder Qual pasta de assets buscar. Default: 'indicadores'.
+ *
  */
+
+const CAMBIO_COMERCIAL_IMAGES = import.meta.glob(
+  '../../assets/cambioComercial/*.{jpeg,jpg,png,webp,avif}',
+  { eager: true, import: 'default' },
+) as Record<string, string>;
+
+
 export const findImage = (
   key: string,
-  folder: 'indicadores' | 'impostos' | 'exportacoes' = 'indicadores',
+  folder: 'indicadores' | 'impostos' | 'exportacoes' | 'cambioComercial' = 'indicadores',
 ): string | undefined => {
   const map = folder === 'impostos' ? TAX_IMAGES
             : folder === 'exportacoes' ? EXPORT_IMAGES
+            : folder === 'cambioComercial' ? CAMBIO_COMERCIAL_IMAGES
             : INDICATOR_IMAGES;
   const k = key.toLowerCase();
   const match = Object.entries(map).find(([path]) => {
     const filename = path.toLowerCase().split('/').pop() ?? '';
-    // Remove a extensão para comparar só o "nome base"
     const basename = filename.replace(/\.(jpe?g|png|webp|avif)$/, '');
-    // Remove prefixos conhecidos (exportacoes-, impostos-, indicadores-)
-    const cleaned = basename.replace(/^(exportacoes|impostos|indicadores)-/, '');
-    // Comparações diretas: aceita {key}, {key}-img
+    // Remove prefixos conhecidos
+    const cleaned = basename
+      .replace(/^(exportacoes|impostos|indicadores|cambioComercial)-/, '')
+      .replace(/^cambio-contratado-/, '');
     return cleaned === k || cleaned === `${k}-img`;
   });
   return match?.[1];
 };
+
+
+
+
+
+
 
 // ─── Geradores de texto dinâmico para Insights ──────────────────────────────
 
