@@ -36,8 +36,14 @@ import IbgePage   from './pages/dashboard/brasil/IbgePage';
 import IpeaPage   from './pages/dashboard/brasil/IpeaPage';
 import BancosPage from './pages/dashboard/brasil/BancosPage';
 
+
+
+
 // Dashboard — Comércio
 import ExportacoesPage from './pages/dashboard/comercio/exportacoes/ExportacoesPage';
+import CambioContratadoComercialPage from './pages/dashboard/comercio/cambioComercial/CambioComercialPage';
+import BalancaPage from './pages/dashboard/comercio/balancaPagamentos/BalancaPage';
+
 
 // Dashboard — Admin
 import AdminUsersPage from './pages/dashboard/admin/AdminUsersPage';
@@ -75,7 +81,7 @@ function AppRoutes() {
             <Route path="economia"         element={<EconomiaPage />} />
             <Route path="economia/salario" element={<SalarioPage />} />
             <Route path="economia/pib"     element={<PibPage />} />
-            <Route path="economia/impostos" element={<ImpostosPage />} /> {/* <-- Nova Rota Inserida */}
+            <Route path="economia/impostos" element={<ImpostosPage />} />
             <Route path="mercado/acoes"    element={<AcoesPage />} />
             <Route path="mercado/metais"   element={<MetaisPage />} />
             <Route path="moedas/cambio"    element={<CambioPage />} />
@@ -85,6 +91,8 @@ function AppRoutes() {
             <Route path="brasil/bancos"    element={<BancosPage />} />
             <Route path="settings"         element={<SettingsAuthPage />} />
             <Route path="/dashboard/comercio/exportacoes" element={<ExportacoesPage />} />
+            <Route path="/dashboard/comercio/cambioComercial" element={<CambioContratadoComercialPage />} />
+            <Route path="/dashboard/comercio/balancaPagamentos" element={<BalancaPage />} />
 
             <Route element={<AdminRoute />}>
               <Route path="admin/usuarios" element={<AdminUsersPage />} />
