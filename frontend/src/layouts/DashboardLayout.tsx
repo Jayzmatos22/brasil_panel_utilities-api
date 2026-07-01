@@ -3,7 +3,7 @@ import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   TrendingUp, BarChart2, Settings, DollarSign, Map, ChevronDown, ChevronRight,
   Activity, Wallet, Globe, Bitcoin, Coins, Users, Building2, LogOut,
-  ShieldCheck, PanelLeftClose, PanelLeftOpen, Receipt, Ship,
+  ShieldCheck, PanelLeftClose, PanelLeftOpen, Receipt, Ship, Banknote
 } from 'lucide-react';
 import { BrandLogo } from '../components/brand/BrandLogo';
 import { getTokenEmail, isAdmin } from '../lib/auth/jwt';
@@ -22,6 +22,7 @@ const NAV = [
     group: 'Comércio Exterior', icon: Ship,
     items: [
       { label: 'Exportações', path: '/dashboard/comercio/exportacoes', icon: Ship },
+      { label: 'Câmbio',       path: '/dashboard/moedas/cambioComercial',       icon: Banknote },
     ],
   },
   {
