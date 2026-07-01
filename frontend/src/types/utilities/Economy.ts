@@ -188,3 +188,39 @@ export interface ExportSpec {
 
 /** Alias genérico para o resultado de qualquer hook IPEA. */
 export type SeriesHookResult = TaxHookResult;
+
+
+
+
+export interface CambioContractedSpec {
+  key: string;
+  shortName: string;
+  longName: string;
+  badge: string;
+  description: string;
+  imageKey: string;
+  imageFolder?: 'indicadores' | 'impostos' | 'exportacoes' | 'cambioComercial';
+  gradient: string;
+  accent: string;
+  iconKey: string;
+  /** Indica se a série é um Total (soma de outras) — usado para excluir do agregado. */
+  isAggregate?: boolean;
+}
+
+
+
+// ─── Especificação de séries da Balança de Pagamentos ──────────────────────
+export interface BalancaSpec {
+  key: string;
+  shortName: string;
+  longName: string;
+  badge: string;
+  description: string;
+  imageKey: string;
+  imageFolder?: 'indicadores' | 'impostos' | 'exportacoes' | 'cambioComercial' | 'balanca';
+  gradient: string;
+  accent: string;
+  iconKey: string;
+  /** 'valor' = US$ milhões | 'indice' = % do PIB. */
+  category: 'valor' | 'indice';
+}
