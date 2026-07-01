@@ -1,0 +1,454 @@
+// API: IPEA — Câmbio Contratado (7 séries em US$ milhões)
+import { memo, useMemo, useState } from 'react';
+import { motion } from 'motion/react';
+import { Activity, Sparkles, Filter, Layers } from 'lucide-react';
+
+import {
+  useContractedExchangeCommercial,
+  useContractedExchangeCommercialExports,
+  useContractedExchangeCommercialImports,
+  useContractedExchangeTotal,
+  useContractedExchangeFinancial,
+  useContractedExchangeFinancialPurchases,
+  useContractedExchangeFinancialSales,
+} from '../../../hooks/UseIpea';
+
+import {
+  containerVariants, itemVariants,
+  IndicatorCard, DataRow, ChartPanel, ChartGridPanel,
+  RecentClosingsTable, PeriodExplorer, EducationalInsightsPanel,
+  IndicesSummaryPanel, QuickNav, PageBanner,
+  fmtPctSigned, fmtUSDCompact, fmtBRDate, MONTHS_PT,
+  computeMetrics, computeLatestSummary,
+  describeAmplitude, describeVolatility, describeLast5Trend,
+  getResponsiveGridCols, useResponsiveValue,
+  findBannerImage,
+} from '../../../components/indicators/Indicators';
+
+import type { IpeaSerie } from '../../../types/IpeaType';
+import type {
+  CambioContractedSpec, SeasonalityInsight, ComparativoGridProps,
+  SeriesHookResult, LatestSummary,
+} from '../../../types/utilities/Economy';
+
+import { CAMBIO_SPECS, NAV_ITEMS_CAMBIO } from '../../../constants/cambio/CambioSpecs';
+import { renderCambioIcon } from '../../../constants/cambio/CambioIcons';
+import {
+  CAMBIO_SEASONALITY, CAMBIO_CORRELATION_LABEL,
+} from '../../../constants/cambio/CambioSeasonality';
+
+const fmt = fmtUSDCompact;
+
+// ─── Observações dinâmicas ─────────────────────────────────────────────────
+interface ObservationsResult {
+  observations: string[];
+  insights: { label: string; value: string; tone: 'pos' | 'neg' | 'neutral' }[];
+}
+
+const buildCambioObservations = (
+  spec: CambioContractedSpec,
+  data: IpeaSerie[] | undefined,
+): ObservationsResult => {
+  const metrics = computeMetrics(data);
+  const latest = computeLatestSummary(data);
+  if (!metrics || !latest) return { observations: [], insights: [] };
+
+  const observations: string[] = [];
+  const insights: { label: string; value: string; tone: 'pos' | 'neg' | 'neutral' }[] = [];
+
+  insights.push({
+    label: 'Variação M/M',
+    value: latest.variationMM === null ? '—' : fmtPctSigned(latest.variationMM),
+    tone: latest.variationMM === null ? 'neutral' : latest.variationMM >= 0 ? 'pos' : 'neg',
+  });
+  insights.push({
+    label: 'Variação YoY',
+    value: latest.variationYoY === null ? '—' : fmtPctSigned(latest.variationYoY),
+    tone: latest.variationYoY === null ? 'neutral' : latest.variationYoY >= 0 ? 'pos' : 'neg',
+  });
+  insights.push({
+    label: 'Variação 6 meses',
+    value: metrics.sixMonthReturn === null ? '—' : fmtPctSigned(metrics.sixMonthReturn),
+    tone: metrics.sixMonthReturn === null ? 'neutral' : metrics.sixMonthReturn >= 0 ? 'pos' : 'neg',
+  });
+  insights.push({
+    label: 'Vol. média 6m',
+    value: metrics.avgDailyAbsVar6m === null ? '—' : `${metrics.avgDailyAbsVar6m.toFixed(2)}%`,
+    tone: 'neutral',
+  });
+
+  observations.push(
+    `Volume mais recente de ${spec.shortName}: ${fmt(latest.value)} (referência ${fmtBRDate(latest.date)}).` +
+    (latest.variationMM !== null
+      ? ` Frente ao mês anterior, variação de ${fmtPctSigned(latest.variationMM)}` +
+        (latest.variationMM >= 15 ? ' (forte alta mensal)'
+          : latest.variationMM >= 3 ? ' (alta mensal consistente)'
+          : latest.variationMM > -3 ? ' (estável no mês)'
+          : latest.variationMM > -15 ? ' (queda mensal moderada)'
+          : ' (forte queda mensal)')
+      : '') +
+    (latest.variationYoY !== null
+      ? `; frente ao mesmo mês do ano anterior, variação de ${fmtPctSigned(latest.variationYoY)}` +
+        (latest.variationYoY >= 15 ? ' (expansão robusta na base anual)'
+          : latest.variationYoY >= 0 ? ' (crescimento anual moderado)'
+          : latest.variationYoY > -15 ? ' (recuo anual moderado)'
+          : ' (recuo anual acentuado)')
+      : '') +
+    '.',
+  );
+
+  if (metrics.sixMonthReturn !== null) {
+    const r = metrics.sixMonthReturn;
+    let desc: string;
+    if (r >= 20) desc = `forte alta de curto prazo, acumulando ${fmtPctSigned(r)} nos últimos 6 meses`;
+    else if (r >= 5) desc = `fase ascendente consistente, com ${fmtPctSigned(r)} nos últimos 6 meses`;
+    else if (r >= 0.5) desc = `leve viés de alta no curto prazo, acumulando ${fmtPctSigned(r)} nos últimos 6 meses`;
+    else if (r > -0.5) desc = `mercado lateralizado nos últimos 6 meses, com variação líquida de ${fmtPctSigned(r)}`;
+    else if (r > -5) desc = `leve viés de baixa no curto prazo, acumulando ${fmtPctSigned(r)} nos últimos 6 meses`;
+    else if (r > -20) desc = `fase descendente consistente, com ${fmtPctSigned(r)} nos últimos 6 meses`;
+    else desc = `forte queda de curto prazo, acumulando ${fmtPctSigned(r)} nos últimos 6 meses`;
+    observations.push(`Nos últimos 6 meses, ${desc}.`);
+  }
+
+  if (metrics.fiveYearHigh && metrics.fiveYearLow) {
+    observations.push(
+      `${describeAmplitude(metrics.fiveYearHigh, metrics.fiveYearLow, fmt)}, evidenciando os ciclos do fluxo cambial brasileiro.`,
+    );
+  }
+
+  if (metrics.avgDailyAbsVar6m !== null) {
+    observations.push(
+      `${describeVolatility(metrics.avgDailyAbsVar6m, metrics.positiveDays6m, metrics.negativeDays6m)}.`,
+    );
+  }
+
+  if (metrics.last5Trend !== null && metrics.last5NetPct !== null) {
+    observations.push(`${describeLast5Trend(metrics.last5Trend, metrics.last5NetPct)}.`);
+  }
+
+  const monthIdx = parseInt(latest.date.substring(5, 7), 10) - 1;
+  const monthName = MONTHS_PT[monthIdx] ?? 'mês atual';
+
+  const seasonal: SeasonalityInsight[] | undefined = CAMBIO_SEASONALITY[spec.key];
+  if (seasonal && seasonal.length > 0) {
+    const matched = seasonal.find((s) => s.monthIdx === monthIdx);
+    const next = seasonal.find((s) => s.monthIdx > monthIdx)
+      ?? seasonal.find((s) => s.monthIdx < monthIdx);
+    if (matched) {
+      observations.push(
+        `O mês corrente (${monthName}) é tipicamente de pico para ${spec.shortName} — ${matched.reason}. Padrão sazonal historicamente observado.`,
+      );
+    } else if (next) {
+      const nextName = MONTHS_PT[next.monthIdx];
+      observations.push(
+        `Fora dos meses de pico, ${spec.shortName} apresenta movimento mais contido. Próximo pico esperado em ${nextName} (${next.reason}).`,
+      );
+    }
+  }
+
+  const correlation = CAMBIO_CORRELATION_LABEL[spec.key] ?? 'fluxo cambial';
+  observations.push(
+    `Para ${spec.shortName}, o movimento reflete ${correlation}. Em cenários de incerteza cambial ou choques externos, o volume contratado tende a se elevar; em ambientes de estabilidade, tende a recuar. Correlação macroeconômica observável, mas não determinística.`,
+  );
+
+  return { observations, insights };
+};
+
+// ─── ComparativoGrid ───────────────────────────────────────────────────────
+const GRID_COLS_CLASS: Record<number, string> = {
+  1: 'grid grid-cols-1',
+  2: 'grid grid-cols-1 sm:grid-cols-2',
+  3: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
+  4: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4',
+};
+
+const ComparativoGrid = memo(function ComparativoGrid({
+  series, id,
+}: ComparativoGridProps & { id?: string }) {
+  const cols = useResponsiveValue(() => getResponsiveGridCols(series.length));
+
+  const panels = useMemo(() => {
+    return series.map((s) => {
+      const metrics = computeMetrics(s.data);
+      const valid = metrics?.validAsc ?? [];
+      const last12 = valid.slice(-12).map((i) => ({
+        date: i.data.substring(0, 10),
+        value: i.valor as number,
+      }));
+      const sixMonth = metrics?.sixMonthPoints ?? [];
+      const points = last12.length >= sixMonth.length ? last12 : sixMonth;
+      return {
+        key: s.key, shortName: s.shortName, longName: s.longName,
+        accent: s.accent, points,
+      };
+    });
+  }, [series]);
+
+  return (
+    <motion.div
+      id={id} variants={itemVariants}
+      className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]
+                 backdrop-blur-md p-6 shadow-[0_8px_40px_-15px_rgba(0,0,0,0.5)] scroll-mt-24"
+    >
+      <div aria-hidden
+        className="pointer-events-none absolute -top-20 -right-20 h-48 w-48 rounded-full blur-3xl opacity-25"
+        style={{ background: '#a78bfa' }}
+      />
+      <div className="relative mb-5 flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10"
+            style={{ background: '#a78bfa1a', color: '#a78bfa' }} aria-hidden>
+            <Layers size={18} />
+          </span>
+          <div>
+            <h4 className="text-base font-semibold tracking-tight text-slate-100">Comparativo — últimos 12 meses</h4>
+            <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
+              {series.length} séries · escalas independentes
+            </p>
+          </div>
+        </div>
+        <span className="rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider"
+          style={{ background: '#a78bfa1a', color: '#a78bfa' }}>
+          {series.length} itens
+        </span>
+      </div>
+
+      <div className={`${GRID_COLS_CLASS[cols] ?? GRID_COLS_CLASS[4]} gap-3`}>
+        {panels.map((p) => (
+          <ChartGridPanel
+            key={p.key} title={p.shortName} subtitle={p.longName}
+            accent={p.accent} points={p.points}
+            emptyHint="Sem dados para esta série."
+            valueFormatter={fmt}
+          />
+        ))}
+      </div>
+    </motion.div>
+  );
+});
+
+// ─── PeriodExplorerWithSelector ────────────────────────────────────────────
+interface PeriodExplorerWithSelectorProps {
+  seriesByKey: Record<string, IpeaSerie[] | undefined>;
+  id?: string;
+}
+
+const PeriodExplorerWithSelector = memo(function PeriodExplorerWithSelector({
+  seriesByKey, id,
+}: PeriodExplorerWithSelectorProps) {
+  const [selectedKey, setSelectedKey] = useState<string>(CAMBIO_SPECS[0]?.key ?? '');
+  const selectedSpec = CAMBIO_SPECS.find((s) => s.key === selectedKey) ?? CAMBIO_SPECS[0];
+  const data = selectedSpec ? seriesByKey[selectedSpec.key] : undefined;
+  const metrics = useMemo(() => computeMetrics(data), [data]);
+
+  return (
+    <motion.div
+      id={id} variants={itemVariants}
+      className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]
+                 backdrop-blur-md p-6 shadow-[0_8px_40px_-15px_rgba(0,0,0,0.5)] scroll-mt-24"
+    >
+      <div aria-hidden
+        className="pointer-events-none absolute -top-20 -right-20 h-48 w-48 rounded-full blur-3xl opacity-25"
+        style={{ background: '#a78bfa' }}
+      />
+      <div className="relative mb-5 flex flex-wrap items-start justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10"
+            style={{ background: '#a78bfa1a', color: '#a78bfa' }} aria-hidden>
+            <Filter size={18} />
+          </span>
+          <div>
+            <h4 className="text-base font-semibold tracking-tight text-slate-100">Explorador por Período</h4>
+            <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Selecione a série · depois ano e mês</p>
+          </div>
+        </div>
+        <label className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-slate-500">
+          <span>Série</span>
+          <select
+            value={selectedKey} onChange={(e) => setSelectedKey(e.target.value)}
+            className="rounded-lg border border-white/10 bg-slate-900/70 px-3 py-1.5 text-xs font-medium text-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-500/50 hover:border-white/20 transition-colors"
+            aria-label="Selecionar série"
+          >
+            {CAMBIO_SPECS.map((s) => (
+              <option key={s.key} value={s.key}>{s.shortName}</option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      {metrics ? (
+        <PeriodExplorer validAsc={metrics.validAsc} accent={selectedSpec.accent} valueFormatter={fmt} />
+      ) : (
+        <div className="flex h-[300px] items-center justify-center text-center text-xs text-slate-500">
+          Sem dados válidos para {selectedSpec.shortName}.
+        </div>
+      )}
+    </motion.div>
+  );
+});
+
+// ─── Página ────────────────────────────────────────────────────────────────
+function CambioPage() {
+  const comercial      = useContractedExchangeCommercial();
+  const comercialExp   = useContractedExchangeCommercialExports();
+  const comercialImp   = useContractedExchangeCommercialImports();
+  const total          = useContractedExchangeTotal();
+  const financeiro     = useContractedExchangeFinancial();
+  const financeiroComp = useContractedExchangeFinancialPurchases();
+  const financeiroVend = useContractedExchangeFinancialSales();
+
+  const resultsByKey = useMemo<Record<string, SeriesHookResult>>(() => ({
+    'comercial':              comercial,
+    'comercial-exportacoes':  comercialExp,
+    'comercial-importacoes':  comercialImp,
+    'comercial-financeiro':   total,
+    'financeiro':             financeiro,
+    'financeiro-compras':     financeiroComp,
+    'financeiro-vendas':      financeiroVend,
+  }), [comercial, comercialExp, comercialImp, total, financeiro, financeiroComp, financeiroVend]);
+
+  const summaryItems = useMemo(() => {
+    return CAMBIO_SPECS.map((s) => ({
+      key: s.key, label: s.shortName, accent: s.accent,
+      latest: computeLatestSummary(resultsByKey[s.key]?.data),
+      valueFormatter: fmt,
+    }));
+  }, [resultsByKey]);
+
+  const comparativoSeries = useMemo(
+    () => CAMBIO_SPECS.map((spec) => ({
+      key: spec.key, shortName: spec.shortName, longName: spec.longName,
+      accent: spec.accent, data: resultsByKey[spec.key]?.data,
+    })),
+    [resultsByKey],
+  );
+
+  const seriesByKey = useMemo(() => {
+    const map: Record<string, IpeaSerie[] | undefined> = {};
+    for (const spec of CAMBIO_SPECS) {
+      map[spec.key] = resultsByKey[spec.key]?.data;
+    }
+    return map;
+  }, [resultsByKey]);
+
+  return (
+    <motion.section
+      className="flex flex-col gap-8 max-w-5xl mx-auto py-6"
+      variants={containerVariants} initial="hidden" animate="show"
+    >
+      <PageBanner
+        image={findBannerImage('cambio')}
+        badge="IPEA · BACEN"
+        title="Câmbio Contratado"
+        titleAccent="Contratado"
+        subtitle="Volume de divisas contratado no Brasil — fluxo comercial e financeiro mensal."
+        navItems={NAV_ITEMS_CAMBIO}
+        accentColor="#f59e0b"
+      />
+
+      <IndicesSummaryPanel
+        id="sec-resumo"
+        title="Resumo — Último mês"
+        subtitle="Volume de divisas contratado (US$ milhões)"
+        items={summaryItems}
+      />
+
+      <ComparativoGrid id="sec-comparativo" series={comparativoSeries} />
+
+      {CAMBIO_SPECS.map((spec) => {
+        const result = resultsByKey[spec.key];
+        if (!result) return null;
+        const { data, isLoading, error, refetch } = result;
+        const metrics = computeMetrics(data);
+        const latest = computeLatestSummary(data);
+        const { observations, insights } = buildCambioObservations(spec, data);
+
+        return (
+          <div key={spec.key} className="flex flex-col gap-5">
+            <IndicatorCard
+              id={`sec-${spec.key}`}
+              imageKey={spec.imageKey}
+              imageFolder={spec.imageFolder ?? 'cambioComercial'}
+              gradient={spec.gradient}
+              icon={renderCambioIcon(spec.iconKey, 18)}
+              title={spec.shortName}
+              badge={spec.badge}
+              description={spec.description}
+              isLoading={isLoading} error={error} refetch={refetch}
+            >
+              {latest && (
+                <div className="flex flex-col gap-2">
+                  <p className="text-4xl font-bold tracking-tight" style={{ color: spec.accent }}>
+                    {fmt(latest.value)}
+                  </p>
+                  <p className="text-slate-300 text-xs mt-1 font-mono">
+                    Referência: {fmtBRDate(latest.date)}
+                  </p>
+                  <div className="flex flex-col mt-2">
+                    {latest.variationMM !== null && (
+                      <DataRow label="Variação M/M"
+                        value={fmtPctSigned(latest.variationMM)}
+                        valueClass={latest.variationMM >= 0 ? 'text-emerald-400' : 'text-red-400'}
+                      />
+                    )}
+                    {latest.variationYoY !== null && (
+                      <DataRow label="Variação YoY"
+                        value={fmtPctSigned(latest.variationYoY)}
+                        valueClass={latest.variationYoY >= 0 ? 'text-emerald-400' : 'text-red-400'}
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
+            </IndicatorCard>
+
+            {metrics && metrics.fiveYearPoints.length > 0 && (
+              <ChartPanel
+                title={`${spec.shortName} — 5 Anos`}
+                subtitle={`${spec.longName} · longo prazo`}
+                icon={<Activity size={18} />}
+                accent={spec.accent}
+                points={metrics.fiveYearPoints}
+                emptyHint="Sem dados válidos no intervalo de 5 anos."
+                valueFormatter={fmt}
+              />
+            )}
+
+            {metrics && metrics.sixMonthPoints.length > 0 && (
+              <ChartPanel
+                title={`${spec.shortName} — 6 Meses`}
+                subtitle="Volatilidade e tendência de curto prazo"
+                icon={<Sparkles size={18} />}
+                accent={spec.accent}
+                points={metrics.sixMonthPoints}
+                emptyHint="Sem dados válidos nos últimos 6 meses."
+                valueFormatter={fmt}
+              />
+            )}
+
+            {metrics && metrics.closings.length > 0 && (
+              <RecentClosingsTable
+                rows={metrics.closings}
+                title={`${spec.shortName} — Últimos Fechamentos`}
+                subtitle="5 períodos · variação D/D-1"
+                valueFormatter={fmt}
+              />
+            )}
+
+            {observations.length > 0 && (
+              <EducationalInsightsPanel
+                observations={observations}
+                insights={insights}
+                accent={spec.accent}
+              />
+            )}
+          </div>
+        );
+      })}
+
+      <PeriodExplorerWithSelector id="sec-explorador" seriesByKey={seriesByKey} />
+    </motion.section>
+  );
+}
+
+export default memo(CambioPage);
