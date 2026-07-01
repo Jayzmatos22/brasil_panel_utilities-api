@@ -11,7 +11,7 @@ import {
   useContractedExchangeFinancial,
   useContractedExchangeFinancialPurchases,
   useContractedExchangeFinancialSales,
-} from '../../../hooks/UseIpea';
+} from '../../../../hooks/UseIpea';
 
 import {
   containerVariants, itemVariants,
@@ -23,19 +23,19 @@ import {
   describeAmplitude, describeVolatility, describeLast5Trend,
   getResponsiveGridCols, useResponsiveValue,
   findBannerImage,
-} from '../../../components/indicators/Indicators';
+} from '../../../../components/indicators/Indicators';
 
-import type { IpeaSerie } from '../../../types/IpeaType';
+import type { IpeaSerie } from '../../../../types/IpeaType';
 import type {
   CambioContractedSpec, SeasonalityInsight, ComparativoGridProps,
   SeriesHookResult, LatestSummary,
-} from '../../../types/utilities/Economy';
+} from '../../../../types/utilities/Economy';
 
-import { CAMBIO_SPECS, NAV_ITEMS_CAMBIO } from '../../../constants/cambio/CambioSpecs';
-import { renderCambioIcon } from '../../../constants/cambio/CambioIcons';
+import { CAMBIO_SPECS, NAV_ITEMS_CAMBIO } from '../../../../constants/cambio/CambioSpecs';
+import { renderCambioIcon } from '../../../../constants/cambio/CambioIcons';
 import {
   CAMBIO_SEASONALITY, CAMBIO_CORRELATION_LABEL,
-} from '../../../constants/cambio/CambioSeasonality';
+} from '../../../../constants/cambio/CambioSeasonality';
 
 const fmt = fmtUSDCompact;
 
