@@ -19,12 +19,15 @@ export interface LineChartEchartsProps {
   points: LinePoint[];
   color?: string;
   valueFormatter?: (v: number) => string;
+  /** Override do estilo inline (height/width). */
+  style?: React.CSSProperties;
 }
 
 export function LineChartEcharts({
   points,
   color = '#eab308',
   valueFormatter,
+  style,
 }: LineChartEchartsProps) {
   const option = useMemo<EChartsOption>(() => {
     const rgb = hexToRgb(color);
@@ -83,7 +86,7 @@ export function LineChartEcharts({
   return (
     <ReactECharts
       option={option}
-      style={{ height: 300, width: '100%' }}
+      style={{ height: 300, width: '100%', ...style }}
       notMerge
     />
   );
