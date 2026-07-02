@@ -49,8 +49,9 @@ public class IpeaService {
     private static final String POBREZA = "PNADS_PERCPOBRE300";
 
     // Macro
-    private static final String PIB = "WEO_PIBWEOBRA";
-    private static final String INVESTIMENTO = "WEO_INVESTWEOBRA";
+    //private static final String TAXA_DESEMPREGO_FORCA_TRABALHO = "ECONMI12_USU12";
+    private static final String TAXA_DESOCUPACAO14MAIS = "PNADC12_TDESOC12";
+
     private static final String DESEMPREGO_FMI = "WEO_DESEMWEOBRA";
     private static final String SELIC = "PAN12_TJOVER12";
     private static final String RESERVAS = "BM12_RES12";
@@ -143,7 +144,7 @@ public class IpeaService {
     private static final List<String> ALL_CODES = List.of(
             DESOCUPACAO, OCUPACAO, EXPORTACOES_TOTAL_FOB, INDICE_QUANTUM_EXPORTACOES,
             SALARIO_MINIMO_REAL, SALARIO_MINIMO_PPC, RENDA_PER_CAPITA, AGRICULTURA_E_PECUARIA_QUANTUM,
-            GINI, POBREZA,  PIB, INVESTIMENTO, DESEMPREGO_FMI, SELIC, RESERVAS, ARRECADACAO,
+            GINI, POBREZA, DESEMPREGO_FMI, SELIC, RESERVAS, ARRECADACAO,
             INPC, IGPM,  POPULACAO, PROJECAO_TOTAL, PROJECAO_HOMENS, PROJECAO_MULHERES, TRANSACOES_CORRENTES_SALDO,
             BALANCA_COMERCIAL,  SERVICOS,  RENDA_PRIMARIA, INVESTIMENTO_DIRETO_INGRESSOS,
             INVESTIMENTO_DIRETO,  CONTA_CAPITAL,  CONTA_FINANCEIRA, EXPORTACOES_BENS_CONSUMO,
@@ -152,7 +153,8 @@ public class IpeaService {
             VALOR_FOB_BENS_INTERMEDIARIOS, INDICE_QUANTUM_BENS_INTERMEDIARIOS, VALOR_FOB_COMBUSTIVEIS, IBOVESPA_FECHAMENTO,
             IMPOSTO_II, IMPOSTO_IRPF, IMPOSTO_IRPJ, IMPOSTO_IR_TOTAL, IMPOSTO_IOF, IMPOSTO_IPI, PIB_MENSAL,
             CAMBIO_COMERCIAL, CAMBIO_COMERCIAL_EXP, CAMBIO_COMERCIAL_IMP, CAMBIO_COMERCIAL_FINANC, CAMBIO_FINANCEIRO,
-            CAMBIO_FINANCEIRO, CAMBIO_FINANCEIRO_COMPRA, CAMBIO_FINANCEIRO_VENDA, IMPOSTO_ITR
+            CAMBIO_FINANCEIRO, CAMBIO_FINANCEIRO_COMPRA, CAMBIO_FINANCEIRO_VENDA, IMPOSTO_ITR,
+            TAXA_DESOCUPACAO14MAIS
     );
 
     // Pib
@@ -196,12 +198,10 @@ public class IpeaService {
     @Cacheable("ipea-macro")
     public List<IpeaSerieDTO> getMacro() {
         return List.of(
-                serie(PIB, "PIB (US$ bilhões)"),
-                serie(INVESTIMENTO, "Investimento (% PIB)"),
-                serie(DESEMPREGO_FMI, "Taxa de desemprego FMI (%)"),
                 serie(SELIC, "Taxa Selic/Overnight (% a.a.)"),
                 serie(RESERVAS, "Reservas internacionais (US$ milhões)"),
-                serie(ARRECADACAO, "Arrecadação federal (R$ milhões)")
+                serie(ARRECADACAO, "Arrecadação federal (R$ milhões)"),
+                serie(TAXA_DESOCUPACAO14MAIS, "Taxa de desocupação - 14 anos e acima")
         );
     }
 
@@ -398,7 +398,7 @@ public class IpeaService {
     }
 
     @Cacheable("ipea-balanca-transacoes-correntes-pib")
-    public List<IpeaSerieDTO> getCurrentTransactionsPib() {
+    public List<IpeaSerieDTO> getCurrentTransactionsPercentagePib() {
         return List.of(serie(TRANSACOES_CORRENTES_PIB, "Balanço de pagamentos: transações correntes (% PIB)"));
     }
 
