@@ -351,9 +351,10 @@ export const findImage = (
     const filename = path.toLowerCase().split('/').pop() ?? '';
     const basename = filename.replace(/\.(jpe?g|png|webp|avif)$/, '');
     const cleaned = basename
-      .replace(/^(exportacoes|impostos|indicadores|cambioComercial|balanca)-/, '')
-      .replace(/^cambio-contratado-/, '');
-    return cleaned === k || cleaned === `${k}-img`;
+    .replace(/^(exportacoes|impostos|indicadores|cambioComercial|balanca)-/, '')
+    .replace(/^cambio-contratado-/, '')
+    .replace(/^balanca-pagamentos-/, '');   // ← NOVA LINHA
+return cleaned === k || cleaned === `${k}-img`;
   });
   return match?.[1];
 };
