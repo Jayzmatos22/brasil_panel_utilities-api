@@ -104,31 +104,29 @@ public class FinancialSeriesSeeder implements ApplicationRunner {
                 .unit("%").description("Taxa de pobreza (PPC$3/dia)")
                 .build(),
 
+
         // Macro
-        FinancialSeries.builder()
-                .code("WEO_PIBWEOBRA").source("IPEA").name("PIB (FMI)")
-                .unit("US$ bilhões").description("PIB segundo o World Economic Outlook (FMI)")
-                .build(),
-        FinancialSeries.builder()
-                .code("WEO_INVESTWEOBRA").source("IPEA").name("Investimento")
-                .unit("% PIB").description("Investimento como % do PIB (FMI)")
-                .build(),
-        FinancialSeries.builder()
-                .code("WEO_DESEMWEOBRA").source("IPEA").name("Taxa de desemprego (FMI)")
-                .unit("%").description("Taxa de desemprego segundo o FMI")
-                .build(),
         FinancialSeries.builder()
                 .code("PAN12_TJOVER12").source("IPEA").name("Taxa Selic/Overnight")
                 .unit("% a.a.").description("Taxa Selic/Overnight")
                 .build(),
+
         FinancialSeries.builder()
                 .code("BM12_RES12").source("IPEA").name("Reservas internacionais")
                 .unit("US$ milhões").description("Reservas internacionais")
                 .build(),
+
         FinancialSeries.builder()
                 .code("SRF12_TOTGER12").source("IPEA").name("Arrecadação federal")
                 .unit("R$ milhões").description("Arrecadação federal total")
                 .build(),
+
+        FinancialSeries.builder()
+                .code("PNADC12_TDESOC12").source("IPEA").name("Taxa de desocupação")
+                .unit("%").description("Taxa de desocupação - 14 anos ou mais")
+                .build(),
+
+
 
         // Preços
         FinancialSeries.builder()
@@ -172,7 +170,7 @@ public class FinancialSeriesSeeder implements ApplicationRunner {
                 .code("BPAG12_TC12")
                 .source("IPEA")
                 .name("Transações Correntes")
-                .unit("US$ milhões")
+                .unit("% PIB")
                 .description("Saldo das transações correntes")
                 .build(),
 
