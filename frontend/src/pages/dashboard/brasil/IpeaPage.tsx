@@ -1,32 +1,55 @@
 // API: IPEA — Indicadores Socioeconômicos
 // Endpoints: /ipea/macro, /emprego, /renda, /desigualdade-pobreza, /precos, /populacao
-import { memo, useMemo, useState, type ChangeEvent } from 'react';
-import { motion } from 'motion/react';
+import { memo, useMemo, useState, type ChangeEvent } from "react";
+import { motion } from "motion/react";
 import {
-  ChevronDown, LoaderCircle, Search, TrendingUp, Briefcase, DollarSign,
-  Scale, Percent, Users, Calendar, X,
-} from 'lucide-react';
+  ChevronDown,
+  LoaderCircle,
+  Search,
+  TrendingUp,
+  Briefcase,
+  DollarSign,
+  Scale,
+  Percent,
+  Users,
+  Calendar,
+  X,
+} from "lucide-react";
 import {
-  useMacro, useEmprego, useRenda, useDesigualdade, usePrecos, usePopulacao,
-} from '../../../hooks/UseIpea';
-import type { IpeaSerie, IpeaItem } from '../../../types/IpeaType';
+  useMacro,
+  useEmprego,
+  useRenda,
+  useDesigualdade,
+  usePrecos,
+  usePopulacao,
+} from "../../../hooks/UseIpea";
+import type { IpeaSerie, IpeaItem } from "../../../types/IpeaType";
 import {
-  containerVariants, itemVariants,
-  PageBanner, findBannerImage,
-  fmtPctSigned, fmtBRDate, fmtCompact,
-} from '../../../components/indicators/Indicators';
+  containerVariants,
+  itemVariants,
+  PageBanner,
+  findBannerImage,
+  fmtPctSigned,
+  fmtBRDate,
+  fmtCompact,
+} from "../../../components/indicators/Indicators";
 
-import type { ComponentType } from 'react';
+import type { ComponentType } from "react";
 
 import {
-  LineChartEcharts, type LinePoint,
-} from '../../../components/charts/LineChartEcharts';
-
-import { LineChartEchartsCompact } from "../../../components/charts/LineChartEchartsCompact";
+  LineChartEcharts,
+  type LinePoint,
+} from "../../../components/charts/LineChartEcharts";
 
 // ─── Tipos ─────────────────────────────────────────────────────────────────
 
-type Tab = 'Macro' | 'Emprego' | 'Renda' | 'Desigualdade' | 'Preços' | 'População';
+type Tab =
+  | "Macro"
+  | "Emprego"
+  | "Renda"
+  | "Desigualdade"
+  | "Preços"
+  | "População";
 
 interface TabSpec {
   key: Tab;
@@ -37,23 +60,65 @@ interface TabSpec {
 }
 
 const TAB_SPECS: TabSpec[] = [
-  { key: 'Macro',        label: 'Macro',        icon: TrendingUp, accent: '#34d399', description: 'Indicadores macroeconômicos — PIB, juros, câmbio, atividade.' },
-  { key: 'Emprego',      label: 'Emprego',      icon: Briefcase,  accent: '#22d3ee', description: 'Mercado de trabalho — rendimento, ocupação, desemprego.' },
-  { key: 'Renda',        label: 'Renda',        icon: DollarSign, accent: '#84cc16', description: 'Renda média e distribuição de rendimentos.' },
-  { key: 'Desigualdade', label: 'Desigualdade', icon: Scale,      accent: '#fbbf24', description: 'Pobreza, desigualdade, índice de Gini e vulnerabilidade.' },
-  { key: 'Preços',       label: 'Preços',       icon: Percent,    accent: '#fb923c', description: 'Índices de preços ao consumidor e produtor.' },
-  { key: 'População',    label: 'População',    icon: Users,      accent: '#a78bfa', description: 'Demografia, população residente e projeções.' },
+  {
+    key: "Macro",
+    label: "Macro",
+    icon: TrendingUp,
+    accent: "#34d399",
+    description: "Indicadores macroeconômicos — PIB, juros, câmbio, atividade.",
+  },
+  {
+    key: "Emprego",
+    label: "Emprego",
+    icon: Briefcase,
+    accent: "#22d3ee",
+    description: "Mercado de trabalho — rendimento, ocupação, desemprego.",
+  },
+  {
+    key: "Renda",
+    label: "Renda",
+    icon: DollarSign,
+    accent: "#84cc16",
+    description: "Renda média e distribuição de rendimentos.",
+  },
+  {
+    key: "Desigualdade",
+    label: "Desigualdade",
+    icon: Scale,
+    accent: "#fbbf24",
+    description: "Pobreza, desigualdade, índice de Gini e vulnerabilidade.",
+  },
+  {
+    key: "Preços",
+    label: "Preços",
+    icon: Percent,
+    accent: "#fb923c",
+    description: "Índices de preços ao consumidor e produtor.",
+  },
+  {
+    key: "População",
+    label: "População",
+    icon: Users,
+    accent: "#a78bfa",
+    description: "Demografia, população residente e projeções.",
+  },
 ];
 
 // ─── Helpers locais ────────────────────────────────────────────────────────
 
 const sortValidAsc = (items: IpeaItem[]): IpeaItem[] =>
   items
-    .filter((i) => i.valor !== null && i.valor !== undefined && !Number.isNaN(i.valor))
+    .filter(
+      (i) =>
+        i.valor !== null && i.valor !== undefined && !Number.isNaN(i.valor),
+    )
     .sort((a, b) => a.data.localeCompare(b.data));
 
 const toPoints = (items: IpeaItem[]): LinePoint[] =>
-  items.map((i) => ({ date: i.data.substring(0, 10), value: i.valor as number }));
+  items.map((i) => ({
+    date: i.data.substring(0, 10),
+    value: i.valor as number,
+  }));
 
 /** Último valor e variação M/M de uma série. */
 const getSeriesStats = (serie: IpeaSerie) => {
@@ -70,9 +135,7 @@ const getSeriesStats = (serie: IpeaSerie) => {
     }
   }
   const variationMM =
-    prev && prev.valor
-      ? ((last.valor! - prev.valor) / prev.valor) * 100
-      : null;
+    prev && prev.valor ? ((last.valor! - prev.valor) / prev.valor) * 100 : null;
   return {
     last,
     variationMM,
@@ -93,7 +156,7 @@ const SerieCard = memo(function SerieCard({ serie, accent }: SerieCardProps) {
 
   if (!stats) {
     return (
-      <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
+      <div className="rounded-xl border border-white/10 bg-white/2 p-4">
         <p className="text-slate-500 text-sm">{serie.nome}</p>
         <p className="text-slate-600 text-xs mt-1">Sem dados válidos.</p>
       </div>
@@ -107,12 +170,14 @@ const SerieCard = memo(function SerieCard({ serie, accent }: SerieCardProps) {
   // Determina se vale a pena mostrar gráfico "wide" (muitos pontos → scroll horizontal)
   const needsWideChart = points.length > 60;
   const chartHeight = needsWideChart ? 280 : 200;
-  const chartWidth = needsWideChart ? Math.max(800, points.length * 12) : undefined;
+  const chartWidth = needsWideChart
+    ? Math.max(800, points.length * 12)
+    : undefined;
 
   return (
     <motion.div
       variants={itemVariants}
-      className="relative overflow-hidden rounded-xl border border-white/10 bg-white/[0.02]
+      className="relative overflow-hidden rounded-xl border border-white/10 bg-white/2
                  backdrop-blur-md"
     >
       {/* Glow lateral colorido */}
@@ -165,11 +230,11 @@ const SerieCard = memo(function SerieCard({ serie, accent }: SerieCardProps) {
             <span
               className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 font-mono text-[11px] ${
                 variationMM >= 0
-                  ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
-                  : 'bg-red-500/10 text-red-300 border-red-500/20'
+                  ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/20"
+                  : "bg-red-500/10 text-red-300 border-red-500/20"
               }`}
             >
-              {variationMM >= 0 ? '↗' : '↘'} {fmtPctSigned(variationMM)} M/M
+              {variationMM >= 0 ? "↗" : "↘"} {fmtPctSigned(variationMM)} M/M
             </span>
           )}
         </div>
@@ -182,12 +247,19 @@ const SerieCard = memo(function SerieCard({ serie, accent }: SerieCardProps) {
             <span>Série histórica completa</span>
             {needsWideChart && (
               <span className="flex items-center gap-1 text-slate-600">
-                <ChevronDown size={10} className="rotate-90" /> Arraste para ver mais
+                <ChevronDown size={10} className="rotate-90" /> Arraste para ver
+                mais
               </span>
             )}
           </div>
-          <div className={needsWideChart ? 'overflow-x-auto pb-3' : 'pb-3'}>
-            <div style={needsWideChart ? { width: `${chartWidth}px`, minWidth: '100%' } : undefined}>
+          <div className={needsWideChart ? "overflow-x-auto pb-3" : "pb-3"}>
+            <div
+              style={
+                needsWideChart
+                  ? { width: `${chartWidth}px`, minWidth: "100%" }
+                  : undefined
+              }
+            >
               <LineChartEcharts
                 points={points}
                 color={accent}
@@ -198,8 +270,14 @@ const SerieCard = memo(function SerieCard({ serie, accent }: SerieCardProps) {
 
           {/* Stats extras — sempre visíveis abaixo do gráfico */}
           <div className="px-4 pb-4 pt-2 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs border-t border-white/5">
-            <StatBox label="Máxima" value={fmtCompact(Math.max(...points.map((p) => p.value)))} />
-            <StatBox label="Mínima" value={fmtCompact(Math.min(...points.map((p) => p.value)))} />
+            <StatBox
+              label="Máxima"
+              value={fmtCompact(Math.max(...points.map((p) => p.value)))}
+            />
+            <StatBox
+              label="Mínima"
+              value={fmtCompact(Math.min(...points.map((p) => p.value)))}
+            />
             <StatBox
               label="Primeiro"
               value={fmtCompact(points[0].value)}
@@ -214,20 +292,32 @@ const SerieCard = memo(function SerieCard({ serie, accent }: SerieCardProps) {
         </div>
       ) : (
         <div className="border-t border-white/5 p-4">
-          <p className="text-slate-500 text-xs">Série sem pontos suficientes para o gráfico.</p>
+          <p className="text-slate-500 text-xs">
+            Série sem pontos suficientes para o gráfico.
+          </p>
         </div>
       )}
     </motion.div>
   );
 });
 
-const StatBox = memo(({ label, value, hint }: { label: string; value: string; hint?: string }) => (
-  <div className="rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2">
-    <span className="block text-[10px] uppercase tracking-wider text-slate-500">{label}</span>
-    <span className="block font-mono text-sm font-semibold text-slate-200 mt-0.5">{value}</span>
-    {hint && <span className="block text-[10px] text-slate-600 font-mono mt-0.5">{hint}</span>}
-  </div>
-));
+const StatBox = memo(
+  ({ label, value, hint }: { label: string; value: string; hint?: string }) => (
+    <div className="rounded-lg border border-white/5 bg-white/2 px-3 py-2">
+      <span className="block text-[10px] uppercase tracking-wider text-slate-500">
+        {label}
+      </span>
+      <span className="block font-mono text-sm font-semibold text-slate-200 mt-0.5">
+        {value}
+      </span>
+      {hint && (
+        <span className="block text-[10px] text-slate-600 font-mono mt-0.5">
+          {hint}
+        </span>
+      )}
+    </div>
+  ),
+);
 
 // ─── TabBar ────────────────────────────────────────────────────────────────
 
@@ -250,9 +340,13 @@ const TabBar = memo(function TabBar({ active, onChange }: TabBarProps) {
             className="group flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-all duration-200
                        border focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
             style={{
-              background: isActive ? `${spec.accent}1a` : 'rgba(255,255,255,0.02)',
-              color: isActive ? spec.accent : '#94a3b8',
-              borderColor: isActive ? `${spec.accent}40` : 'rgba(255,255,255,0.08)',
+              background: isActive
+                ? `${spec.accent}1a`
+                : "rgba(255,255,255,0.02)",
+              color: isActive ? spec.accent : "#94a3b8",
+              borderColor: isActive
+                ? `${spec.accent}40`
+                : "rgba(255,255,255,0.08)",
             }}
           >
             <Icon size={14} className="shrink-0" />
@@ -275,13 +369,17 @@ interface CategoryHeaderProps {
 }
 
 const CategoryHeader = memo(function CategoryHeader({
-  spec, count, lastUpdate, filter, onFilterChange,
+  spec,
+  count,
+  lastUpdate,
+  filter,
+  onFilterChange,
 }: CategoryHeaderProps) {
   const Icon = spec.icon;
   return (
     <motion.div
       variants={itemVariants}
-      className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]
+      className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/2
                  backdrop-blur-md p-5"
     >
       <div
@@ -300,7 +398,9 @@ const CategoryHeader = memo(function CategoryHeader({
           </span>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-base font-semibold tracking-tight text-slate-100">{spec.label}</h2>
+              <h2 className="text-base font-semibold tracking-tight text-slate-100">
+                {spec.label}
+              </h2>
               <span
                 className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider border"
                 style={{
@@ -312,7 +412,9 @@ const CategoryHeader = memo(function CategoryHeader({
                 {count} séries
               </span>
             </div>
-            <p className="text-slate-500 text-xs mt-1 max-w-xl leading-relaxed">{spec.description}</p>
+            <p className="text-slate-500 text-xs mt-1 max-w-xl leading-relaxed">
+              {spec.description}
+            </p>
             {lastUpdate && (
               <p className="flex items-center gap-1 text-slate-600 text-[11px] font-mono mt-1.5">
                 <Calendar size={10} aria-hidden />
@@ -323,7 +425,7 @@ const CategoryHeader = memo(function CategoryHeader({
         </div>
 
         {/* Filtro de busca */}
-        <div className="relative flex-1 min-w-[200px] max-w-xs">
+        <div className="relative flex-1 min-w-50 max-w-xs">
           <Search
             size={14}
             className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none"
@@ -332,7 +434,9 @@ const CategoryHeader = memo(function CategoryHeader({
           <input
             type="text"
             value={filter}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => onFilterChange(e.target.value)}
+            onChange={(e: ChangeEvent<HTMLInputElement>) =>
+              onFilterChange(e.target.value)
+            }
             placeholder="Buscar série..."
             className="w-full h-10 pl-9 pr-9 rounded-lg bg-slate-900/70 border border-white/10
                        text-slate-200 text-sm placeholder:text-slate-600
@@ -341,7 +445,7 @@ const CategoryHeader = memo(function CategoryHeader({
           />
           {filter && (
             <button
-              onClick={() => onFilterChange('')}
+              onClick={() => onFilterChange("")}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
               aria-label="Limpar filtro"
             >
@@ -365,7 +469,11 @@ interface TabContentProps {
 }
 
 const TabContent = memo(function TabContent({
-  data, isLoading, error, filter, accent,
+  data,
+  isLoading,
+  error,
+  filter,
+  accent,
 }: TabContentProps) {
   if (isLoading) {
     return (
@@ -380,7 +488,7 @@ const TabContent = memo(function TabContent({
       <div className="text-center py-12">
         <p className="text-red-400 text-sm">Erro ao carregar dados.</p>
         <p className="text-slate-600 text-xs mt-1 font-mono">
-          {error instanceof Error ? error.message : 'Erro desconhecido'}
+          {error instanceof Error ? error.message : "Erro desconhecido"}
         </p>
       </div>
     );
@@ -389,9 +497,11 @@ const TabContent = memo(function TabContent({
 
   const normalized = filter.trim().toLowerCase();
   const filtered = normalized
-    ? data.filter((s) =>
-        s.nome.toLowerCase().includes(normalized) ||
-        s.codigo.toLowerCase().includes(normalized))
+    ? data.filter(
+        (s) =>
+          s.nome.toLowerCase().includes(normalized) ||
+          s.codigo.toLowerCase().includes(normalized),
+      )
     : data;
 
   if (filtered.length === 0) {
@@ -399,7 +509,7 @@ const TabContent = memo(function TabContent({
       <div className="text-center py-12">
         <p className="text-slate-500 text-sm">
           {data.length === 0
-            ? 'Nenhuma série disponível nesta categoria.'
+            ? "Nenhuma série disponível nesta categoria."
             : `Nenhuma série encontrada para "${filter}".`}
         </p>
       </div>
@@ -423,24 +533,30 @@ const TabContent = memo(function TabContent({
 // ─── IpeaPage ──────────────────────────────────────────────────────────────
 
 function IpeaPage() {
-  const [activeTab, setActiveTab] = useState<Tab>('Macro');
-  const [filter, setFilter] = useState('');
+  const [activeTab, setActiveTab] = useState<Tab>("Macro");
+  const [filter, setFilter] = useState("");
 
-  const macro     = useMacro();
-  const emprego   = useEmprego();
-  const renda     = useRenda();
-  const desig     = useDesigualdade();
-  const precos    = usePrecos();
+  const macro = useMacro();
+  const emprego = useEmprego();
+  const renda = useRenda();
+  const desig = useDesigualdade();
+  const precos = usePrecos();
   const populacao = usePopulacao();
 
   const activeQuery = (() => {
     switch (activeTab) {
-      case 'Macro':        return macro;
-      case 'Emprego':      return emprego;
-      case 'Renda':        return renda;
-      case 'Desigualdade': return desig;
-      case 'Preços':       return precos;
-      case 'População':    return populacao;
+      case "Macro":
+        return macro;
+      case "Emprego":
+        return emprego;
+      case "Renda":
+        return renda;
+      case "Desigualdade":
+        return desig;
+      case "Preços":
+        return precos;
+      case "População":
+        return populacao;
     }
   })();
 
@@ -449,7 +565,7 @@ function IpeaPage() {
   // Calcula última atualização (data mais recente entre todas as séries da categoria).
   const lastUpdate = useMemo(() => {
     if (!activeQuery.data) return null;
-    let max = '';
+    let max = "";
     for (const serie of activeQuery.data) {
       const valid = sortValidAsc(serie.dados ?? []);
       if (valid.length > 0) {
@@ -463,7 +579,7 @@ function IpeaPage() {
   // Reset do filtro ao trocar de tab.
   const handleTabChange = (tab: Tab) => {
     setActiveTab(tab);
-    setFilter('');
+    setFilter("");
   };
 
   return (
@@ -474,7 +590,7 @@ function IpeaPage() {
       animate="show"
     >
       <PageBanner
-        image={findBannerImage('ipea')}
+        image={findBannerImage("ipea")}
         badge="IPEA · Indicadores Socioeconômicos"
         title="Séries IPEA"
         titleAccent="IPEA"
