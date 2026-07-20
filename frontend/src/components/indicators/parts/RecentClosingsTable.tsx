@@ -5,13 +5,13 @@
  * encapsulada num VariationPill colorido.
  */
 
-import { memo, useMemo } from 'react';
-import { motion } from 'motion/react';
-import { Calendar } from 'lucide-react';
-import { itemVariants } from '../../../constants/indicators/Motion';
-import { fmtBRDate, fmtPts } from '../../../constants/indicators/Formatters';
-import type { ClosingRow } from '../../../types/utilities/Economy';
-import { VariationPill } from './Atoms';
+import { memo, useMemo } from "react";
+import { motion } from "motion/react";
+import { Calendar } from "lucide-react";
+import { itemVariants } from "../../../constants/indicators/Motion";
+import { fmtBRDate, fmtPts } from "../../../constants/indicators/Formatters";
+import type { ClosingRow } from "../../../types/utilities/Economy";
+import { VariationPill } from "./Atoms";
 
 export interface RecentClosingsTableProps {
   id?: string;
@@ -25,8 +25,8 @@ export interface RecentClosingsTableProps {
 export const RecentClosingsTable = memo(function RecentClosingsTable({
   id,
   rows,
-  title = 'Últimos Fechamentos',
-  subtitle = '5 pregões · variação D/D-1',
+  title = "Últimos Fechamentos",
+  subtitle = "5 pregões · variação D/D-1",
   valueFormatter = fmtPts,
 }: RecentClosingsTableProps) {
   // Pega os últimos 5 e inverte para exibir do mais recente → mais antigo.
@@ -36,7 +36,7 @@ export const RecentClosingsTable = memo(function RecentClosingsTable({
     <motion.div
       id={id}
       variants={itemVariants}
-      className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]
+      className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/2
                  backdrop-blur-md shadow-[0_8px_40px_-15px_rgba(0,0,0,0.5)] scroll-mt-24"
     >
       <div className="flex items-center gap-3 border-b border-white/5 px-6 py-4">
@@ -44,8 +44,12 @@ export const RecentClosingsTable = memo(function RecentClosingsTable({
           <Calendar size={16} aria-hidden />
         </span>
         <div>
-          <h4 className="text-base font-semibold tracking-tight text-slate-100">{title}</h4>
-          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">{subtitle}</p>
+          <h4 className="text-base font-semibold tracking-tight text-slate-100">
+            {title}
+          </h4>
+          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
+            {subtitle}
+          </p>
         </div>
       </div>
 
@@ -61,7 +65,10 @@ export const RecentClosingsTable = memo(function RecentClosingsTable({
           <tbody>
             {last5.length === 0 ? (
               <tr>
-                <td colSpan={3} className="px-4 py-6 text-center text-xs text-slate-500">
+                <td
+                  colSpan={3}
+                  className="px-4 py-6 text-center text-xs text-slate-500"
+                >
                   Sem dados disponíveis.
                 </td>
               </tr>
@@ -69,9 +76,11 @@ export const RecentClosingsTable = memo(function RecentClosingsTable({
               last5.map((row) => (
                 <tr
                   key={row.date}
-                  className="border-t border-white/5 transition-colors hover:bg-white/[0.03]"
+                  className="border-t border-white/5 transition-colors hover:bg-white/3"
                 >
-                  <td className="px-4 py-2.5 font-mono text-slate-300">{fmtBRDate(row.date)}</td>
+                  <td className="px-4 py-2.5 font-mono text-slate-300">
+                    {fmtBRDate(row.date)}
+                  </td>
                   <td className="px-4 py-2.5 text-right font-mono font-medium text-slate-100">
                     {valueFormatter(row.value)}
                   </td>

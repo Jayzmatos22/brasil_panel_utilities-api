@@ -1,43 +1,75 @@
 // API: Banco Central do Brasil (BCB) & IPEA (Ibovespa)
-import { memo, useMemo } from 'react';
-import { motion } from 'motion/react';
+import { memo, useMemo } from "react";
+import { motion } from "motion/react";
 import {
-  DollarSign, TrendingUp, BarChart3, Percent, Activity, Sparkles,
-} from 'lucide-react';
-import { useDollarPtax, useSelic, useCdiRate, useIpca } from '../../../hooks/UseEconomy';
-import { useIbovespa } from '../../../hooks/UseIpea';
+  DollarSign,
+  TrendingUp,
+  BarChart3,
+  Percent,
+  Activity,
+  Sparkles,
+} from "lucide-react";
 import {
-  containerVariants, itemVariants,
-  IndicatorCard, DataRow,
-  ChartPanel, RecentClosingsTable, PeriodExplorer, EducationalInsightsPanel,
-  QuickNav, type NavItem,
-  fmtPct as pct, fmtBRL as brl, fmtPts as formatPts, fmtPctSigned,
+  useDollarPtax,
+  useSelic,
+  useCdiRate,
+  useIpca,
+} from "../../../hooks/UseEconomy";
+import { useIbovespa } from "../../../hooks/UseIpea";
+import {
+  containerVariants,
+  IndicatorCard,
+  DataRow,
+  ChartPanel,
+  RecentClosingsTable,
+  PeriodExplorer,
+  EducationalInsightsPanel,
+  type NavItem,
+  fmtPct as pct,
+  fmtBRL as brl,
+  fmtPts as formatPts,
+  fmtPctSigned,
   computeMetrics,
-  describeFiveYearReturn, describeSixMonthReturn, describeVolatility,
-  describeLast5Trend, describeAmplitude, describeSelicCorrelation,
-} from '../../../components/indicators/Indicators';
+  describeFiveYearReturn,
+  describeSixMonthReturn,
+  describeVolatility,
+  describeLast5Trend,
+  describeAmplitude,
+  describeSelicCorrelation,
+  PageBanner, findBannerImage
+} from "../../../components/indicators/Indicators";
 
 // ─── QuickNav items ─────────────────────────────────────────────────────────
 const NAV_ITEMS: NavItem[] = [
-  { id: 'sec-ibovespa',  label: 'Ibovespa',    color: '#818cf8' },
-  { id: 'sec-hist-5y',   label: '5 Anos',      color: '#c084fc' },
-  { id: 'sec-hist-6m',   label: '6 Meses',     color: '#38bdf8' },
-  { id: 'sec-explorer',  label: 'Explorador',  color: '#a78bfa' },
-  { id: 'sec-closings',  label: 'Fechamentos', color: '#a5b4fc' },
-  { id: 'sec-insights',  label: 'Insights',    color: '#c084fc' },
-  { id: 'sec-dollar',    label: 'Dólar',       color: '#4ade80' },
-  { id: 'sec-selic',     label: 'Selic',       color: '#f87171' },
-  { id: 'sec-cdi',       label: 'CDI',         color: '#60a5fa' },
-  { id: 'sec-ipca',      label: 'IPCA',        color: '#cbd5e1' },
+  { id: "sec-ibovespa", label: "Ibovespa", color: "#818cf8" },
+  { id: "sec-hist-5y", label: "5 Anos", color: "#c084fc" },
+  { id: "sec-hist-6m", label: "6 Meses", color: "#38bdf8" },
+  { id: "sec-explorer", label: "Explorador", color: "#a78bfa" },
+  { id: "sec-closings", label: "Fechamentos", color: "#a5b4fc" },
+  { id: "sec-insights", label: "Insights", color: "#c084fc" },
+  { id: "sec-dollar", label: "Dólar", color: "#4ade80" },
+  { id: "sec-selic", label: "Selic", color: "#f87171" },
+  { id: "sec-cdi", label: "CDI", color: "#60a5fa" },
+  { id: "sec-ipca", label: "IPCA", color: "#cbd5e1" },
 ];
 
 // ─── Main Page ──────────────────────────────────────────────────────────────
 function EconomiaPage() {
-  const { data: ibovData, isLoading: lIbov, error: eIbov, refetch: rIbov } = useIbovespa();
-  const { data: dollar,   isLoading: l0,    error: e0,    refetch: r0 } = useDollarPtax();
-  const { data: selic,    isLoading: l1,    error: e1,    refetch: r1 } = useSelic();
-  const { data: cdi,      isLoading: l2,    error: e2,    refetch: r2 } = useCdiRate();
-  const { data: ipca,     isLoading: l3,    error: e3,    refetch: r3 } = useIpca();
+  const {
+    data: ibovData,
+    isLoading: lIbov,
+    error: eIbov,
+    refetch: rIbov,
+  } = useIbovespa();
+  const {
+    data: dollar,
+    isLoading: l0,
+    error: e0,
+    refetch: r0,
+  } = useDollarPtax();
+  const { data: selic, isLoading: l1, error: e1, refetch: r1 } = useSelic();
+  const { data: cdi, isLoading: l2, error: e2, refetch: r2 } = useCdiRate();
+  const { data: ipca, isLoading: l3, error: e3, refetch: r3 } = useIpca();
 
   // Último fechamento válido (geralmente D-1)
   const ibovespaLatest = useMemo(() => {
@@ -57,7 +89,7 @@ function EconomiaPage() {
       variation = ((latest.valor - previous.valor) / previous.valor) * 100;
     }
 
-    const dateParts = latest.data.substring(0, 10).split('-');
+    const dateParts = latest.data.substring(0, 10).split("-");
     return {
       value: latest.valor,
       date: `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`,
@@ -68,37 +100,84 @@ function EconomiaPage() {
   const ibovMetrics = useMemo(() => computeMetrics(ibovData), [ibovData]);
 
   const ibovInsights = useMemo(() => {
-    if (!ibovMetrics) return { observations: [] as string[], insights: [] as { label: string; value: string; tone: 'pos' | 'neg' | 'neutral' }[] };
+    if (!ibovMetrics)
+      return {
+        observations: [] as string[],
+        insights: [] as {
+          label: string;
+          value: string;
+          tone: "pos" | "neg" | "neutral";
+        }[],
+      };
     const {
-      fiveYearReturn, sixMonthReturn,
-      fiveYearHigh, fiveYearLow,
-      avgDailyAbsVar6m, positiveDays6m, negativeDays6m,
-      last5Trend, last5NetPct,
+      fiveYearReturn,
+      sixMonthReturn,
+      fiveYearHigh,
+      fiveYearLow,
+      avgDailyAbsVar6m,
+      positiveDays6m,
+      negativeDays6m,
+      last5Trend,
+      last5NetPct,
     } = ibovMetrics;
 
     const observations: string[] = [];
     if (fiveYearReturn !== null) {
-      observations.push(`No recorte de 5 anos, o índice apresenta ${describeFiveYearReturn(fiveYearReturn)}.`);
+      observations.push(
+        `No recorte de 5 anos, o índice apresenta ${describeFiveYearReturn(fiveYearReturn)}.`,
+      );
     }
     if (sixMonthReturn !== null) {
-      observations.push(`Nos últimos 6 meses, ${describeSixMonthReturn(sixMonthReturn)}.`);
+      observations.push(
+        `Nos últimos 6 meses, ${describeSixMonthReturn(sixMonthReturn)}.`,
+      );
     }
     if (fiveYearHigh && fiveYearLow) {
-      observations.push(`${describeAmplitude(fiveYearHigh, fiveYearLow, formatPts)}, ilustrando os ciclos clássicos de volatilidade da bolsa brasileira.`);
+      observations.push(
+        `${describeAmplitude(fiveYearHigh, fiveYearLow, formatPts)}, ilustrando os ciclos clássicos de volatilidade da bolsa brasileira.`,
+      );
     }
     if (avgDailyAbsVar6m !== null) {
-      observations.push(`${describeVolatility(avgDailyAbsVar6m, positiveDays6m, negativeDays6m)}.`);
+      observations.push(
+        `${describeVolatility(avgDailyAbsVar6m, positiveDays6m, negativeDays6m)}.`,
+      );
     }
     if (last5Trend !== null && last5NetPct !== null) {
       observations.push(`${describeLast5Trend(last5Trend, last5NetPct)}.`);
     }
-    observations.push(`${describeSelicCorrelation(sixMonthReturn, fiveYearReturn)}.`);
+    observations.push(
+      `${describeSelicCorrelation(sixMonthReturn, fiveYearReturn)}.`,
+    );
 
     const insights = [
-      { label: 'Variação 5 anos', value: fiveYearReturn === null ? '—' : fmtPctSigned(fiveYearReturn), tone: (fiveYearReturn === null ? 'neutral' : fiveYearReturn >= 0 ? 'pos' : 'neg') as 'pos' | 'neg' | 'neutral' },
-      { label: 'Variação 6 meses', value: sixMonthReturn === null ? '—' : fmtPctSigned(sixMonthReturn), tone: (sixMonthReturn === null ? 'neutral' : sixMonthReturn >= 0 ? 'pos' : 'neg') as 'pos' | 'neg' | 'neutral' },
-      { label: 'Máxima 5 anos', value: fiveYearHigh ? `${formatPts(fiveYearHigh.value)}` : '—', tone: 'neutral' as const },
-      { label: 'Mínima 5 anos', value: fiveYearLow ? `${formatPts(fiveYearLow.value)}` : '—', tone: 'neutral' as const },
+      {
+        label: "Variação 5 anos",
+        value: fiveYearReturn === null ? "—" : fmtPctSigned(fiveYearReturn),
+        tone: (fiveYearReturn === null
+          ? "neutral"
+          : fiveYearReturn >= 0
+            ? "pos"
+            : "neg") as "pos" | "neg" | "neutral",
+      },
+      {
+        label: "Variação 6 meses",
+        value: sixMonthReturn === null ? "—" : fmtPctSigned(sixMonthReturn),
+        tone: (sixMonthReturn === null
+          ? "neutral"
+          : sixMonthReturn >= 0
+            ? "pos"
+            : "neg") as "pos" | "neg" | "neutral",
+      },
+      {
+        label: "Máxima 5 anos",
+        value: fiveYearHigh ? `${formatPts(fiveYearHigh.value)}` : "—",
+        tone: "neutral" as const,
+      },
+      {
+        label: "Mínima 5 anos",
+        value: fiveYearLow ? `${formatPts(fiveYearLow.value)}` : "—",
+        tone: "neutral" as const,
+      },
     ];
 
     return { observations, insights };
@@ -111,16 +190,15 @@ function EconomiaPage() {
       initial="hidden"
       animate="show"
     >
-      <motion.div variants={itemVariants}>
-        <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.5)]">
-          Indicadores <span className="text-[#FFDF00]">Econômicos</span>
-        </h1>
-        <p className="text-slate-400 text-sm mt-2 max-w-xl">
-          Dados oficiais do Banco Central do Brasil e da B3, atualizados diariamente.
-        </p>
-      </motion.div>
-
-      <QuickNav items={NAV_ITEMS} />
+      <PageBanner
+        image={findBannerImage("indicadores")}
+        badge="IPEA · Comex"
+        title="indicadores Econômicos"
+        titleAccent="Brasil"
+        subtitle="Dados econômicos. IPEA - B3"
+        navItems={NAV_ITEMS}
+        accentColor="#34d399"
+      />
 
       {/* ── Ibovespa ── */}
       <IndicatorCard
@@ -134,22 +212,27 @@ function EconomiaPage() {
         error={eIbov}
         refetch={rIbov}
         description={
-          'Principal índice de ações da bolsa de valores brasileira (B3). ' +
-          'Reflete o desempenho médio das cotações das empresas mais negociadas e representativas do mercado. ' +
-          'Os dados exibidos referem-se ao último fechamento de mercado consolidado.'
+          "Principal índice de ações da bolsa de valores brasileira (B3). " +
+          "Reflete o desempenho médio das cotações das empresas mais negociadas e representativas do mercado. " +
+          "Os dados exibidos referem-se ao último fechamento de mercado consolidado."
         }
       >
         {ibovespaLatest && (
           <div className="flex flex-col gap-2">
             <p className="text-5xl font-bold text-indigo-400 tracking-tight drop-shadow-[0_2px_10px_rgba(129,140,248,0.3)]">
-              {formatPts(ibovespaLatest.value)} <span className="text-2xl text-indigo-400/50">pts</span>
+              {formatPts(ibovespaLatest.value)}{" "}
+              <span className="text-2xl text-indigo-400/50">pts</span>
             </p>
             <div className="flex flex-col mt-2">
               {ibovespaLatest.variation !== null && (
                 <DataRow
                   label="Variação Diária (D/D-1)"
-                  value={`${ibovespaLatest.variation > 0 ? '+' : ''}${ibovespaLatest.variation.toFixed(2)}%`}
-                  valueClass={ibovespaLatest.variation >= 0 ? "text-emerald-400" : "text-red-400"}
+                  value={`${ibovespaLatest.variation > 0 ? "+" : ""}${ibovespaLatest.variation.toFixed(2)}%`}
+                  valueClass={
+                    ibovespaLatest.variation >= 0
+                      ? "text-emerald-400"
+                      : "text-red-400"
+                  }
                 />
               )}
               <DataRow label="Data do Fechamento" value={ibovespaLatest.date} />
@@ -205,9 +288,9 @@ function EconomiaPage() {
         error={e0}
         refetch={r0}
         description={
-          'Cotação oficial calculada pelo Banco Central com base nas operações do ' +
-          'mercado interbancário ao longo do dia. É a referência para contratos, ' +
-          'importações, exportações e o cálculo de IOF em remessas ao exterior.'
+          "Cotação oficial calculada pelo Banco Central com base nas operações do " +
+          "mercado interbancário ao longo do dia. É a referência para contratos, " +
+          "importações, exportações e o cálculo de IOF em remessas ao exterior."
         }
       >
         {dollar && (
@@ -215,7 +298,9 @@ function EconomiaPage() {
             <p className="text-5xl font-bold text-green-400 tracking-tight drop-shadow-[0_2px_10px_rgba(74,222,128,0.3)]">
               {brl(dollar.value)}
             </p>
-            <p className="text-slate-300 text-xs mt-1 font-mono">Referência: {dollar.date}</p>
+            <p className="text-slate-300 text-xs mt-1 font-mono">
+              Referência: {dollar.date}
+            </p>
           </div>
         )}
       </IndicatorCard>
@@ -232,9 +317,9 @@ function EconomiaPage() {
         error={e1}
         refetch={r1}
         description={
-          'Taxa básica de juros da economia brasileira, definida pelo COPOM a cada 45 ' +
-          'dias. Serve de piso para todos os juros do país e influencia diretamente o ' +
-          'crédito, os investimentos em renda fixa e o controle da inflação.'
+          "Taxa básica de juros da economia brasileira, definida pelo COPOM a cada 45 " +
+          "dias. Serve de piso para todos os juros do país e influencia diretamente o " +
+          "crédito, os investimentos em renda fixa e o controle da inflação."
         }
       >
         {selic && (
@@ -243,9 +328,18 @@ function EconomiaPage() {
               {pct(selic.currentRate)}
             </p>
             <div className="flex flex-col mt-2">
-              <DataRow label="Acumulado no mês"  value={pct(selic.accumulatedMonth)} />
-              <DataRow label="Acumulado no ano"  value={pct(selic.accumulatedYear)} />
-              <DataRow label="Últimos 12 meses"  value={pct(selic.last12MonthsCompound)} />
+              <DataRow
+                label="Acumulado no mês"
+                value={pct(selic.accumulatedMonth)}
+              />
+              <DataRow
+                label="Acumulado no ano"
+                value={pct(selic.accumulatedYear)}
+              />
+              <DataRow
+                label="Últimos 12 meses"
+                value={pct(selic.last12MonthsCompound)}
+              />
             </div>
           </div>
         )}
@@ -263,9 +357,9 @@ function EconomiaPage() {
         error={e2}
         refetch={r2}
         description={
-          'Certificado de Depósito Interbancário — taxa média dos empréstimos de ' +
-          'curtíssimo prazo entre bancos. É o principal benchmark da renda fixa: CDBs, ' +
-          'fundos DI e LCIs costumam render um percentual do CDI.'
+          "Certificado de Depósito Interbancário — taxa média dos empréstimos de " +
+          "curtíssimo prazo entre bancos. É o principal benchmark da renda fixa: CDBs, " +
+          "fundos DI e LCIs costumam render um percentual do CDI."
         }
       >
         {cdi && (
@@ -274,8 +368,11 @@ function EconomiaPage() {
               {pct(cdi.annualRate)}
             </p>
             <div className="flex flex-col mt-2">
-              <DataRow label="Taxa diária" value={`${cdi.dailyRate.toFixed(4)}%`} />
-              <DataRow label="Referência"  value={cdi.date} />
+              <DataRow
+                label="Taxa diária"
+                value={`${cdi.dailyRate.toFixed(4)}%`}
+              />
+              <DataRow label="Referência" value={cdi.date} />
             </div>
           </div>
         )}
@@ -293,9 +390,9 @@ function EconomiaPage() {
         error={e3}
         refetch={r3}
         description={
-          'Índice Nacional de Preços ao Consumidor Amplo — o indicador oficial de ' +
-          'inflação do Brasil, apurado pelo IBGE. É a meta perseguida pelo Banco ' +
-          'Central: quando sobe demais, o COPOM eleva a Selic para conter o consumo.'
+          "Índice Nacional de Preços ao Consumidor Amplo — o indicador oficial de " +
+          "inflação do Brasil, apurado pelo IBGE. É a meta perseguida pelo Banco " +
+          "Central: quando sobe demais, o COPOM eleva a Selic para conter o consumo."
         }
       >
         {ipca && (
@@ -304,14 +401,22 @@ function EconomiaPage() {
               {pct(ipca.currentMonth)}
             </p>
             <div className="flex flex-col mt-2">
-              <DataRow label="Acumulado no ano"     value={pct(ipca.accumulatedYear)} />
-              <DataRow label="Soma 12 meses"        value={pct(ipca.last12MonthsSum)} />
-              <DataRow label="Composto 12 meses"    value={pct(ipca.last12MonthsCompound)} />
+              <DataRow
+                label="Acumulado no ano"
+                value={pct(ipca.accumulatedYear)}
+              />
+              <DataRow
+                label="Soma 12 meses"
+                value={pct(ipca.last12MonthsSum)}
+              />
+              <DataRow
+                label="Composto 12 meses"
+                value={pct(ipca.last12MonthsCompound)}
+              />
             </div>
           </div>
         )}
       </IndicatorCard>
-
     </motion.section>
   );
 }

@@ -1,14 +1,13 @@
-import { useQuery } from '@tanstack/react-query';
-import { ipeaService } from '../api/services/Ipea';
-import { HISTORICAL, DAILY } from '../constants/queryTimes';
-
+import { useQuery } from "@tanstack/react-query";
+import { ipeaService } from "../api/services/Ipea";
+import { HISTORICAL, DAILY } from "../constants/queryTimes";
 
 // ==========================================
 // HOOKS: ECONOMIA GERAL
 // ==========================================
 export function useMacro() {
   return useQuery({
-    queryKey: ['ipea', 'macro'],
+    queryKey: ["ipea", "macro"],
     queryFn: ipeaService.getMacro,
     ...HISTORICAL,
   });
@@ -16,7 +15,7 @@ export function useMacro() {
 
 export function useEmprego() {
   return useQuery({
-    queryKey: ['ipea', 'emprego'],
+    queryKey: ["ipea", "emprego"],
     queryFn: ipeaService.getEmprego,
     ...HISTORICAL,
   });
@@ -24,7 +23,7 @@ export function useEmprego() {
 
 export function useRenda() {
   return useQuery({
-    queryKey: ['ipea', 'renda'],
+    queryKey: ["ipea", "renda"],
     queryFn: ipeaService.getRenda,
     ...HISTORICAL,
   });
@@ -32,7 +31,7 @@ export function useRenda() {
 
 export function useDesigualdade() {
   return useQuery({
-    queryKey: ['ipea', 'desigualdade'],
+    queryKey: ["ipea", "desigualdade"],
     queryFn: ipeaService.getDesigualdadePobreza,
     ...HISTORICAL,
   });
@@ -40,7 +39,7 @@ export function useDesigualdade() {
 
 export function usePrecos() {
   return useQuery({
-    queryKey: ['ipea', 'precos'],
+    queryKey: ["ipea", "precos"],
     queryFn: ipeaService.getPrecos,
     ...HISTORICAL,
   });
@@ -48,7 +47,7 @@ export function usePrecos() {
 
 export function usePopulacao() {
   return useQuery({
-    queryKey: ['ipea', 'populacao'],
+    queryKey: ["ipea", "populacao"],
     queryFn: ipeaService.getPopulacao,
     ...HISTORICAL,
   });
@@ -56,13 +55,11 @@ export function usePopulacao() {
 
 export function useIbovespa() {
   return useQuery({
-    queryKey: ['ipea', 'mercado', 'ibovespa'],
+    queryKey: ["ipea", "mercado", "ibovespa"],
     queryFn: ipeaService.getIbovespaClosing,
-    ...DAILY
-  })
+    ...DAILY,
+  });
 }
-
-
 
 // ==========================================
 // HOOKS: BALANÇA DE PAGAMENTOS
@@ -70,103 +67,99 @@ export function useIbovespa() {
 
 export function useAtivosReservas() {
   return useQuery({
-    queryKey: ['ipea', 'balanca', 'ativos-reservas'],
-    queryFn: ipeaService.getAtivosReservas,
+    queryKey: ["ipea", "balanca", "ativos-reservas"],
+    queryFn: ipeaService.getAssetReserves,
     ...HISTORICAL,
   });
 }
 
 export function useTransacoesCorrentes() {
   return useQuery({
-    queryKey: ['ipea', 'balanca', 'transacoes-correntes'],
-    queryFn: ipeaService.getTransacoesCorrentes,
+    queryKey: ["ipea", "balanca", "transacoes-correntes"],
+    queryFn: ipeaService.getCurrentTransactions,
     ...HISTORICAL,
   });
 }
 
 export function useBalancaComercial() {
   return useQuery({
-    queryKey: ['ipea', 'balanca', 'comercial'],
-    queryFn: ipeaService.getBalancaComercial,
+    queryKey: ["ipea", "balanca", "comercial"],
+    queryFn: ipeaService.getTradeBalance,
     ...HISTORICAL,
   });
 }
 
 export function useServicosBalanca() {
   return useQuery({
-    queryKey: ['ipea', 'balanca', 'servicos'],
-    queryFn: ipeaService.getServicosBalanca,
+    queryKey: ["ipea", "balanca", "servicos"],
+    queryFn: ipeaService.getServicesBalance,
     ...HISTORICAL,
   });
 }
 
 export function useRendaPrimaria() {
   return useQuery({
-    queryKey: ['ipea', 'balanca', 'renda-primaria'],
-    queryFn: ipeaService.getRendaPrimaria,
+    queryKey: ["ipea", "balanca", "renda-primaria"],
+    queryFn: ipeaService.getPrimaryIncome,
     ...HISTORICAL,
   });
 }
 
 export function useInvestimentoDireto() {
   return useQuery({
-    queryKey: ['ipea', 'balanca', 'investimento-direto'],
-    queryFn: ipeaService.getInvestimentoDireto,
+    queryKey: ["ipea", "balanca", "investimento-direto"],
+    queryFn: ipeaService.getDirectInvestment,
     ...HISTORICAL,
   });
 }
 
 export function useContaCapital() {
   return useQuery({
-    queryKey: ['ipea', 'balanca', 'conta-capital'],
-    queryFn: ipeaService.getContaCapital,
+    queryKey: ["ipea", "balanca", "conta-capital"],
+    queryFn: ipeaService.getCapitalAccount,
     ...HISTORICAL,
   });
 }
 
 export function useContaFinanceira() {
   return useQuery({
-    queryKey: ['ipea', 'balanca', 'conta-financeira'],
-    queryFn: ipeaService.getContaFinanceira,
+    queryKey: ["ipea", "balanca", "conta-financeira"],
+    queryFn: ipeaService.getFinancialAccount,
     ...HISTORICAL,
   });
 }
 
 export function useInvestimentoCarteira() {
   return useQuery({
-    queryKey: ['ipea', 'balanca', 'investimento-carteira'],
-    queryFn: ipeaService.getInvestimentoCarteira,
+    queryKey: ["ipea", "balanca", "investimento-carteira"],
+    queryFn: ipeaService.getInvestmentWallet,
     ...HISTORICAL,
   });
 }
 
 export function useServicosDespesas() {
   return useQuery({
-    queryKey: ['ipea', 'balanca', 'servicos-despesas'],
-    queryFn: ipeaService.getServicosDespesas,
+    queryKey: ["ipea", "balanca", "servicos-despesas"],
+    queryFn: ipeaService.getServicesExpenses,
     ...HISTORICAL,
   });
 }
 
 export function useInvestimentoDiretoIngressos() {
   return useQuery({
-    queryKey: ['ipea', 'balanca', 'investimento-direto-ingressos'],
-    queryFn: ipeaService.getInvestimentoDiretoIngressos,
+    queryKey: ["ipea", "balanca", "investimento-direto-ingressos"],
+    queryFn: ipeaService.getDirectInvestmentEntries,
     ...HISTORICAL,
   });
 }
-
 
 export function useTransacoesCorrentesPib() {
   return useQuery({
-    queryKey: ['ipea', 'balanca', 'transacoes-correntes'],
-    queryFn: ipeaService.getTransacoesCorrentes,
+    queryKey: ["ipea", "balanca", "transacoes-correntes-pib"],
+    queryFn: ipeaService.getCurrentTransactionsGDP,
     ...HISTORICAL,
   });
 }
-
-
-
 
 // ==========================================
 // HOOKS: EXPORTAÇÕES
@@ -174,7 +167,7 @@ export function useTransacoesCorrentesPib() {
 
 export function useTotalExports() {
   return useQuery({
-    queryKey: ['ipea', 'exportacoes', 'total'],
+    queryKey: ["ipea", "exportacoes", "total"],
     queryFn: ipeaService.getTotalExports,
     ...HISTORICAL,
   });
@@ -182,7 +175,7 @@ export function useTotalExports() {
 
 export function useExportQuantumIndex() {
   return useQuery({
-    queryKey: ['ipea', 'exportacoes', 'quantum'],
+    queryKey: ["ipea", "exportacoes", "quantum"],
     queryFn: ipeaService.getExportQuantumIndex,
     ...HISTORICAL,
   });
@@ -190,7 +183,7 @@ export function useExportQuantumIndex() {
 
 export function useBasicProductsExports() {
   return useQuery({
-    queryKey: ['ipea', 'exportacoes', 'produtos-basicos'],
+    queryKey: ["ipea", "exportacoes", "produtos-basicos"],
     queryFn: ipeaService.getBasicProductsExports,
     ...HISTORICAL,
   });
@@ -198,7 +191,7 @@ export function useBasicProductsExports() {
 
 export function useAgricultureLivestockQuantumExports() {
   return useQuery({
-    queryKey: ['ipea', 'exportacoes', 'quantum-agricultura-pecuaria'],
+    queryKey: ["ipea", "exportacoes", "quantum-agricultura-pecuaria"],
     queryFn: ipeaService.getAgricultureLivestockQuantumExports,
     ...HISTORICAL,
   });
@@ -206,7 +199,7 @@ export function useAgricultureLivestockQuantumExports() {
 
 export function useConsumerGoodsExports() {
   return useQuery({
-    queryKey: ['ipea', 'exportacoes', 'bens-consumo'],
+    queryKey: ["ipea", "exportacoes", "bens-consumo"],
     queryFn: ipeaService.getConsumerGoodsExports,
     ...HISTORICAL,
   });
@@ -214,7 +207,7 @@ export function useConsumerGoodsExports() {
 
 export function useCapitalGoodsPriceIndex() {
   return useQuery({
-    queryKey: ['ipea', 'exportacoes', 'precos-bens-capital'],
+    queryKey: ["ipea", "exportacoes", "precos-bens-capital"],
     queryFn: ipeaService.getCapitalGoodsPriceIndex,
     ...HISTORICAL,
   });
@@ -222,7 +215,7 @@ export function useCapitalGoodsPriceIndex() {
 
 export function useDurableConsumerGoodsPriceIndex() {
   return useQuery({
-    queryKey: ['ipea', 'exportacoes', 'precos-bens-duraveis'],
+    queryKey: ["ipea", "exportacoes", "precos-bens-duraveis"],
     queryFn: ipeaService.getDurableConsumerGoodsPriceIndex,
     ...HISTORICAL,
   });
@@ -230,7 +223,7 @@ export function useDurableConsumerGoodsPriceIndex() {
 
 export function useNonDurableConsumerGoodsPriceIndex() {
   return useQuery({
-    queryKey: ['ipea', 'exportacoes', 'precos-bens-nao-duraveis'],
+    queryKey: ["ipea", "exportacoes", "precos-bens-nao-duraveis"],
     queryFn: ipeaService.getNonDurableConsumerGoodsPriceIndex,
     ...HISTORICAL,
   });
@@ -238,7 +231,7 @@ export function useNonDurableConsumerGoodsPriceIndex() {
 
 export function useIntermediateGoodsFobValue() {
   return useQuery({
-    queryKey: ['ipea', 'exportacoes', 'valor-bens-intermediarios'],
+    queryKey: ["ipea", "exportacoes", "valor-bens-intermediarios"],
     queryFn: ipeaService.getIntermediateGoodsFobValue,
     ...HISTORICAL,
   });
@@ -246,7 +239,7 @@ export function useIntermediateGoodsFobValue() {
 
 export function useIntermediateGoodsQuantumIndex() {
   return useQuery({
-    queryKey: ['ipea', 'exportacoes', 'quantum-bens-intermediarios'],
+    queryKey: ["ipea", "exportacoes", "quantum-bens-intermediarios"],
     queryFn: ipeaService.getIntermediateGoodsQuantumIndex,
     ...HISTORICAL,
   });
@@ -254,14 +247,11 @@ export function useIntermediateGoodsQuantumIndex() {
 
 export function useFuelsFobValue() {
   return useQuery({
-    queryKey: ['ipea', 'exportacoes', 'valor-combustiveis'],
+    queryKey: ["ipea", "exportacoes", "valor-combustiveis"],
     queryFn: ipeaService.getFuelsFobValue,
     ...HISTORICAL,
   });
 }
-
-
-
 
 // ==========================================
 // HOOKS: IMPOSTOS
@@ -269,7 +259,7 @@ export function useFuelsFobValue() {
 
 export function useImportTax() {
   return useQuery({
-    queryKey: ['ipea', 'impostos', 'importacao'],
+    queryKey: ["ipea", "impostos", "importacao"],
     queryFn: ipeaService.getImportTax,
     ...HISTORICAL,
   });
@@ -277,7 +267,7 @@ export function useImportTax() {
 
 export function usePersonalIncomeTax() {
   return useQuery({
-    queryKey: ['ipea', 'impostos', 'irpf'],
+    queryKey: ["ipea", "impostos", "irpf"],
     queryFn: ipeaService.getPersonalIncomeTax,
     ...HISTORICAL,
   });
@@ -285,7 +275,7 @@ export function usePersonalIncomeTax() {
 
 export function useCorporateIncomeTax() {
   return useQuery({
-    queryKey: ['ipea', 'impostos', 'irpj'],
+    queryKey: ["ipea", "impostos", "irpj"],
     queryFn: ipeaService.getCorporateIncomeTax,
     ...HISTORICAL,
   });
@@ -293,7 +283,7 @@ export function useCorporateIncomeTax() {
 
 export function useTotalIncomeTax() {
   return useQuery({
-    queryKey: ['ipea', 'impostos', 'ir-total'],
+    queryKey: ["ipea", "impostos", "ir-total"],
     queryFn: ipeaService.getTotalIncomeTax,
     ...HISTORICAL,
   });
@@ -301,7 +291,7 @@ export function useTotalIncomeTax() {
 
 export function useIofTax() {
   return useQuery({
-    queryKey: ['ipea', 'impostos', 'iof'],
+    queryKey: ["ipea", "impostos", "iof"],
     queryFn: ipeaService.getIofTax,
     ...HISTORICAL,
   });
@@ -309,7 +299,7 @@ export function useIofTax() {
 
 export function useIpiTax() {
   return useQuery({
-    queryKey: ['ipea', 'impostos', 'ipi'],
+    queryKey: ["ipea", "impostos", "ipi"],
     queryFn: ipeaService.getIpiTax,
     ...HISTORICAL,
   });
@@ -317,14 +307,11 @@ export function useIpiTax() {
 
 export function useItrTax() {
   return useQuery({
-    queryKey: ['ipea', 'impostos', 'itr'],
+    queryKey: ["ipea", "impostos", "itr"],
     queryFn: ipeaService.getItrTax,
-    ...HISTORICAL
-  })
+    ...HISTORICAL,
+  });
 }
-
-
-
 
 // ==========================================
 // HOOKS: CÂMBIO CONTRATADO
@@ -332,7 +319,7 @@ export function useItrTax() {
 
 export function useContractedExchangeCommercial() {
   return useQuery({
-    queryKey: ['ipea', 'cambio', 'comercial'],
+    queryKey: ["ipea", "cambio", "comercial"],
     queryFn: ipeaService.getContractedExchangeCommercial,
     ...HISTORICAL,
   });
@@ -340,7 +327,7 @@ export function useContractedExchangeCommercial() {
 
 export function useContractedExchangeCommercialExports() {
   return useQuery({
-    queryKey: ['ipea', 'cambio', 'comercial', 'exportacao'],
+    queryKey: ["ipea", "cambio", "comercial", "exportacao"],
     queryFn: ipeaService.getContractedExchangeCommercialExports,
     ...HISTORICAL,
   });
@@ -348,7 +335,7 @@ export function useContractedExchangeCommercialExports() {
 
 export function useContractedExchangeCommercialImports() {
   return useQuery({
-    queryKey: ['ipea', 'cambio', 'comercial', 'importacao'],
+    queryKey: ["ipea", "cambio", "comercial", "importacao"],
     queryFn: ipeaService.getContractedExchangeCommercialImports,
     ...HISTORICAL,
   });
@@ -356,7 +343,7 @@ export function useContractedExchangeCommercialImports() {
 
 export function useContractedExchangeTotal() {
   return useQuery({
-    queryKey: ['ipea', 'cambio', 'comercial-financeiro'],
+    queryKey: ["ipea", "cambio", "comercial-financeiro"],
     queryFn: ipeaService.getContractedExchangeTotal,
     ...HISTORICAL,
   });
@@ -364,7 +351,7 @@ export function useContractedExchangeTotal() {
 
 export function useContractedExchangeFinancial() {
   return useQuery({
-    queryKey: ['ipea', 'cambio', 'financeiro'],
+    queryKey: ["ipea", "cambio", "financeiro"],
     queryFn: ipeaService.getContractedExchangeFinancial,
     ...HISTORICAL,
   });
@@ -372,7 +359,7 @@ export function useContractedExchangeFinancial() {
 
 export function useContractedExchangeFinancialPurchases() {
   return useQuery({
-    queryKey: ['ipea', 'cambio', 'financeiro', 'compra'],
+    queryKey: ["ipea", "cambio", "financeiro", "compra"],
     queryFn: ipeaService.getContractedExchangeFinancialPurchases,
     ...HISTORICAL,
   });
@@ -380,7 +367,7 @@ export function useContractedExchangeFinancialPurchases() {
 
 export function useContractedExchangeFinancialSales() {
   return useQuery({
-    queryKey: ['ipea', 'cambio', 'financeiro', 'venda'],
+    queryKey: ["ipea", "cambio", "financeiro", "venda"],
     queryFn: ipeaService.getContractedExchangeFinancialSales,
     ...HISTORICAL,
   });
@@ -389,12 +376,8 @@ export function useContractedExchangeFinancialSales() {
 //Pib
 export function useMonthlyPib() {
   return useQuery({
-    queryKey: ['ipea', 'pib', 'mensal'],
+    queryKey: ["ipea", "pib", "mensal"],
     queryFn: ipeaService.getMonthlyPib,
     ...HISTORICAL,
   });
 }
-
-
-
-

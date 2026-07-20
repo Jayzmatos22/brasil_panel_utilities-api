@@ -10,14 +10,22 @@
  * mensais de impostos onde o usuário quer ver tendência, não detalhe mensal.
  */
 
-import { memo, useMemo, useState } from 'react';
-import { motion } from 'motion/react';
-import { Filter } from 'lucide-react';
-import { LineChartEcharts, type LinePoint } from '../../charts/LineChartEcharts';
-import { itemVariants } from '../../../constants/indicators/Motion';
-import { fmtPctSigned, fmtPts, fmtBRDate } from '../../../constants/indicators/Formatters';
-import { toLinePoints } from '../Helpers';
-import type { IpeaItem } from '../../../types/IpeaType';
+import { memo, useMemo, useState } from "react";
+import { motion } from "motion/react";
+import { Filter } from "lucide-react";
+import {
+  LineChartEcharts,
+  type LinePoint,
+} from "../../charts/LineChartEcharts";
+import { itemVariants } from "../../../constants/indicators/Motion";
+import {
+  fmtPctSigned,
+  fmtPts,
+  fmtBRDate,
+} from "../../../constants/indicators/Formatters";
+import { toLinePoints } from "../Helpers";
+import type { IpeaItem } from "../../../types/IpeaType";
+import { fmtBRLTax } from "../../../constants/indicators/Formatters";
 
 export interface PeriodExplorerProps {
   id?: string;
@@ -28,12 +36,12 @@ export interface PeriodExplorerProps {
   valueFormatter?: (v: number) => string;
 }
 
-type Mode = 'single' | 'range';
+type Mode = "single" | "range";
 
 export const PeriodExplorer = memo(function PeriodExplorer({
   id,
   validAsc,
-  accent = '#a78bfa',
+  accent = "#a78bfa",
   valueFormatter,
 }: PeriodExplorerProps) {
   // Anos disponíveis — ordenados asc (mais antigo → mais recente).
@@ -46,8 +54,8 @@ export const PeriodExplorer = memo(function PeriodExplorer({
 
   // Estado: modo + anos selecionados.
   // Inicialização lazy pega o ano mais recente disponível.
-  const latestYear = availableYears[availableYears.length - 1] ?? '';
-  const [mode, setMode] = useState<Mode>('single');
+  const latestYear = availableYears[availableYears.length - 1] ?? "";
+  const [mode, setMode] = useState<Mode>("single");
   const [selectedYear, setSelectedYear] = useState<string>(latestYear);
   const [startYear, setStartYear] = useState<string>(latestYear);
   const [endYear, setEndYear] = useState<string>(latestYear);
@@ -58,7 +66,7 @@ export const PeriodExplorer = memo(function PeriodExplorer({
   const [prevMode, setPrevMode] = useState<Mode>(mode);
   if (mode !== prevMode) {
     setPrevMode(mode);
-    if (mode === 'range') {
+    if (mode === "range") {
       setStartYear(selectedYear);
       setEndYear(selectedYear);
     }
@@ -66,7 +74,7 @@ export const PeriodExplorer = memo(function PeriodExplorer({
 
   // Garante start ≤ end (se usuário inverter, trocamos automaticamente).
   const [start, end] = useMemo(() => {
-    if (mode !== 'range') return [selectedYear, selectedYear];
+    if (mode !== "range") return [selectedYear, selectedYear];
     return startYear <= endYear ? [startYear, endYear] : [endYear, startYear];
   }, [mode, selectedYear, startYear, endYear]);
 
@@ -95,11 +103,12 @@ export const PeriodExplorer = memo(function PeriodExplorer({
     return { count: filteredPoints.length, ret, hi, lo, first, last };
   }, [filteredPoints]);
 
-  const periodLabel = mode === 'single'
-    ? `Ano ${selectedYear}`
-    : start === end
-      ? `Ano ${start}`
-      : `Intervalo ${start} – ${end}`;
+  const periodLabel =
+    mode === "single"
+      ? `Ano ${selectedYear}`
+      : start === end
+        ? `Ano ${start}`
+        : `Intervalo ${start} – ${end}`;
 
   // Opções dos selects de ano (mesma lista, usada 3x).
   const yearOptions = availableYears;
@@ -108,7 +117,7 @@ export const PeriodExplorer = memo(function PeriodExplorer({
     <motion.div
       id={id}
       variants={itemVariants}
-      className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]
+      className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/2
                  backdrop-blur-md p-6 shadow-[0_8px_40px_-15px_rgba(0,0,0,0.5)] scroll-mt-24"
     >
       <div
@@ -128,8 +137,12 @@ export const PeriodExplorer = memo(function PeriodExplorer({
             <Filter size={18} />
           </span>
           <div>
-            <h4 className="text-base font-semibold tracking-tight text-slate-100">Explorador por Período</h4>
-            <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Ano inteiro ou intervalo entre anos</p>
+            <h4 className="text-base font-semibold tracking-tight text-slate-100">
+              Explorador por Período
+            </h4>
+            <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
+              Ano inteiro ou intervalo entre anos
+            </p>
           </div>
         </div>
 
@@ -138,32 +151,32 @@ export const PeriodExplorer = memo(function PeriodExplorer({
           <div className="inline-flex rounded-lg border border-white/10 bg-slate-900/70 p-0.5">
             <button
               type="button"
-              onClick={() => setMode('single')}
+              onClick={() => setMode("single")}
               className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
-                mode === 'single'
-                  ? 'bg-violet-500/20 text-violet-200'
-                  : 'text-slate-400 hover:text-slate-200'
+                mode === "single"
+                  ? "bg-violet-500/20 text-violet-200"
+                  : "text-slate-400 hover:text-slate-200"
               }`}
-              aria-pressed={mode === 'single'}
+              aria-pressed={mode === "single"}
             >
               Ano inteiro
             </button>
             <button
               type="button"
-              onClick={() => setMode('range')}
+              onClick={() => setMode("range")}
               className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
-                mode === 'range'
-                  ? 'bg-violet-500/20 text-violet-200'
-                  : 'text-slate-400 hover:text-slate-200'
+                mode === "range"
+                  ? "bg-violet-500/20 text-violet-200"
+                  : "text-slate-400 hover:text-slate-200"
               }`}
-              aria-pressed={mode === 'range'}
+              aria-pressed={mode === "range"}
             >
               Intervalo
             </button>
           </div>
 
           {/* Select(s) de ano conforme o modo */}
-          {mode === 'single' ? (
+          {mode === "single" ? (
             <label className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-slate-500">
               <span>Ano</span>
               <select
@@ -173,7 +186,9 @@ export const PeriodExplorer = memo(function PeriodExplorer({
                 aria-label="Selecionar ano"
               >
                 {yearOptions.map((y) => (
-                  <option key={y} value={y}>{y}</option>
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
                 ))}
               </select>
             </label>
@@ -188,7 +203,9 @@ export const PeriodExplorer = memo(function PeriodExplorer({
                   aria-label="Ano inicial"
                 >
                   {yearOptions.map((y) => (
-                    <option key={y} value={y}>{y}</option>
+                    <option key={y} value={y}>
+                      {y}
+                    </option>
                   ))}
                 </select>
               </label>
@@ -201,7 +218,9 @@ export const PeriodExplorer = memo(function PeriodExplorer({
                   aria-label="Ano final"
                 >
                   {yearOptions.map((y) => (
-                    <option key={y} value={y}>{y}</option>
+                    <option key={y} value={y}>
+                      {y}
+                    </option>
                   ))}
                 </select>
               </label>
@@ -212,57 +231,69 @@ export const PeriodExplorer = memo(function PeriodExplorer({
 
       {/* Stats do período filtrado */}
       <div className="relative mb-4 flex flex-wrap items-center gap-2 text-xs">
-        <span className="inline-flex items-center gap-1.5 rounded-md border border-white/5 bg-white/[0.03] px-2.5 py-1 font-mono">
+        <span className="inline-flex items-center gap-1.5 rounded-md border border-white/5 bg-white/3 px-2.5 py-1 font-mono">
           <span className="text-slate-500">Período:</span>
           <span className="text-slate-100">{periodLabel}</span>
         </span>
         {periodStats ? (
           <>
-            <span className="inline-flex items-center gap-1.5 rounded-md border border-white/5 bg-white/[0.03] px-2.5 py-1 font-mono">
+            <span className="inline-flex items-center gap-1.5 rounded-md border border-white/5 bg-white/3 px-2.5 py-1 font-mono">
               <span className="text-slate-500">Pts:</span>
               <span className="text-slate-100">{periodStats.count}</span>
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-md border border-white/5 bg-white/[0.03] px-2.5 py-1 font-mono">
+            <span className="inline-flex items-center gap-1.5 rounded-md border border-white/5 bg-white/3 px-2.5 py-1 font-mono">
               <span className="text-slate-500">Var:</span>
-              <span className={periodStats.ret >= 0 ? 'text-emerald-300' : 'text-red-300'}>
+              <span
+                className={
+                  periodStats.ret >= 0 ? "text-emerald-300" : "text-red-300"
+                }
+              >
                 {fmtPctSigned(periodStats.ret)}
               </span>
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-md border border-white/5 bg-white/[0.03] px-2.5 py-1 font-mono">
+            <span className="inline-flex items-center gap-1.5 rounded-md border border-white/5 bg-white/3 px-2.5 py-1 font-mono">
               <span className="text-slate-500">Máx:</span>
               <span className="text-slate-100">
-                {valueFormatter ? valueFormatter(periodStats.hi.value) : fmtPts(periodStats.hi.value)}
+                {valueFormatter
+                  ? valueFormatter(periodStats.hi.value)
+                  : fmtPts(periodStats.hi.value)}
               </span>
               <span className="text-slate-600">·</span>
-              <span className="text-slate-500">{fmtBRDate(periodStats.hi.date)}</span>
+              <span className="text-slate-500">
+                {fmtBRDate(periodStats.hi.date)}
+              </span>
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-md border border-white/5 bg-white/[0.03] px-2.5 py-1 font-mono">
+            <span className="inline-flex items-center gap-1.5 rounded-md border border-white/5 bg-white/3 px-2.5 py-1 font-mono">
               <span className="text-slate-500">Mín:</span>
               <span className="text-slate-100">
-                {valueFormatter ? valueFormatter(periodStats.lo.value) : fmtPts(periodStats.lo.value)}
+                {valueFormatter
+                  ? valueFormatter(periodStats.lo.value)
+                  : fmtPts(periodStats.lo.value)}
               </span>
               <span className="text-slate-600">·</span>
-              <span className="text-slate-500">{fmtBRDate(periodStats.lo.date)}</span>
+              <span className="text-slate-500">
+                {fmtBRDate(periodStats.lo.date)}
+              </span>
             </span>
           </>
         ) : (
-          <span className="rounded-md border border-white/5 bg-white/[0.03] px-2.5 py-1 font-mono text-slate-500">
+          <span className="rounded-md border border-white/5 bg-white/3 px-2.5 py-1 font-mono text-slate-500">
             {filteredPoints.length === 0
-              ? 'Sem dados neste recorte.'
+              ? "Sem dados neste recorte."
               : `${filteredPoints.length} ponto(s) — insuficiente para métricas.`}
           </span>
         )}
       </div>
 
       {filteredPoints.length === 0 ? (
-        <div className="flex h-[300px] items-center justify-center text-center text-xs text-slate-500">
+        <div className="flex h-75 items-center justify-center text-center text-xs text-slate-500">
           Sem dados válidos para o período selecionado.
         </div>
       ) : (
         <LineChartEcharts
           points={filteredPoints}
           color={accent}
-          valueFormatter={valueFormatter}
+          valueFormatter={fmtBRLTax}
         />
       )}
     </motion.div>

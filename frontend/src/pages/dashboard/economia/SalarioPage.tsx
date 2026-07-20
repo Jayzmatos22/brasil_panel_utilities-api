@@ -1,7 +1,14 @@
 // APIs: Banco Central do Brasil (BCB) + IPEA
 import { useMemo, useState, memo } from "react";
 import { motion } from "motion/react";
-import { LoaderCircle, TrendingUp, TrendingDown, Minus, AlertCircle, RefreshCw } from "lucide-react";
+import {
+  LoaderCircle,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  AlertCircle,
+  RefreshCw,
+} from "lucide-react";
 import {
   useMinimumWage,
   useMinimumWageHistory,
@@ -24,14 +31,28 @@ const bannerImage = Object.values(PAGE_IMAGES)[0];
 // ─── Types & Constants ──────────────────────────────────────────────────────
 const SOURCES = [
   { key: "bcb", label: "Nominal (BCB)", unit: "BRL", code: undefined },
-  { key: "real", label: "Mínimo real (IPEA)", unit: "BRL", code: "GAC12_SALMINRE12" },
-  { key: "ppc", label: "Mínimo PPC em USD (IPEA)", unit: "USD", code: "GAC12_SALMINDOL12" },
-  { key: "renda", label: "Renda média per capita (IPEA)", unit: "BRL", code: "PNADS_RENDAMEDIA" },
+  {
+    key: "real",
+    label: "Mínimo real (IPEA)",
+    unit: "BRL",
+    code: "GAC12_SALMINRE12",
+  },
+  {
+    key: "ppc",
+    label: "Mínimo PPC em USD (IPEA)",
+    unit: "USD",
+    code: "GAC12_SALMINDOL12",
+  },
+  {
+    key: "renda",
+    label: "Renda média per capita (IPEA)",
+    unit: "BRL",
+    code: "PNADS_RENDAMEDIA",
+  },
 ] as const;
 
 type SourceKey = (typeof SOURCES)[number]["key"];
-import type { StatCardProps } from '../../../types/utilities/Economy'
-
+import type { StatCardProps } from "../../../types/utilities/Economy";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 function computeStats(points: LinePoint[]) {
@@ -48,34 +69,43 @@ const money = (unit: "BRL" | "USD") => (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: unit });
 
 // ─── Sub-Components (Memoized) ──────────────────────────────────────────────
-const StatCard = memo(({ title, value, icon, trendClass, floatDelay }: StatCardProps) => (
-  <div 
-    className={`relative bg-slate-900/60 backdrop-blur-sm border border-white/5 rounded-xl p-4 flex flex-col gap-2 overflow-hidden animate-float hover:-translate-y-1 transition-all duration-300 ${floatDelay ?? ''}`}
-  >
-    {/* Brazil-themed color rail at the top of each card */}
-    <div className={`absolute top-0 left-0 right-0 h-[2px] ${trendClass}`} />
-    <span className="text-slate-400 text-xs font-medium uppercase tracking-wider">{title}</span>
-    <span className="flex items-center gap-2 font-mono font-bold text-white text-lg">
-      {icon}
-      {value}
-    </span>
-  </div>
-));
+const StatCard = memo(
+  ({ title, value, icon, trendClass, floatDelay }: StatCardProps) => (
+    <div
+      className={`relative bg-slate-900/60 backdrop-blur-sm border border-white/5 rounded-xl p-4 flex flex-col gap-2 overflow-hidden animate-float hover:-translate-y-1 transition-all duration-300 ${floatDelay ?? ""}`}
+    >
+      {/* Brazil-themed color rail at the top of each card */}
+      <div className={`absolute top-0 left-0 right-0 h-[2px] ${trendClass}`} />
+      <span className="text-slate-400 text-xs font-medium uppercase tracking-wider">
+        {title}
+      </span>
+      <span className="flex items-center gap-2 font-mono font-bold text-white text-lg">
+        {icon}
+        {value}
+      </span>
+    </div>
+  ),
+);
 
 const LoadingState = () => (
-  <div className="flex items-center gap-2 text-slate-400 text-sm py-4" role="status">
+  <div
+    className="flex items-center gap-2 text-slate-400 text-sm py-4"
+    role="status"
+  >
     <LoaderCircle size={16} className="animate-spin" aria-hidden="true" />
     <span>Carregando dados...</span>
   </div>
 );
 
 const ErrorState = ({ message }: { message: string }) => (
-  <div className="flex items-center gap-3 text-red-300 bg-red-950/30 border border-red-500/20 rounded-lg px-4 py-3 text-sm" role="alert">
+  <div
+    className="flex items-center gap-3 text-red-300 bg-red-950/30 border border-red-500/20 rounded-lg px-4 py-3 text-sm"
+    role="alert"
+  >
     <AlertCircle size={16} className="shrink-0" aria-hidden="true" />
     <span>{message}</span>
   </div>
 );
-
 
 // ─── Main Page ──────────────────────────────────────────────────────────────
 export default function SalarioPage() {
@@ -84,19 +114,19 @@ export default function SalarioPage() {
     isLoading: loadingCurrent,
     error: errCurrent,
   } = useMinimumWage();
-  
+
   const {
     data: history,
     isLoading: loadingHistory,
     error: errHistory,
     refetch: refetchHistory,
   } = useMinimumWageHistory();
-  
-  const { 
-    data: renda, 
-    isLoading: loadingRenda, 
+
+  const {
+    data: renda,
+    isLoading: loadingRenda,
     error: errRenda,
-    refetch: refetchRenda 
+    refetch: refetchRenda,
   } = useRenda();
 
   const [source, setSource] = useState<SourceKey>("bcb");
@@ -135,12 +165,15 @@ export default function SalarioPage() {
       <motion.header
         variants={item}
         className="group relative flex flex-col lg:flex-row overflow-hidden rounded-2xl bg-slate-950 shadow-2xl shadow-emerald-900/20"
-        style={{ transform: 'perspective(1200px) rotateX(1deg)', transformOrigin: 'bottom center' }}
+        style={{
+          transform: "perspective(1200px) rotateX(1deg)",
+          transformOrigin: "bottom center",
+        }}
       >
         {/* Visual Panel */}
         <div className="relative lg:w-2/5 h-56 lg:h-auto shrink-0 overflow-hidden">
           <div className="absolute inset-0 bg-linear-to-br from-emerald-900 to-green-800" />
-          
+
           {bannerImage && (
             <img
               src={bannerImage}
@@ -148,16 +181,20 @@ export default function SalarioPage() {
               role="presentation"
               loading="lazy"
               className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-              style={{ 
-                WebkitMaskImage: 'radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, transparent 70%)',
-                maskImage: 'radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, transparent 70%)'
+              style={{
+                WebkitMaskImage:
+                  "radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, transparent 70%)",
+                maskImage:
+                  "radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, transparent 70%)",
               }}
-              onError={(e) => { e.currentTarget.style.display = "none"; }}
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+              }}
             />
           )}
-          
+
           {/* Deep overlay for text pop */}
-          <div className="absolute inset-0 bg-linear-to-t from-slate-950 via-slate-950/60 to-transparent lg:bg-gradient-to-r lg:from-transparent lg:via-slate-950/40 lg:to-slate-950" />
+          <div className="absolute inset-0 bg-linear-to-t from-slate-950 via-slate-950/60 to-transparent lg:bg-linear-to-r lg:from-transparent lg:via-slate-950/40 lg:to-slate-950" />
         </div>
 
         {/* Content Panel */}
@@ -168,7 +205,7 @@ export default function SalarioPage() {
               BCB · Live
             </span>
           </div>
-          
+
           <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.5)]">
             Salário <span className="text-[#FFDF00]">Mínimo</span>
           </h1>
@@ -208,7 +245,7 @@ export default function SalarioPage() {
             <span className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse" />
             Histórico
           </h2>
-          
+
           <div className="flex items-center gap-3">
             <select
               value={source}
@@ -217,7 +254,11 @@ export default function SalarioPage() {
               className="h-10 px-4 rounded-xl bg-white/5 text-white border border-white/10 outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-sm cursor-pointer appearance-none hover:bg-white/10"
             >
               {SOURCES.map((s) => (
-                <option key={s.key} value={s.key} className="bg-slate-900 text-white">
+                <option
+                  key={s.key}
+                  value={s.key}
+                  className="bg-slate-900 text-white"
+                >
                   {s.label}
                 </option>
               ))}
@@ -233,8 +274,10 @@ export default function SalarioPage() {
         ) : errChart ? (
           <div className="flex flex-col items-center gap-4 py-8">
             <ErrorState message="Falha ao carregar histórico." />
-            <button 
-              onClick={() => source === "bcb" ? refetchHistory() : refetchRenda()}
+            <button
+              onClick={() =>
+                source === "bcb" ? refetchHistory() : refetchRenda()
+              }
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
             >
               <RefreshCw size={14} aria-hidden="true" />
@@ -248,29 +291,33 @@ export default function SalarioPage() {
                 title="Variação no período"
                 value={`${stats.pct > 0 ? "+" : ""}${stats.pct.toFixed(2)}%`}
                 icon={
-                  stats.change > 0 ? <TrendingUp size={16} className="text-emerald-400" /> :
-                  stats.change < 0 ? <TrendingDown size={16} className="text-red-400" /> :
-                  <Minus size={16} className="text-slate-400" />
+                  stats.change > 0 ? (
+                    <TrendingUp size={16} className="text-emerald-400" />
+                  ) : stats.change < 0 ? (
+                    <TrendingDown size={16} className="text-red-400" />
+                  ) : (
+                    <Minus size={16} className="text-slate-400" />
+                  )
                 }
-                trendClass="bg-gradient-to-r from-emerald-500 to-green-400"
+                trendClass="bg-linear-to-r from-emerald-500 to-green-400"
                 floatDelay=""
               />
               <StatCard
                 title="Mínima"
                 value={fmt(stats.min)}
                 icon={<TrendingDown size={16} className="text-blue-400" />}
-                trendClass="bg-gradient-to-r from-blue-500 to-sky-400"
+                trendClass="bg-linear-to-r from-blue-500 to-sky-400"
                 floatDelay="animation-delay-200"
               />
               <StatCard
                 title="Máxima"
                 value={fmt(stats.max)}
                 icon={<TrendingUp size={16} className="text-yellow-400" />}
-                trendClass="bg-gradient-to-r from-yellow-500 to-amber-400"
+                trendClass="bg-linear-to-r from-yellow-500 to-amber-400"
                 floatDelay="animation-delay-400"
               />
             </div>
-            
+
             <div className="mt-4 rounded-xl overflow-hidden bg-slate-950/40 p-2 border border-white/5">
               <LineChartEcharts points={points} color="#10b981" />
             </div>

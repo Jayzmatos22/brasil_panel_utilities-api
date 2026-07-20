@@ -5,9 +5,9 @@
  * padding menor, badge compacto.
  */
 
-import { memo } from 'react';
-import { LineChartEchartsCompact } from '../../charts/LineChartEchartsCompact';
-import type { LinePoint } from '../../charts/LineChartEcharts';
+import { memo } from "react";
+import { LineChartEchartsCompact } from "../../charts/LineChartEchartsCompact";
+import type { LinePoint } from "../../charts/LineChartEcharts";
 
 export interface ChartGridPanelProps {
   id?: string;
@@ -31,7 +31,7 @@ export const ChartGridPanel = memo(function ChartGridPanel({
   return (
     <div
       id={id}
-      className="relative overflow-hidden rounded-xl border border-white/10 bg-white/[0.02]
+      className="relative overflow-hidden rounded-xl border border-white/10 bg-white/2
                  backdrop-blur-md p-4 scroll-mt-24"
     >
       <div
@@ -41,8 +41,12 @@ export const ChartGridPanel = memo(function ChartGridPanel({
       />
       <div className="relative mb-3 flex items-start justify-between gap-2">
         <div>
-          <h5 className="text-sm font-semibold tracking-tight text-slate-100">{title}</h5>
-          <p className="text-[10px] uppercase tracking-[0.16em] text-slate-500">{subtitle}</p>
+          <h5 className="text-sm font-semibold tracking-tight text-slate-100">
+            {title}
+          </h5>
+          <p className="text-[10px] uppercase tracking-[0.16em] text-slate-500">
+            {subtitle}
+          </p>
         </div>
         <span
           className="rounded-full px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider"
@@ -53,7 +57,7 @@ export const ChartGridPanel = memo(function ChartGridPanel({
       </div>
 
       {points.length === 0 ? (
-        <div className="flex h-[160px] items-center justify-center text-center text-[11px] text-slate-500">
+        <div className="flex h-40 items-center justify-center text-center text-[11px] text-slate-500">
           {emptyHint}
         </div>
       ) : (

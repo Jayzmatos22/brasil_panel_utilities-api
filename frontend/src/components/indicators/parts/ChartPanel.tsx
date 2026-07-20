@@ -6,10 +6,13 @@
  * Para grids densos, prefira ChartGridPanel (160px).
  */
 
-import { memo, type ReactNode } from 'react';
-import { motion } from 'motion/react';
-import { LineChartEcharts, type LinePoint } from '../../charts/LineChartEcharts';
-import { itemVariants } from '../../../constants/indicators/Motion';
+import { memo, type ReactNode } from "react";
+import { motion } from "motion/react";
+import {
+  LineChartEcharts,
+  type LinePoint,
+} from "../../charts/LineChartEcharts";
+import { itemVariants } from "../../../constants/indicators/Motion";
 
 export interface ChartPanelProps {
   id?: string;
@@ -38,7 +41,7 @@ export const ChartPanel = memo(function ChartPanel({
     <motion.div
       id={id}
       variants={itemVariants}
-      className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]
+      className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/2
                  backdrop-blur-md p-6 shadow-[0_8px_40px_-15px_rgba(0,0,0,0.5)] scroll-mt-24"
     >
       {/* Glow decorativo no canto — intensifica no hover. */}
@@ -58,8 +61,12 @@ export const ChartPanel = memo(function ChartPanel({
             {icon}
           </span>
           <div>
-            <h4 className="text-base font-semibold tracking-tight text-slate-100">{title}</h4>
-            <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">{subtitle}</p>
+            <h4 className="text-base font-semibold tracking-tight text-slate-100">
+              {title}
+            </h4>
+            <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
+              {subtitle}
+            </p>
           </div>
         </div>
         <span

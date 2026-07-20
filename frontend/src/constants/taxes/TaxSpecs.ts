@@ -99,6 +99,20 @@ export const TAX_SPECS: TaxSpec[] = [
     accent: '#34d399',
     iconKey: 'factory',
   },
+  {
+  key: 'itr',
+  shortName: 'ITR',
+  longName: 'Imposto sobre a Propriedade Territorial Rural',
+  badge: 'IPEA · Receita Federal',
+  description:
+    'Tributo federal sobre a propriedade de imóveis rurais. ' +
+    'Tem vencimento anual e arrecadação concentrada no segundo semestre, ' +
+    'refletindo o calendário de apuração da Receita Federal.',
+  imageKey: 'itr',
+  gradient: 'from-lime-900 to-green-700',
+  accent: '#84cc16',
+  iconKey: 'trees',
+  },
 ];
 
 /** Mapa derivado: key do tributo → cor de destaque. */

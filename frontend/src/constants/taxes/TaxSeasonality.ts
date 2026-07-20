@@ -19,6 +19,10 @@ export const SEASONALITY: Record<string, SeasonalityInsight[]> = {
   iof: [],         // sem sazonalidade marcante — frase genérica
   importacao: [],  // sensível a câmbio + ciclo externo
   ipi: [],         // sensível ao ciclo industrial — frase via média móvel 3M
+  itr: [
+  { monthIdx: 8,  reason: 'pico característico em setembro, com o vencimento da quota única do ITR' },
+  { monthIdx: 11, reason: 'elevação em dezembro, associada ao encerramento do exercício e ajustes finais' },
+  ],
 };
 
 

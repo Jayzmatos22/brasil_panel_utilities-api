@@ -6,6 +6,9 @@ import type {
   ResendCodeRequest,
   AuthResponse,
   VerifyEmailRequest,
+  UpdateNameRequest,
+  DeleteAccountRequest,
+  UpdatePasswordRequest
 } from '../../types/UserType';
 
 export const authService = {
@@ -20,4 +23,13 @@ export const authService = {
 
   login: (data: LoginRequest) =>
     apiClient.post<AuthResponse>('/auth/login', data).then((r) => r.data),
+
+  updateName: (data: UpdateNameRequest) =>
+  apiClient.patch<void>('/auth/update-name', data).then((r) => r.data),
+
+updatePassword: (data: UpdatePasswordRequest) =>
+  apiClient.patch<void>('/auth/update-password', data).then((r) => r.data),
+
+deleteAccount: (data: DeleteAccountRequest) =>
+  apiClient.delete<void>('/auth/delete-account', { data }).then((r) => r.data),
 };

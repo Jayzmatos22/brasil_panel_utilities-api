@@ -39,14 +39,14 @@ export function BarChartEcharts({ items, color = '#eab308', valueFormatter }: Ba
       xAxis: {
         type: 'value',
         axisLine: { lineStyle: { color: '#334155' } },
-        axisLabel: { color: '#94a3b8', fontSize: 12, formatter: (v: number) => fmt(v) },
+        axisLabel: { color: '#334155', fontSize: 12, formatter: (v: number) => fmt(v) },
         splitLine: { lineStyle: { color: '#1e293b' } },
       },
       yAxis: {
         type: 'category',
         data: ordered.map((i) => i.label),
         axisLine: { lineStyle: { color: '#334155' } },
-        axisLabel: { color: '#94a3b8', fontSize: 12 },
+        axisLabel: { color: '#334155', fontSize: 12 },
       },
       series: [
         {
@@ -56,7 +56,7 @@ export function BarChartEcharts({ items, color = '#eab308', valueFormatter }: Ba
           label: {
             show: true,
             position: 'right',
-            color: '#cbd5e1',
+            color: '#204155',
             fontSize: 11,
             formatter: (p: { value: number }) => fmt(p.value),
           },

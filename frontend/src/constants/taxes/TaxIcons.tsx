@@ -1,5 +1,5 @@
 import {
-  Ship, UserCheck, Building2, Layers, Coins, Factory,
+  Ship, UserCheck, Building2, Layers, Coins, Factory, Trees,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -24,6 +24,7 @@ export const TAX_ICON_BY_KEY: Record<string, LucideIcon> = {
   'layers':       Layers,
   'coins':        Coins,
   'factory':      Factory,
+  'trees':        Trees,
 };
 
 /** Resolve a chave e devolve o elemento já dimensionado. */
@@ -31,3 +32,6 @@ export function renderTaxIcon(iconKey: string, size: number = 18): React.ReactNo
   const Icon = TAX_ICON_BY_KEY[iconKey] ?? Ship;
   return <Icon size={size} aria-hidden />;
 }
+
+
+

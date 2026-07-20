@@ -41,3 +41,5 @@ export * from '../../constants/indicators/Formatters';
 export * from './hooks/UseResponsiveValue';
 
 export * from './parts/PageBanner';
+export * from './parts/IndicesSummaryPanel';
+

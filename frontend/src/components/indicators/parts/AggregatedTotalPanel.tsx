@@ -14,7 +14,7 @@ import { memo } from 'react';
 import { motion } from 'motion/react';
 import { Activity } from 'lucide-react';
 import { itemVariants } from '../../../constants/indicators/Motion';
-import { fmtBRLCompact, fmtPctSigned } from '../../../constants/indicators/Formatters';
+import { fmtBRLTax, fmtPctSigned } from '../../../constants/indicators/Formatters';
 import type { AggregatedTotal } from '../../../types/utilities/Economy';
 
 export interface AggregatedTotalPanelProps {
@@ -25,7 +25,7 @@ export interface AggregatedTotalPanelProps {
   aggregate: AggregatedTotal | null;
   /** Mapa key → cor para colorir a barra de participação. */
   accentsByKey?: Record<string, string>;
-  /** Formatador do valor total. Default fmtBRLCompact. */
+  /** Formatador do valor total. . */
   valueFormatter?: (v: number) => string;
 }
 
@@ -36,14 +36,14 @@ export const AggregatedTotalPanel = memo(function AggregatedTotalPanel({
   accent = '#818cf8',
   aggregate,
   accentsByKey,
-  valueFormatter = fmtBRLCompact,
+  valueFormatter = fmtBRLTax,
 }: AggregatedTotalPanelProps) {
   return (
     <motion.div
       id={id}
       variants={itemVariants}
       className="group relative overflow-hidden rounded-2xl border border-white/10
-                 bg-gradient-to-br from-indigo-950/40 via-violet-950/20 to-slate-950/40
+                 bg-linear-to-br from-indigo-950/40 via-violet-950/20 to-slate-950/40
                  backdrop-blur-md p-6 shadow-[0_8px_40px_-15px_rgba(0,0,0,0.5)] scroll-mt-24"
     >
       <div
@@ -93,7 +93,7 @@ export const AggregatedTotalPanel = memo(function AggregatedTotalPanel({
 
           {/* Variações M/M e YoY lado a lado */}
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            <div className="rounded-lg border border-white/5 bg-white/[0.02] px-4 py-3">
+            <div className="rounded-lg border border-white/5 bg-white/2 px-4 py-3">
               <p className="text-[10px] uppercase tracking-wider text-slate-500">Variação M/M</p>
               <p
                 className={`font-mono text-lg font-semibold ${
@@ -107,7 +107,7 @@ export const AggregatedTotalPanel = memo(function AggregatedTotalPanel({
                 {aggregate.variationMM === null ? '—' : fmtPctSigned(aggregate.variationMM)}
               </p>
             </div>
-            <div className="rounded-lg border border-white/5 bg-white/[0.02] px-4 py-3">
+            <div className="rounded-lg border border-white/5 bg-white/2 px-4 py-3">
               <p className="text-[10px] uppercase tracking-wider text-slate-500">Variação YoY</p>
               <p
                 className={`font-mono text-lg font-semibold ${

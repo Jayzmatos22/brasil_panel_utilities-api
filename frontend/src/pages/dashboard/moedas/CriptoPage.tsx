@@ -11,9 +11,21 @@ import { BarChartEcharts } from '../../../components/charts/BarChartEcharts';
 import { AnimatedNumber } from '../../../components/AnimatedNumber';
 import { container, item } from '../../../lib/motion/presets';
 
+// ============================================================================
+// 1. IMPORTAÇÃO DINÂMICA DE IMAGENS (Padrão)
+// ============================================================================
+const CRIPTO_IMAGES = import.meta.glob(
+  "../../../assets/criptomoedas/*.{jpeg,jpg,png,webp,avif}", 
+  { eager: true, import: 'default' }
+) as Record<string, string>;
+
+const bannerImage = Object.values(CRIPTO_IMAGES)[0];
+
+// ============================================================================
+// PÁGINA PRINCIPAL
+// ============================================================================
 export default function CriptoPage() {
   const [search, setSearch] = useState('');
-  // Debounce: só consulta após o usuário parar de digitar (evita 1 req + 404 por tecla).
   const [debounced, setDebounced] = useState('');
   
   useEffect(() => {
@@ -33,14 +45,10 @@ export default function CriptoPage() {
   const pct = (v: number) => 
     typeof v === 'number' ? `${v >= 0 ? '+' : ''}${v.toFixed(2)}%` : '-';
 
-  // Comparativos derivados do mesmo batch (top 100) — sem requisições extras.
   const { gainers, losers, topCap } = useMemo(() => {
     if (!market) return { gainers: [], losers: [], topCap: [] };
     
-    // Filtramos moedas que tenham priceChange24h válido (diferente de null/undefined)
     const validChanges = [...market].filter((c) => typeof c.priceChange24h === 'number');
-    
-    // Ordenamos apenas as válidas
     const byChange = validChanges.sort((a, b) => b.priceChange24h - a.priceChange24h);
     
     return {
@@ -55,45 +63,72 @@ export default function CriptoPage() {
 
   return (
     <motion.div className="flex flex-col gap-6" variants={container} initial="hidden" animate="show">
-      <motion.h1 variants={item} className="text-2xl font-bold text-blue-500">Criptomoedas</motion.h1>
-
-      {/* Busca por nome */}
-      <motion.div
-        variants={item}
-        whileHover={{ y: -4 }}
-        className="bg-slate-900 border border-slate-700 rounded-xl cursor-pointer p-5 max-w-md flex flex-col gap-3"
+      
+      {/* HEADER DINÂMICO SPLIT-VIEW (Card colado) */}
+      <motion.div 
+        variants={item} 
+        // Retiramos o p-6 daqui e usamos flex-col/row direto na raiz para as "metades" ocuparem tudo
+        className="relative overflow-hidden rounded-xl border-3 border-blue-500 flex flex-col md:flex-row min-h-[200px] float-card border-b-3 group"
       >
-        <h2 className="text-yellow-500 font-semibold text-sm uppercase tracking-wider">Busca por Nome</h2>
-        <div className="relative">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-          <input
-            value={search}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
-            placeholder="Ex: bitcoin, ethereum..."
-            className="w-full h-10 pl-9 pr-3 rounded-md bg-slate-800 text-white border border-slate-600
-                       placeholder-slate-500 outline-none focus:ring-2 focus:ring-yellow-500 transition-all text-sm"
-          />
-        </div>
-        {loadingByName && debounced && (
-          <div className="flex items-center gap-2 text-slate-400 text-sm">
-            <LoaderCircle size={14} className="animate-spin" /> Buscando...
+        {/* Fundo da imagem global */}
+        {bannerImage ? (
+          <div className="absolute inset-0 z-0 pointer-events-none">
+            <img 
+              src={bannerImage} 
+              alt="Banner Criptomoedas" 
+              className="w-full h-full object-cover opacity-100 transition-transform duration-700 group-hover:scale-105" 
+            />
+            <div className="absolute inset-0 bg-linear-to-r from-slate-950/95 via-slate-900/80 to-slate-900/30" />
           </div>
+        ) : (
+          <div className="absolute inset-0 z-0 bg-slate-900 pointer-events-none" />
         )}
-        {byNameError && debounced && !loadingByName && (
-          <span className="text-red-400 text-sm">Criptomoeda "{debounced}" não encontrada.</span>
-        )}
-        {byName && typeof byName.priceBrl === 'number' && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.96 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="flex justify-between items-center bg-slate-800 rounded-lg px-4 py-3"
-          >
-            <span className="text-white font-semibold">{byName.id}</span>
-            <span className="text-green-500 font-mono font-bold">
-              <AnimatedNumber value={byName.priceBrl} format={brl} />
-            </span>
-          </motion.div>
-        )}
+
+        {/* Metade Esquerda: Títulos (com padding interno próprio) */}
+        <div className="relative z-10 flex-1 flex flex-col justify-center p-6 md:p-8">
+          <h1 className="text-2xl md:text-3xl font-bold text-white">Criptomoedas</h1>
+          <p className="text-slate-300 text-sm mt-1 max-w-xl">
+            Cotações e tendências do mercado global em tempo real
+          </p>
+        </div>
+
+        {/* Metade Direita: Card de Busca (Colado no topo, base e direita) */}
+        <div className="relative z-10 w-full md:w-80 lg:w-96 bg-slate-950/60 backdrop-blur-sm border-t md:border-t-0 md:border-l
+                         border-slate-500/30 p-6 flex flex-col justify-center gap-3 shrink-0 ">
+          <h2 className="text-yellow-400 font-semibold text-xs uppercase tracking-wider">Buscar por Nome</h2>
+          <div className="relative">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-900" />
+            <input
+              value={search}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
+              placeholder="Ex: bitcoin, ethereum..."
+              className="w-full h-9 pl-9 pr-3 rounded-md bg-slate-900/80 text-black border border-slate-700
+                         placeholder-slate-500 outline-none focus:ring-2 bg-white focus:ring-yellow-500 transition-all text-sm"
+            />
+          </div>
+          
+          {/* Resultados e feedbacks */}
+          {loadingByName && debounced && (
+            <div className="flex items-center gap-2 text-slate-300 text-xs">
+              <LoaderCircle size={12} className="animate-spin" /> Buscando...
+            </div>
+          )}
+          {byNameError && debounced && !loadingByName && (
+            <span className="text-red-400 text-xs">Criptomoeda "{debounced}" não encontrada.</span>
+          )}
+          {byName && typeof byName.priceBrl === 'number' && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex justify-between items-center bg-cyan-950 rounded-md px-3 py-2 border border-slate-500 mt-1"
+            >
+              <span className="text-white font-medium text-xs uppercase">{byName.id}</span>
+              <span className="text-green-400 font-mono font-bold text-sm">
+                <AnimatedNumber value={byName.priceBrl} format={brl} />
+              </span>
+            </motion.div>
+          )}
+        </div>
       </motion.div>
 
       {/* Top 100 */}
@@ -108,9 +143,9 @@ export default function CriptoPage() {
           </div>
         ) : market ? (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm ">
               <thead>
-                <tr className="border-b border-slate-700">
+                <tr className="border-b-2 border-white/20 rounded-lg bg-slate-950">
                   <th className="text-left py-2 px-3 text-slate-500 font-medium">#</th>
                   <th className="text-left py-2 px-3 text-blue-500 font-medium">Moeda</th>
                   <th className="text-right py-2 px-3 text-green-500 font-medium">Preço (BRL)</th>
@@ -159,53 +194,55 @@ export default function CriptoPage() {
         ) : null}
       </motion.div>
 
-      {/* Comparativos (24h) — maiores altas e quedas */}
+      {/* Comparativos (24h) */}
       <motion.div variants={item} className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <motion.div whileHover={{ y: -4 }} className="bg-slate-900 border border-slate-700 rounded-xl p-5 flex flex-col gap-4">
+        {/* Card: Maiores Altas */}
+        <motion.div whileHover={{ y: -4 }} className="bg-white/85 border border-slate-200 shadow-sm rounded-xl p-5 flex flex-col gap-4">
           <div className="flex items-center gap-2">
-            <span className="text-green-400"><TrendingUp size={15} /></span>
-            <h2 className="text-green-400 font-semibold text-sm uppercase tracking-wider">Maiores altas (24h)</h2>
+            <span className="text-green-600"><TrendingUp size={15} /></span>
+            <h2 className="text-green-600 font-semibold text-sm uppercase tracking-wider">Maiores altas (24h)</h2>
           </div>
           {loadingMarket ? (
-            <div className="flex items-center gap-2 text-slate-400 text-sm">
+            <div className="flex items-center gap-2 text-slate-500 text-sm">
               <LoaderCircle size={16} className="animate-spin" /> Carregando...
             </div>
           ) : gainers.length ? (
-            <BarChartEcharts items={gainers} color="#22c55e" valueFormatter={pct} />
+            <BarChartEcharts items={gainers} color="#16a34a" valueFormatter={pct} />
           ) : (
             <p className="text-slate-500 text-sm">Sem dados.</p>
           )}
         </motion.div>
 
-        <motion.div whileHover={{ y: -4 }} className="bg-slate-900 border border-slate-700 rounded-xl p-5 flex flex-col gap-4">
+        {/* Card: Maiores Quedas */}
+        <motion.div whileHover={{ y: -4 }} className="bg-white/85 border border-slate-200 shadow-sm rounded-xl p-5 flex flex-col gap-4">
           <div className="flex items-center gap-2">
-            <span className="text-red-400"><TrendingDown size={15} /></span>
-            <h2 className="text-red-400 font-semibold text-sm uppercase tracking-wider">Maiores quedas (24h)</h2>
+            <span className="text-red-600"><TrendingDown size={15} /></span>
+            <h2 className="text-red-700 font-semibold text-sm uppercase tracking-wider">Maiores quedas (24h)</h2>
           </div>
           {loadingMarket ? (
-            <div className="flex items-center gap-2 text-slate-400 text-sm">
+            <div className="flex items-center gap-2 text-slate-500 text-sm">
               <LoaderCircle size={16} className="animate-spin" /> Carregando...
             </div>
           ) : losers.length ? (
-            <BarChartEcharts items={losers} color="#ef4444" valueFormatter={pct} />
+            <BarChartEcharts items={losers} color="#dc2626" valueFormatter={pct} />
           ) : (
             <p className="text-slate-500 text-sm">Sem dados.</p>
           )}
         </motion.div>
       </motion.div>
 
-      {/* Top 10 por market cap */}
-      <motion.div variants={item} whileHover={{ y: -4 }} className="bg-slate-900 border border-slate-700 rounded-xl p-5 flex flex-col gap-4">
+      {/* Card: Top 10 por market cap */}
+      <motion.div variants={item} whileHover={{ y: -4 }} className="bg-white border border-slate-200 shadow-sm rounded-xl p-5 flex flex-col gap-4 mt-2">
         <div className="flex items-center gap-2">
-          <span className="text-blue-500"><BarChart3 size={15} /></span>
-          <h2 className="text-blue-500 font-semibold text-sm uppercase tracking-wider">Top 10 por market cap</h2>
+          <span className="text-blue-600"><BarChart3 size={15} /></span>
+          <h2 className="text-blue-700 font-semibold text-sm uppercase tracking-wider">Top 10 por market cap</h2>
         </div>
         {loadingMarket ? (
-          <div className="flex items-center gap-2 text-slate-400 text-sm">
+          <div className="flex items-center gap-2 text-slate-500 text-sm">
             <LoaderCircle size={16} className="animate-spin" /> Carregando...
           </div>
         ) : topCap.length ? (
-          <BarChartEcharts items={topCap} color="#a855f7" valueFormatter={compact} />
+          <BarChartEcharts items={topCap} color="#2563eb" valueFormatter={compact} />
         ) : (
           <p className="text-slate-500 text-sm">Sem dados.</p>
         )}

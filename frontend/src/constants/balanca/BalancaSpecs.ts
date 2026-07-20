@@ -161,7 +161,7 @@ export const BALANCA_SPECS: BalancaSpec[] = [
     description:
       'Ingressos de investimento direto no país registrados no balanço de pagamentos. ' +
       'Reflete a atração de capital produtivo estrangeiro para o Brasil.',
-    imageKey: 'investimento-direto-ingressos',
+    imageKey: 'ingressos',
     imageFolder: 'balanca',
     gradient: 'from-green-900 to-emerald-700',
     accent: '#4ade80',
