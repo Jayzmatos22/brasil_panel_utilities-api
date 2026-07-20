@@ -1,0 +1,14 @@
+name: CD - Deploy Manual na Nuvem
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy em Produção
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Disparar Webhook de Deploy
+        run: |
+          curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
