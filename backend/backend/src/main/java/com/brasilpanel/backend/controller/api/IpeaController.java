@@ -90,13 +90,13 @@ public class IpeaController {
 
 
     @Operation(
-            summary = "Transações Correntes",
+            summary = "Transações Correntes em uni. U$ milhões",
             description = "Registra o saldo das transações entre residentes e não residentes envolvendo bens, serviços, rendas e transferências correntes."
     )
     @ApiResponse(responseCode = "200", description = "Séries retornadas com sucesso")
     @ApiResponse(responseCode = "502", description = "Erro na comunicação com IPEA")
-    @GetMapping("/balanca/transacoes-correntes-pib")
-    ResponseEntity<List<IpeaSerieDTO>> getTransacoesCorrentes() {
+    @GetMapping("/balanca/transacoes-correntes")
+    ResponseEntity<List<IpeaSerieDTO>> getCurrentTransactions() {
         return ResponseEntity.ok(ipeaService.getCurrentTransactionsBalance());
     }
 
@@ -214,9 +214,9 @@ public class IpeaController {
     )
     @ApiResponse(responseCode = "200", description = "Série retornada com sucesso")
     @ApiResponse(responseCode = "502", description = "Erro na comunicação com IPEA")
-    @GetMapping("/balanca/transacoes-correntes")
-    public ResponseEntity<List<IpeaSerieDTO>> getCurrentTransactionsPib() {
-        return ResponseEntity.ok(ipeaService.getCurrentTransactionsPib());
+    @GetMapping("/balanca/transacoes-correntes-pib")
+    public ResponseEntity<List<IpeaSerieDTO>> getCurrentTransactionsPibPercent() {
+        return ResponseEntity.ok(ipeaService.getCurrentTransactionsPercentagePib());
     }
 
 

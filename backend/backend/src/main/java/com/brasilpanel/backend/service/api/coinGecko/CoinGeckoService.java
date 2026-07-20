@@ -69,10 +69,12 @@ public class CoinGeckoService {
     public CryptoCoinGeckoByNameDTO returnCryptoByName(String cryptoName){
         cryptoCoinGecko.validNameCoin(cryptoName);
 
-        // DB-first: se a moeda está no último batch (top 100), serve o preço do banco
+        // DB-first: resolve por id, símbolo ou nome (ex: "usdc" → usd-coin) e serve
+        // o preço do banco se a moeda está no último batch (top 100).
         Optional<CryptoSnapshot> snapshot = snapshotService.getLatestCrypto(cryptoName);
         if (snapshot.isPresent()) {
-            return new CryptoCoinGeckoByNameDTO(cryptoName, bd(snapshot.get().getCurrentPrice()));
+            CryptoSnapshot s = snapshot.get();
+            return new CryptoCoinGeckoByNameDTO(s.getCoinId(), bd(s.getCurrentPrice()));
         }
 
         // fallback — API externa (moeda fora do top 100 ou banco vazio)

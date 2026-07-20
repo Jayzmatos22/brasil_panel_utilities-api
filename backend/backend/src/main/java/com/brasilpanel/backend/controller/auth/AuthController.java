@@ -8,6 +8,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -66,5 +68,30 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponseDTO> login(@RequestBody @Valid LoginRequestDTO dto) {
         return ResponseEntity.ok(authService.loginUser(dto));
+    }
+
+
+    @PatchMapping("/update-name")
+    public ResponseEntity<Void> updateName(
+            @RequestBody @Valid UpdateNameRequestDTO dto,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        authService.updateName(userDetails.getUsername(), dto);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/update-password")
+    public ResponseEntity<Void> updatePassword(
+            @RequestBody @Valid UpdatePasswordRequestDTO dto,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        authService.updatePassword(userDetails.getUsername(), dto);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/delete-account")
+    public ResponseEntity<Void> deleteAccount(
+            @RequestBody @Valid DeleteAccountRequestDTO dto,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        authService.deleteAccount(userDetails.getUsername(), dto);
+        return ResponseEntity.noContent().build();
     }
 }

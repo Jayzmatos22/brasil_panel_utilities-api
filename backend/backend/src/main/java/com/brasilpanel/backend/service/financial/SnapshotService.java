@@ -342,10 +342,13 @@ public class SnapshotService {
                 .orElseGet(List::of);
     }
 
-    /** Último snapshot de uma moeda específica (para leitura DB-first por nome). */
+    /**
+     * Último snapshot de uma moeda (leitura DB-first). Resolve por coinId, símbolo
+     * ou nome — ex: "usdc" e "usd-coin" retornam o mesmo registro.
+     */
     @Transactional(readOnly = true)
-    public Optional<CryptoSnapshot> getLatestCrypto(String coinId) {
-        return Optional.ofNullable(cryptoRepository.findTopByCoinIdOrderByFetchedAtDesc(coinId));
+    public Optional<CryptoSnapshot> getLatestCrypto(String term) {
+        return cryptoRepository.findLatestByTerm(term.trim().toLowerCase());
     }
 
     // ── PIB (World Bank) ──────────────────────────────────────────────────

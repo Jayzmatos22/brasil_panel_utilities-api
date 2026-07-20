@@ -241,7 +241,7 @@ public class IpeaService {
                         codigo, fresh.size(),
                         fresh.isEmpty() ? "—" : fresh.get(0).data());
                 persist(codigo, fresh);
-            } catch (Exception e) { //import org.slf4j.Logger;
+            } catch (Exception e) {
                 log.error("Falha ao atualizar série {}: {}", codigo, e.getMessage(), e);
             }
         }

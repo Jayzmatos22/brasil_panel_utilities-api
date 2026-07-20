@@ -131,4 +131,50 @@ public class AuthService {
     private String generateCode() {
         return String.format("%06d", RANDOM.nextInt(1_000_000));
     }
+
+
+
+    // ── Alterar nome ──────────────────────────────────────────────────────────────
+    public void updateName(String email, UpdateNameRequestDTO dto) {
+        UserEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado"));
+
+        if (dto.name().trim().split("\\s+").length < 2) {
+            throw new IllegalArgumentException("Informe nome e sobrenome.");
+        }
+
+        user.setName(dto.name().trim());
+        userRepository.save(user);
+    }
+
+    // ── Alterar senha ─────────────────────────────────────────────────────────────
+    public void updatePassword(String email, UpdatePasswordRequestDTO dto) {
+        UserEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado"));
+
+        if (!passwordEncoder.matches(dto.currentPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("Senha atual incorreta.");
+        }
+
+        if (passwordEncoder.matches(dto.newPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("A nova senha deve ser diferente da atual.");
+        }
+
+        user.setPassword(passwordEncoder.encode(dto.newPassword()));
+        userRepository.save(user);
+    }
+
+    // ── Deletar conta ─────────────────────────────────────────────────────────────
+    public void deleteAccount(String email, DeleteAccountRequestDTO dto) {
+        UserEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado"));
+
+        if (!passwordEncoder.matches(dto.password(), user.getPassword())) {
+            throw new IllegalArgumentException("Senha incorreta.");
+        }
+
+        userRepository.delete(user);
+    }
+
+
 }

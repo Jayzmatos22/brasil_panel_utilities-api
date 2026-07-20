@@ -126,6 +126,15 @@ public class FinancialDataService {
                 .orElseGet(List::of);
     }
 
+
+    // Última data de referência
+    @Transactional(readOnly = true)
+    public Optional<LocalDate> getLastReferenceDate(String seriesCode, String source) {
+        return seriesRepository.findByCodeAndSource(seriesCode, source)
+                .flatMap(dataPointRepository::findTopBySeriesOrderByReferenceDateDesc)
+                .map(FinancialDataPoint::getReferenceDate);
+    }
+
     /**
      * Retorna os N pontos mais recentes de uma série em ordem cronológica (mais antigo → mais recente),
      * como a API da BCB devolve em /ultimos/N. Usado para reconstruir agregados (acumulado/composição).

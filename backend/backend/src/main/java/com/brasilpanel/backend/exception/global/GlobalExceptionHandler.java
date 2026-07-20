@@ -2,19 +2,25 @@ package com.brasilpanel.backend.exception.global;
 
 import com.brasilpanel.backend.exception.customized.*;
 import jakarta.validation.ConstraintViolationException;
+import org.apache.catalina.connector.ClientAbortException;
 import org.springframework.context.MessageSourceResolvable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.apache.catalina.connector.ClientAbortException;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -193,6 +199,15 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IpeaException.class)
     public ResponseEntity<String> handleIpea(IpeaException ex) {
         return ResponseEntity.status(ex.getStatus()).body(ex.getMessage());
+    }
+
+
+    @ExceptionHandler({ ClientAbortException.class, AsyncRequestNotUsableException.class })
+    public void handleClientAbort(Exception ex) {
+        // Cliente fechou a conexão antes da resposta completar.
+        // Comum com React Query (cancela ao desmontar/trocar query key).
+        // Log em DEBUG para não poluir, mas não é erro real.
+        log.debug("Cliente fechou conexão antes do término da resposta: {}", ex.getMessage());
     }
 
 

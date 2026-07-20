@@ -49,7 +49,11 @@ public class SecurityConfig {
 
                     // Rotas públicas de dados e autenticação (inclui verify-email e resend-code)
                     auth.requestMatchers(
-                            "/api/auth/**",
+                            "/api/auth/register",
+                            "/api/auth/login",
+                            "/api/auth/verify-email",
+                            "/api/auth/resend-code",
+                            //
                             "/api/banks/**",
                             "/api/coingecko/**",
                             "/api/cep/**",

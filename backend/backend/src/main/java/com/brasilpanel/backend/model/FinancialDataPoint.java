@@ -44,6 +44,7 @@ public class FinancialDataPoint {
      * Valor principal — ex: 0.0534 (CDI diário) ou 14.65 (SELIC % a.a.)
      * Precisão 19,8 para suportar valores com muitas casas decimais.
      */
+    @Setter
     @Column(nullable = false, precision = 19, scale = 8)
     private BigDecimal value;
 
@@ -52,6 +53,7 @@ public class FinancialDataPoint {
      * Permite salvar CDI diário + CDI anualizado no mesmo ponto.
      */
     @Column(precision = 19, scale = 8)
+    @Setter
     private BigDecimal secondaryValue;
 
     /** Quando o ponto foi inserido/atualizado no banco */
@@ -67,4 +69,6 @@ public class FinancialDataPoint {
     void preUpdate() {
         fetchedAt = LocalDateTime.now();
     }
+
+
 }
