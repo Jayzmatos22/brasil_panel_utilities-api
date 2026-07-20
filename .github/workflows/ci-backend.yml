@@ -3,11 +3,9 @@ name: CI backend brasil_panel
 # run
 on:
   push:
-    branches:
-      - ["main", "master"]
+    branches: [ "main", "master" ]
   pull_request:
-    branches:
-      - ["main", "master"]
+    branches: [ "main", "master" ]
 jobs:
   # ==========================================
   # 1. CI DO BACKEND (JAVA / SPRING BOOT)
@@ -17,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./backend
+        working-directory: ./backend/backend
 
     steps:
       - name: Baixar código do repositório
@@ -46,34 +44,34 @@ jobs:
     # ==========================================
     # 2. CI DO FRONTEND (REACT + TYPESCRIPT)
     # ==========================================
-    frontend-ci:
-      name: Frontend CI (React TS)
-      runs-on: ubuntu-latest
-      defaults:
-        run:
-          working-directory: ./frontend
+  frontend-ci:
+    name: Frontend CI (React TS)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
 
-      steps:
-        - name: Baixar código do repositório
-          uses: actions/checkout@v4
+    steps:
+      - name: Baixar código do repositório
+        uses: actions/checkout@v4
 
-        - name: Configurar Node.js 24
-          uses: actions/setup-node@v4
-          with:
-            node-version: '24'
-            cache: 'npm'
-            cache-dependency-path: 'frontend/package-lock.json'
+      - name: Configurar Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
 
-        # 1. INSTALL
-        - name: Instalar Dependências (npm ci)
-          run: npm ci
+      # 1. INSTALL
+      - name: Instalar Dependências (npm ci)
+        run: npm ci
 
-        # 2. TEST
-        - name: Executar Testes
-          run: npm test -- --watchAll=false
-          env:
-            CI: true
+      # 2. TEST
+      - name: Executar Testes
+        run: npm test -- --watchAll=false
+        env:
+          CI: true
 
-        # 3. BUILD
-        - name: Build do Frontend (Vite/Webpack + TS Check)
-          run: npm run build
+      # 3. BUILD
+      - name: Build do Frontend (Vite/Webpack + TS Check)
+        run: npm run build
