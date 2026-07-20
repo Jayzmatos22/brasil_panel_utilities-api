@@ -27,7 +27,7 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: 'maven'
-          cache-dependency-path: 'backend/pom.xml'
+          cache-dependency-path: '**/pom.xml'
 
       # 1. INSTALL & BUILD
       - name: Compilar Java (Install & Build)
