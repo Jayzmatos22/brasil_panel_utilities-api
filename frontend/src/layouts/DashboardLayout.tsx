@@ -8,6 +8,7 @@ import {
 import { BrandLogo } from '../components/brand/BrandLogo';
 import { clearSession, getTokenEmail, isAdmin } from '../lib/auth/jwt';
 import { authService } from '../api/services/Auth';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 
 const NAV = [
   {
@@ -231,16 +232,22 @@ export default function DashboardLayout() {
         <main className="flex-1 p-4 md:p-6 overflow-y-auto w-full relative z-0">
           {/* As páginas são carregadas sob demanda (lazy). O Suspense fica aqui,
               e não acima do layout, para que a sidebar e o header permaneçam na
-              tela enquanto o chunk da página é baixado. */}
-          <Suspense
-            fallback={
-              <div className="flex items-center justify-center py-24 text-slate-500">
-                <LoaderCircle className="animate-spin" size={28} />
-              </div>
-            }
-          >
-            <Outlet />
-          </Suspense>
+              tela enquanto o chunk da página é baixado.
+
+              O ErrorBoundary vem por fora: se o chunk falhar ao baixar, ou se a
+              página quebrar no render, o Suspense sozinho não captura nada e o
+              usuário veria uma tela em branco. */}
+          <ErrorBoundary>
+            <Suspense
+              fallback={
+                <div className="flex items-center justify-center py-24 text-slate-500">
+                  <LoaderCircle className="animate-spin" size={28} />
+                </div>
+              }
+            >
+              <Outlet />
+            </Suspense>
+          </ErrorBoundary>
         </main>
       </div>
     </div>
