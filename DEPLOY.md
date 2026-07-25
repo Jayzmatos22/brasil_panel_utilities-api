@@ -1,0 +1,160 @@
+# Deploy — Brasil Panel
+
+Runbook de publicação. Cobre o que precisa existir **antes** do primeiro deploy,
+a ordem correta das etapas e como verificar que subiu de verdade.
+
+---
+
+## 1. Topologia
+
+| Camada | Onde | Hiberna? |
+|---|---|---|
+| Frontend (build Vite estático) | Vercel ou Cloudflare Pages | Não — arquivos em CDN |
+| Backend (JAR Spring Boot) | Render | Free hiberna após ~15 min; **Starter (~US$ 7/mês) não hiberna** |
+| Banco | Neon (PostgreSQL) | Free suspende, mas acorda em ~1s |
+
+> O Postgres do plano free do Render é removido após um período. Por isso o banco
+> fica no Neon, e não no próprio Render.
+
+### Por que o frontend faz proxy da API
+
+O frontend deve reescrever `/api/*` para o backend, em vez de chamar o domínio do
+Render diretamente. Isso faz o navegador enxergar **uma única origem**, o que:
+
+- permite cookie de sessão como primeira-parte (funciona no Safari, que bloqueia
+  cookies de terceiros por padrão);
+- dispensa CORS em produção;
+- reduz `VITE_API_URL` a `/api`.
+
+Exemplo (`vercel.json` na raiz do frontend):
+
+```json
+{
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "https://SEU-APP.onrender.com/api/:path*" }
+  ]
+}
+```
+
+---
+
+## 2. Variáveis de ambiente — backend (Render)
+
+| Variável | Obrigatória | Observação |
+|---|---|---|
+| `SPRING_PROFILES_ACTIVE` | **Sim** | Valor: `prod`. Ver armadilha #1 abaixo. |
+| `JWT_SECRET` | **Sim** | A aplicação **não sobe** sem ela. Ver seção 3. |
+| `DATABASE_URL` | **Sim** | Connection string do Neon |
+| `DATABASE_USERNAME` | **Sim** | |
+| `DATABASE_PASSWORD` | **Sim** | |
+| `CORS_ALLOWED_ORIGINS` | **Sim** | Domínio do frontend. O default é `http://localhost:5173` — em produção o front seria bloqueado. |
+| `ALPHA_KEYS` | Sim | Chaves AlphaVantage, separadas por vírgula |
+| `METALS_KEY` | Sim | Chave Metals.dev |
+| `MAIL_FROM_ADDRESS` | Conforme uso | Remetente dos e-mails |
+| `MAIL_FROM_NAME` | Conforme uso | |
+| `ADMIN_EMAIL` | Opcional | |
+| `ADMIN_PASSWORD` | Opcional | Se vazio, o admin **não** é criado no seed |
+
+### Frontend (Vercel / Cloudflare)
+
+| Variável | Valor |
+|---|---|
+| `VITE_API_URL` | `/api` (com o rewrite configurado) |
+
+Sem essa variável, o build de produção usa o fallback `http://localhost:8080/api`
+— ou seja, o site publicado tenta falar com o **localhost do visitante**.
+
+---
+
+## 3. JWT_SECRET
+
+Gere com um RNG criptográfico. **Não** use `Get-Random`: ele é um PRNG semeado pelo
+relógio, e toda a saída fica determinada por uma semente de 32 bits.
+
+```powershell
+$b = New-Object byte[] 48
+[System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b)
+[Convert]::ToBase64String($b)
+```
+
+Regras:
+
+- Mínimo de 32 bytes (HS256). Abaixo disso a aplicação falha com `WeakKeyException`.
+- Use um valor **diferente** do usado em desenvolvimento.
+- Trocar o secret invalida todos os JWTs emitidos: todos os usuários são deslogados.
+
+O valor de desenvolvimento fica em `application-dev.yml`, que é gitignored.
+
+---
+
+## 4. Armadilhas que impedem o boot
+
+### #1 — O perfil ativo está fixo em `dev`
+
+`application.yaml` declara `spring.profiles.active: dev`. Sem
+`SPRING_PROFILES_ACTIVE=prod` no ambiente, a produção sobe com o perfil de
+desenvolvimento: aponta para `localhost:5432` e habilita o Swagger. A variável de
+ambiente tem precedência e resolve — mas não há aviso se for esquecida.
+
+### #2 — `ddl-auto: validate` contra banco vazio
+
+`application-prod.yml` usa `ddl-auto: validate`: o Hibernate **não cria nem altera**
+o schema, apenas confere que ele corresponde às entidades. Num banco novo (vazio),
+a validação falha e a aplicação não sobe.
+
+**Sequência do primeiro boot em banco novo:**
+
+1. Definir `SPRING_JPA_HIBERNATE_DDL_AUTO=update` no Render (env var sobrescreve o yml)
+2. Fazer o deploy e confirmar que as tabelas foram criadas
+3. **Remover** a variável → volta a `validate` permanentemente
+
+A partir daí, toda alteração de entidade exige o DDL aplicado manualmente no banco
+**antes** do deploy, senão a aplicação não sobe.
+
+---
+
+## 5. Pendências de código antes do primeiro deploy
+
+| ID | Item | Motivo |
+|---|---|---|
+| D1 | Consertar o CI | Está vermelho: `mvn test` exige PostgreSQL no runner, e `npm test` roda sem existir script `test` no `package.json` |
+| D4 | `curl -fsS` no `cd.yml` | Hoje o job fica verde mesmo se o deploy falhar |
+| D5 | CD depender do CI | Hoje é possível publicar com o build quebrado |
+| D6 | Actuator `/actuator/health` | O Render precisa de um health check path |
+| D3 | `.env.example` do frontend | Documenta `VITE_API_URL` |
+| D7 | `<artifactId>backend  </artifactId>` | Dois espaços no fim: o JAR sai como `backend  -0.0.1-SNAPSHOT.jar` |
+| D8 | H2 com escopo `test` | Hoje é `runtime` e vai junto no JAR de produção |
+
+---
+
+## 6. Ordem de execução
+
+1. **S12 + rewrite** — define a topologia; `VITE_API_URL` depende dela
+2. **Pendências da seção 5** — CI verde, CD confiável, health check
+3. **Provisionar** — banco no Neon, variáveis no Render
+4. **Primeiro boot** com `SPRING_JPA_HIBERNATE_DDL_AUTO=update`, depois remover
+5. **Upgrade do plano** no Render, se/quando quiser eliminar a hibernação (é só um
+   toggle no dashboard — não muda código)
+
+Fazer a seção 5 antes do S12 gera retrabalho: a URL da API muda quando entra o rewrite.
+
+---
+
+## 7. Verificação pós-deploy
+
+- [ ] `GET /actuator/health` responde `200` (após D6)
+- [ ] Login com senha correta retorna `200`
+- [ ] Login com senha errada retorna **401**, não 500
+- [ ] 6 tentativas seguidas de senha errada retornam **429**
+- [ ] Swagger **não** acessível (só é liberado no perfil `dev`)
+- [ ] Frontend carrega dados reais — se der "Erro de conexão", verifique
+      `VITE_API_URL` e o rewrite
+- [ ] Um admin não consegue revogar o próprio acesso
+
+---
+
+## 8. Rotação de credenciais
+
+As credenciais de desenvolvimento vivem em `application-dev.yml` (gitignored,
+nunca versionado). Ainda assim, **não reutilize nenhuma delas em produção**: gere
+valores próprios para `JWT_SECRET`, senha do banco, chaves de API e senha do admin.
