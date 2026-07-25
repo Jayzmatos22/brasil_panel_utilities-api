@@ -8,6 +8,7 @@ import com.brasilpanel.backend.repository.user.UserRepository;
 import com.brasilpanel.backend.service.email.EmailService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -26,6 +27,7 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final UserMapper          userMapper;
     private final EmailService        emailService;
+    private final LoginAttemptLimiter loginAttemptLimiter;
 
     private static final SecureRandom RANDOM = new SecureRandom();
 
@@ -111,9 +113,18 @@ public class AuthService {
     // ── Login ─────────────────────────────────────────────────────────────────
 
     public AuthResponseDTO loginUser(LoginRequestDTO dto) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(dto.email(), dto.password())
-        );
+        loginAttemptLimiter.checkNotBlocked(dto.email());
+
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(dto.email(), dto.password())
+            );
+        } catch (BadCredentialsException e) {
+            loginAttemptLimiter.recordFailure(dto.email());
+            throw e;
+        }
+        loginAttemptLimiter.reset(dto.email());
+
         UserEntity user = userRepository.findByEmail(dto.email())
                 .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado"));
 

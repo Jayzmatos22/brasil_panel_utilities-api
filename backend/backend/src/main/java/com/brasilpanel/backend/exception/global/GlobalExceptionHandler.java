@@ -85,6 +85,14 @@ public class GlobalExceptionHandler {
     }
 
 
+    // Excesso de tentativas de login — 429 é o status correto e sinaliza ao cliente
+    // que deve esperar, em vez de continuar tentando.
+    @ExceptionHandler(TooManyAttemptsException.class)
+    public ResponseEntity<String> handleTooManyAttempts(TooManyAttemptsException ex) {
+        return ResponseEntity.status(429).body(ex.getMessage());
+    }
+
+
     // Atende error de API externa Banco Central
     @ExceptionHandler(BcbApiException.class)
     public ResponseEntity<String> handleBcbApi(BcbApiException ex) {
