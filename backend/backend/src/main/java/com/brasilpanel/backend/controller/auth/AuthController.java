@@ -1,5 +1,6 @@
 package com.brasilpanel.backend.controller.auth;
 
+import com.brasilpanel.backend.config.jwt.JwtFilter;
 import com.brasilpanel.backend.dto.user.*;
 import com.brasilpanel.backend.service.auth.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -7,6 +8,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -14,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
+import java.time.Duration;
 
 
 @RestController
@@ -23,6 +28,13 @@ import java.net.URI;
 public class AuthController {
 
     private final AuthService authService;
+
+    @Value("${jwt.expiration-ms}")
+    private long expirationMs;
+
+    // Em produção o cookie deve exigir HTTPS. Em dev (http://localhost) precisa ser false.
+    @Value("${app.auth.cookie.secure:false}")
+    private boolean cookieSecure;
 
 
     @Operation(summary = "Registrar usuário",
@@ -47,7 +59,10 @@ public class AuthController {
     @ApiResponse(responseCode = "400", description = "Código inválido ou expirado")
     @PostMapping("/verify-email")
     public ResponseEntity<AuthResponseDTO> verifyEmail(@RequestBody @Valid VerifyEmailRequestDTO dto) {
-        return ResponseEntity.ok(authService.verifyEmail(dto));
+        AuthResponseDTO response = authService.verifyEmail(dto);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, sessionCookie(response.token()).toString())
+                .body(response);
     }
 
 
@@ -67,7 +82,42 @@ public class AuthController {
     @ApiResponse(responseCode = "403", description = "E-mail não verificado")
     @PostMapping("/login")
     public ResponseEntity<AuthResponseDTO> login(@RequestBody @Valid LoginRequestDTO dto) {
-        return ResponseEntity.ok(authService.loginUser(dto));
+        AuthResponseDTO response = authService.loginUser(dto);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, sessionCookie(response.token()).toString())
+                .body(response);
+    }
+
+
+    @Operation(summary = "Logout", description = "Limpa o cookie de sessão do navegador")
+    @ApiResponse(responseCode = "204", description = "Sessão encerrada")
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout() {
+        return ResponseEntity.noContent()
+                .header(HttpHeaders.SET_COOKIE, expiredSessionCookie().toString())
+                .build();
+    }
+
+
+    // ── Cookie de sessão ──────────────────────────────────────────────────────
+    // O JWT viaja em cookie httpOnly: inacessível ao JavaScript e, portanto, imune
+    // a exfiltração por XSS. SameSite=Lax impede que o navegador o envie em
+    // requisições disparadas por outros sites (defesa contra CSRF).
+
+    private ResponseCookie sessionCookie(String token) {
+        return baseCookie(token).maxAge(Duration.ofMillis(expirationMs)).build();
+    }
+
+    private ResponseCookie expiredSessionCookie() {
+        return baseCookie("").maxAge(0).build();
+    }
+
+    private ResponseCookie.ResponseCookieBuilder baseCookie(String value) {
+        return ResponseCookie.from(JwtFilter.SESSION_COOKIE, value)
+                .httpOnly(true)
+                .secure(cookieSecure)
+                .sameSite("Lax")
+                .path("/");
     }
 
 

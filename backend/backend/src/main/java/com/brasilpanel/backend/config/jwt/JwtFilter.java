@@ -2,6 +2,7 @@ package com.brasilpanel.backend.config.jwt;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,9 @@ public class JwtFilter extends OncePerRequestFilter {
 
     private static final Logger log = LoggerFactory.getLogger(JwtFilter.class);
 
+    /** Nome do cookie httpOnly que carrega o JWT. Deve casar com o emitido em AuthController. */
+    public static final String SESSION_COOKIE = "token";
+
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
 
@@ -35,14 +39,13 @@ public class JwtFilter extends OncePerRequestFilter {
     ) throws ServletException, IOException {
 
         try {
-            final String authHeader = request.getHeader("Authorization");
+            final String token = resolveToken(request);
 
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            if (token == null) {
                 filterChain.doFilter(request, response);
                 return;
             }
 
-            final String token = authHeader.substring(7);
             final String email = jwtService.extractEmail(token);
 
             if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
@@ -63,5 +66,29 @@ public class JwtFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+
+    /**
+     * Obtém o JWT do cookie httpOnly e, se ausente, do header Authorization.
+     *
+     * <p>O cookie é a via usada pelo navegador — inacessível ao JavaScript, portanto
+     * imune a exfiltração por XSS. O header permanece aceito para clientes que não
+     * são navegador (Swagger, curl, testes de integração).
+     */
+    private String resolveToken(HttpServletRequest request) {
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if (SESSION_COOKIE.equals(cookie.getName())) {
+                    return cookie.getValue();
+                }
+            }
+        }
+
+        final String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7);
+        }
+        return null;
     }
 }

@@ -53,6 +53,9 @@ public class SecurityConfig {
                             "/api/auth/login",
                             "/api/auth/verify-email",
                             "/api/auth/resend-code",
+                            // Público de propósito: uma sessão já expirada precisa
+                            // conseguir limpar o próprio cookie.
+                            "/api/auth/logout",
                             //
                             "/api/banks/**",
                             "/api/coingecko/**",
