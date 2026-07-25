@@ -1,5 +1,6 @@
 // API: Banco Central do Brasil (BCB) & IPEA (Ibovespa)
 import { memo, useMemo } from "react";
+import type { IpeaItem } from "../../../types/IpeaType";
 import { motion } from "motion/react";
 import {
   DollarSign,
@@ -77,8 +78,11 @@ function EconomiaPage() {
     const rawData = ibovData[0].dados;
     if (!rawData || rawData.length === 0) return null;
 
+    // Type predicate em vez de predicado booleano comum: o filter já removia os
+    // nulos em runtime, mas o TypeScript não estreitava o tipo, e `valor` seguia
+    // `number | null` para o resto da função.
     const validData = rawData
-      .filter((item) => item.valor !== null)
+      .filter((item): item is IpeaItem & { valor: number } => item.valor !== null)
       .sort((a, b) => b.data.localeCompare(a.data));
     if (validData.length === 0) return null;
 

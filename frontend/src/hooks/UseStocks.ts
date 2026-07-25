@@ -5,7 +5,10 @@ import { ApiError } from '../lib/errors/ErrorsHttp';
 
 // Não repete em erros do cliente (4xx): limite diário (429) e símbolo inválido
 // (404) não mudam com retry — só desperdiçam quota. Repete só em rede/5xx.
-const retryNon4xx = (failureCount: number, error: unknown): boolean => {
+// O tipo do parâmetro `error` define o TError inferido pelo useQuery. Com
+// `unknown`, o `error` devolvido aos componentes também virava `unknown` — e
+// `unknown` não é um ReactNode válido, quebrando `{error && (…)}` no JSX.
+const retryNon4xx = (failureCount: number, error: Error): boolean => {
   if (error instanceof ApiError && error.status >= 400 && error.status < 500) {
     return false;
   }
