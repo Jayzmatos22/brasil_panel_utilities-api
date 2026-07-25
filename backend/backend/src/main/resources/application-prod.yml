@@ -7,7 +7,9 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      # validate (nunca update) em produção: o Hibernate não deve alterar o schema
+      # sozinho a cada deploy. Requer que o schema já exista e corresponda às entidades.
+      ddl-auto: validate
     show-sql: false
     open-in-view: false
 
