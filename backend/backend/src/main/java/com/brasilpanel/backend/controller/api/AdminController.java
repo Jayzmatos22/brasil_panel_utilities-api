@@ -10,6 +10,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -47,12 +49,25 @@ public class AdminController {
         return ResponseEntity.ok(userMapper.toResponse(user));
     }
 
-    /** Rebaixa um ADMIN para USER (não afeta o próprio admin logado — validar no front). */
+    /**
+     * Rebaixa um ADMIN para USER.
+     *
+     * <p>A regra de não rebaixar a si mesmo é validada aqui, e não no frontend: o
+     * endpoint é acessível diretamente, e um admin que se rebaixasse perderia o acesso
+     * ao painel sem forma de reverter pela interface.
+     */
     @Operation(summary = "Revogar admin", description = "Altera o role de um usuário de ADMIN para USER")
     @PutMapping("/users/{id}/demote")
-    public ResponseEntity<UserResponseDTO> demoteUser(@PathVariable UUID id) {
+    public ResponseEntity<UserResponseDTO> demoteUser(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal UserDetails currentUser) {
         UserEntity user = userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado"));
+
+        if (user.getUsername().equals(currentUser.getUsername())) {
+            throw new IllegalArgumentException("Você não pode revogar o seu próprio acesso de administrador.");
+        }
+
         user.setRole(Role.USER);
         userRepository.save(user);
         return ResponseEntity.ok(userMapper.toResponse(user));
