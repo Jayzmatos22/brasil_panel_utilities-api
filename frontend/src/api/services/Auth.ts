@@ -1,3 +1,5 @@
+
+
 import { apiClient } from '../client/Client';
 import type {
   LoginRequest,
@@ -30,9 +32,9 @@ export const authService = {
   updateName: (data: UpdateNameRequest) =>
   apiClient.patch<void>('/auth/update-name', data).then((r) => r.data),
 
-updatePassword: (data: UpdatePasswordRequest) =>
-  apiClient.patch<void>('/auth/update-password', data).then((r) => r.data),
+  updatePassword: (data: UpdatePasswordRequest) =>
+    apiClient.patch<void>('/auth/update-password', data).then((r) => r.data),
 
-deleteAccount: (data: DeleteAccountRequest) =>
+  deleteAccount: (data: DeleteAccountRequest) =>
   apiClient.delete<void>('/auth/delete-account', { data }).then((r) => r.data),
 };
