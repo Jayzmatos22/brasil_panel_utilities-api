@@ -1,6 +1,6 @@
+import { lazy } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import SettingsAuthPage from './pages/auth/SettingsAuthPage';
 
 // Layouts
 import HeaderApp from './components/Header';
@@ -17,36 +17,38 @@ import VerifyEmailPage from './pages/auth/VerifyEmailPage';
 import AddressPage from './pages/onboarding/AddressPage';
 import BankPage    from './pages/onboarding/BankPage';
 
-// Dashboard — Economia
-import EconomiaPage from './pages/dashboard/economia/EconomiaPage';
-import SalarioPage  from './pages/dashboard/economia/SalarioPage';
-import PibPage      from './pages/dashboard/economia/PibPage';
-import ImpostosPage from './pages/dashboard/economia/ImpostosPage'; // <-- Novo Import
+// ─── Páginas do dashboard — carregadas sob demanda ───────────────────────────
+// Importadas com lazy() para não entrarem no bundle inicial: juntas passam de
+// 200 KB de código-fonte, e o visitante que abre a tela de login não precisa de
+// nenhuma delas. Cada rota vira um chunk separado, baixado ao ser acessada.
 
-// Dashboard — Mercado
-import AcoesPage  from './pages/dashboard/mercado/AcoesPage';
-import MetaisPage from './pages/dashboard/mercado/MetaisPage';
+// Economia
+const EconomiaPage = lazy(() => import('./pages/dashboard/economia/EconomiaPage'));
+const SalarioPage  = lazy(() => import('./pages/dashboard/economia/SalarioPage'));
+const PibPage      = lazy(() => import('./pages/dashboard/economia/PibPage'));
+const ImpostosPage = lazy(() => import('./pages/dashboard/economia/ImpostosPage'));
 
-// Dashboard — Moedas
-import CambioPage from './pages/dashboard/moedas/CambioPage';
-import CriptoPage from './pages/dashboard/moedas/CriptoPage';
+// Mercado
+const AcoesPage  = lazy(() => import('./pages/dashboard/mercado/AcoesPage'));
+const MetaisPage = lazy(() => import('./pages/dashboard/mercado/MetaisPage'));
 
-// Dashboard — Brasil
-import IbgePage   from './pages/dashboard/brasil/IbgePage';
-import IpeaPage   from './pages/dashboard/brasil/IpeaPage';
-import BancosPage from './pages/dashboard/brasil/BancosPage';
+// Moedas
+const CambioPage = lazy(() => import('./pages/dashboard/moedas/CambioPage'));
+const CriptoPage = lazy(() => import('./pages/dashboard/moedas/CriptoPage'));
 
+// Brasil
+const IbgePage   = lazy(() => import('./pages/dashboard/brasil/IbgePage'));
+const IpeaPage   = lazy(() => import('./pages/dashboard/brasil/IpeaPage'));
+const BancosPage = lazy(() => import('./pages/dashboard/brasil/BancosPage'));
 
+// Comércio
+const ExportacoesPage = lazy(() => import('./pages/dashboard/comercio/exportacoes/ExportacoesPage'));
+const CambioContratadoComercialPage = lazy(() => import('./pages/dashboard/comercio/cambioComercial/CambioComercialPage'));
+const BalancaPage = lazy(() => import('./pages/dashboard/comercio/balancaPagamentos/BalancaPage'));
 
-
-// Dashboard — Comércio
-import ExportacoesPage from './pages/dashboard/comercio/exportacoes/ExportacoesPage';
-import CambioContratadoComercialPage from './pages/dashboard/comercio/cambioComercial/CambioComercialPage';
-import BalancaPage from './pages/dashboard/comercio/balancaPagamentos/BalancaPage';
-
-
-// Dashboard — Admin
-import AdminUsersPage from './pages/dashboard/admin/AdminUsersPage';
+// Conta e Admin
+const SettingsAuthPage = lazy(() => import('./pages/auth/SettingsAuthPage'));
+const AdminUsersPage   = lazy(() => import('./pages/dashboard/admin/AdminUsersPage'));
 
 import { AnimatePresence } from 'motion/react';
 

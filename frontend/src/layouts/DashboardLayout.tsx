@@ -1,8 +1,8 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, Suspense } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   TrendingUp, BarChart2, Settings, DollarSign, Map, ChevronDown, ChevronRight,
-  Activity, Wallet, Globe, Bitcoin, Coins, Users, Building2, LogOut,
+  Activity, Wallet, Globe, Bitcoin, Coins, Users, Building2, LogOut, LoaderCircle,
   ShieldCheck, PanelLeftClose, PanelLeftOpen, Receipt, Ship, Banknote, Landmark
 } from 'lucide-react';
 import { BrandLogo } from '../components/brand/BrandLogo';
@@ -229,7 +229,18 @@ export default function DashboardLayout() {
 
         {/* Conteúdo principal - overflow-y-auto garante scroll independente */}
         <main className="flex-1 p-4 md:p-6 overflow-y-auto w-full relative z-0">
-          <Outlet />
+          {/* As páginas são carregadas sob demanda (lazy). O Suspense fica aqui,
+              e não acima do layout, para que a sidebar e o header permaneçam na
+              tela enquanto o chunk da página é baixado. */}
+          <Suspense
+            fallback={
+              <div className="flex items-center justify-center py-24 text-slate-500">
+                <LoaderCircle className="animate-spin" size={28} />
+              </div>
+            }
+          >
+            <Outlet />
+          </Suspense>
         </main>
       </div>
     </div>
