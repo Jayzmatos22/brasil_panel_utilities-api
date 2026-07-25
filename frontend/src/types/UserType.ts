@@ -7,9 +7,8 @@ export interface LoginRequest {
   password: string;
 }
 
+/** O JWT não vem aqui: ele chega em cookie httpOnly, inacessível ao JavaScript. */
 export interface AuthResponse {
-  /** Mantido por compatibilidade; o JWT efetivo vai em cookie httpOnly. */
-  token: string;
   email: string;
   role: 'USER' | 'ADMIN';
   expiresInMs: number;
