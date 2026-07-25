@@ -1,6 +1,7 @@
 package com.brasilpanel.backend.config.jwt;
 
 import com.brasilpanel.backend.model.UserEntity;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -70,22 +71,19 @@ public class JwtService {
     }
 
 
-    // Validar token
+    // Validar token — uma única leitura das claims.
+    // Antes eram duas: extractEmail e isTokenExpired parseavam o token de novo, cada
+    // uma reverificando a assinatura HMAC. Somado ao extractEmail que o JwtFilter já
+    // faz, eram três verificações criptográficas por requisição.
     public boolean isTokenValid(String token, UserDetails userDetails) {
-        final String email = extractEmail(token);
-        return email.equals(userDetails.getUsername()) && !isTokenExpired(token);
-    }
-
-
-    // Verificar expiração
-    private boolean isTokenExpired(String token) {
-        return Jwts.parser()
+        Claims claims = Jwts.parser()
                 .verifyWith(getSigningKey())
                 .requireIssuer(ISSUER)
                 .build()
                 .parseSignedClaims(token)
-                .getPayload()
-                .getExpiration()
-                .before(new Date());
+                .getPayload();
+
+        return claims.getSubject().equals(userDetails.getUsername())
+                && claims.getExpiration().after(new Date());
     }
 }
