@@ -18,6 +18,10 @@ a ordem correta das etapas e como verificar que subiu de verdade.
 
 ### Por que o frontend faz proxy da API
 
+> **Obrigatório, não opcional.** A sessão usa cookie httpOnly. Sem o rewrite, o
+> frontend e a API ficam em domínios distintos, o cookie vira terceira-parte e o
+> Safari o bloqueia por padrão — o login simplesmente não funciona nesse navegador.
+
 O frontend deve reescrever `/api/*` para o backend, em vez de chamar o domínio do
 Render diretamente. Isso faz o navegador enxergar **uma única origem**, o que:
 
@@ -47,7 +51,8 @@ Exemplo (`vercel.json` na raiz do frontend):
 | `DATABASE_URL` | **Sim** | Connection string do Neon |
 | `DATABASE_USERNAME` | **Sim** | |
 | `DATABASE_PASSWORD` | **Sim** | |
-| `CORS_ALLOWED_ORIGINS` | **Sim** | Domínio do frontend. O default é `http://localhost:5173` — em produção o front seria bloqueado. |
+| `COOKIE_SECURE` | **Sim** | Valor: `true`. Faz o cookie de sessão exigir HTTPS. O default é `false` (necessário em dev sobre `http://localhost`). |
+| `CORS_ALLOWED_ORIGINS` | **Sim** | Domínio do frontend. O default é `http://localhost:5173` — em produção o front seria bloqueado. Irrelevante se o rewrite estiver ativo, mas mantenha correto. |
 | `ALPHA_KEYS` | Sim | Chaves AlphaVantage, separadas por vírgula |
 | `METALS_KEY` | Sim | Chave Metals.dev |
 | `MAIL_FROM_ADDRESS` | Conforme uso | Remetente dos e-mails |
@@ -146,6 +151,11 @@ Fazer a seção 5 antes do S12 gera retrabalho: a URL da API muda quando entra o
 - [ ] Login com senha correta retorna `200`
 - [ ] Login com senha errada retorna **401**, não 500
 - [ ] 6 tentativas seguidas de senha errada retornam **429**
+- [ ] A resposta do login traz `Set-Cookie` com `HttpOnly`, `Secure` e `SameSite=Lax`
+- [ ] O corpo da resposta do login **não** contém o campo `token`
+- [ ] `localStorage` guarda apenas a chave `session` — nenhum JWT
+- [ ] Logout apaga o cookie (`Max-Age=0`) e devolve **204**
+- [ ] Login funciona no **Safari** — é o navegador que denuncia cookie de terceiros
 - [ ] Swagger **não** acessível (só é liberado no perfil `dev`)
 - [ ] Frontend carrega dados reais — se der "Erro de conexão", verifique
       `VITE_API_URL` e o rewrite
