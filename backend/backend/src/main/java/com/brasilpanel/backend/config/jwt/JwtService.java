@@ -8,6 +8,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.UUID;
 
@@ -25,9 +26,11 @@ public class JwtService {
     private static final String ISSUER = "brasil-panel";
 
 
-    // Chave de assinatura derivada do secret externo
+    // Chave de assinatura derivada do secret externo.
+    // UTF-8 explícito: o charset padrão da JVM difere entre Windows (dev) e Linux (deploy),
+    // o que geraria chaves distintas para o mesmo secret e invalidaria os tokens em produção.
     private SecretKey getSigningKey() {
-        return Keys.hmacShaKeyFor(secret.getBytes());
+        return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
 
