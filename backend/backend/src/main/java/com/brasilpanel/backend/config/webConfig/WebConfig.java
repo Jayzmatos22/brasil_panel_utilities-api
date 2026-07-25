@@ -29,8 +29,15 @@ public class WebConfig {
                 .version(HttpClient.Version.HTTP_1_1)
                 .build();
 
+        // Read timeout é tão essencial quanto o connect timeout: APIs como IPEA e BCB
+        // aceitam a conexão e depois demoram indefinidamente para responder. Sem este
+        // limite, a thread do Tomcat fica presa até o cliente desistir — algumas
+        // requisições assim esgotam o pool e derrubam o painel inteiro.
+        JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(httpClient);
+        requestFactory.setReadTimeout(Duration.ofSeconds(10));
+
         return RestClient.builder()
-                .requestFactory(new JdkClientHttpRequestFactory(httpClient))
+                .requestFactory(requestFactory)
                 .messageConverters(converters -> {
                     converters.removeIf(MappingJackson2HttpMessageConverter.class::isInstance);
                     converters.add(converter);
