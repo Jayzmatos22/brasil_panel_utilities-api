@@ -153,8 +153,19 @@ frontend (React 19 + Vite)  ──►  backend (Spring Boot 3.5)  ──►  API
 ### 🔐 Autenticação — `/api/auth`
 | Método | Rota | Descrição |
 |---|---|---|
-| `POST` | `/api/auth/register` | Registra usuário, retorna JWT |
-| `POST` | `/api/auth/login` | Autentica usuário, retorna JWT |
+| `POST` | `/api/auth/register` | Cria o usuário e envia código de verificação por e-mail |
+| `POST` | `/api/auth/verify-email` | Valida o código de 6 dígitos e abre a sessão |
+| `POST` | `/api/auth/resend-code` | Reenvia o código de verificação |
+| `POST` | `/api/auth/login` | Autentica e devolve o cookie de sessão |
+| `POST` | `/api/auth/logout` | Encerra a sessão (apaga o cookie) |
+| `PATCH` | `/api/auth/update-name` | Altera o nome — requer sessão |
+| `PATCH` | `/api/auth/update-password` | Altera a senha — requer sessão |
+| `DELETE` | `/api/auth/delete-account` | Exclui a conta — requer sessão |
+
+> Login e verificação respondem com `Set-Cookie` (`HttpOnly`). O corpo traz apenas
+> `email`, `role` e `expiresInMs` — **o JWT nunca aparece na resposta**.
+> Após 5 tentativas de login malsucedidas para o mesmo e-mail, a rota devolve `429`
+> por 15 minutos.
 
 ### 🏦 Banco Central — `/api/bcb`
 | Método | Rota | Descrição |
@@ -304,47 +315,69 @@ name / email (unique) / password / created_at
 
 ## 🔑 Fluxo de Autenticação
 
+O JWT vive **exclusivamente num cookie `HttpOnly`** — inacessível ao JavaScript e,
+portanto, imune a exfiltração por XSS.
+
 ```
-  Cliente                  Backend                    BD
+  Navegador                Backend                    BD
     │                         │                        │
-    │── POST /api/auth/register ──►│                   │
+    │── POST  register ──────►│                        │
     │                         │── INSERT UserEntity ──►│
-    │◄── 201 Created ─────────│                        │
+    │◄── 201 + código por e-mail                       │
     │                         │                        │
-    │── POST /api/auth/login ─►│                       │
-    │                         │── SELECT by email ────►│
-    │                         │◄── UserEntity ─────────│
+    │── POST  verify-email ──►│  valida código          │
     │                         │  gera JWT (HS256)       │
-    │◄── 200 { token, user } ─│                        │
+    │◄── 200 + Set-Cookie ────│                        │
+    │    HttpOnly; SameSite=Lax; Path=/                │
+    │    corpo: { email, role, expiresInMs }           │
     │                         │                        │
-    │── GET /api/bcb/selic ───►│                       │
-    │   Authorization: Bearer {token}                  │
-    │                         │  JwtFilter valida token│
+    │── GET /api/bcb/selic ──►│                        │
+    │    Cookie: token=…  (anexado pelo navegador)     │
+    │                         │  JwtFilter lê o cookie  │
     │                         │── GET api.bcb.gov.br ─────────►
-    │                         │◄── resposta BCB ───────────────
     │◄── 200 { selic } ───────│                        │
+    │                         │                        │
+    │── POST  logout ────────►│                        │
+    │◄── 204 + Set-Cookie Max-Age=0                    │
 ```
+
+**Estado no cliente.** Como o token não pode ser lido, o frontend guarda em
+`localStorage` apenas um *hint* de sessão — `{ email, role, exp }`. Ele não
+autentica nada: serve só para decidir o que renderizar e manter as funções de
+guarda síncronas. Toda autorização real acontece no servidor.
+
+O header `Authorization: Bearer` continua aceito pelo `JwtFilter`, para Swagger,
+`curl` e testes de integração.
 
 ---
 
 ## ⚡ Cache
 
-| Cache key | TTL | Dados |
-|---|---|---|
-| `selic` | 12h | SELIC composta |
-| `bcb-ipca` | 12h | IPCA composto |
-| `bcb-ptax` | 6h | Dólar PTAX |
-| `bcb-cdi` | 6h | CDI diário + anualizado |
-| `salario-minimo` | 12h | Salário mínimo |
-| `stocks` | 15min | Cotação por ticker |
-| `metals` | 7 dias | Preços de metais |
-| `crypto-list` | 5min | Top 100 criptos |
-| `crypto-by-name` | 5min | Cripto por nome |
-| `banks` | 12h | Lista de bancos |
-| `ibge-states` | 24h | Estados brasileiros |
-| `ibge-cities` | 24h | Municípios por estado |
+São **73 caches**, cada um com TTL e capacidade próprios, agrupados por cadência de
+atualização da fonte:
 
-> Implementado com **Caffeine** (in-memory). TTLs configurados em `CacheConfig.java`.
+| Tier | TTL | Exemplos |
+|---|---|---|
+| `staticData` | 7 dias | `ibge-states` · `ibge-cities` · `ibge-states-ranking` |
+| `daily` | 24h | as ~55 séries do IPEA · `worldbank-*` · `sidra-pib-estados` · `viacep` |
+| `halfDay` | 12h | `banks` · `bank-by-code` · `metals-history` · `lbma-fixing` · `stock-history` |
+| `hourly` | 60min | `selic` · `bcb-ipca` · `bcb-ptax` · `bcb-cdi` · `metals` · `frank-furter` |
+| `intraday` | 15min | `stocks` (cota diária da AlphaVantage) |
+| `realtime` | 5min | `crypto-list` · `crypto-by-name` (free tier do CoinGecko) |
+
+Implementado com **Caffeine** (in-memory), dividido em quatro arquivos:
+
+| Arquivo | Papel |
+|---|---|
+| `CacheConfig` | Monta o `CacheManager` |
+| `CacheCatalog` | Catálogo declarativo dos 73 caches, agrupado por fonte |
+| `CacheSpec` | `record (name, ttl, maximumSize)` com validação |
+| `CacheTtlProperties` | Os 6 tiers, ajustáveis por perfil em `app.cache.ttl.*` |
+
+> Usa `SimpleCacheManager` de propósito: ele **não** cria caches sob demanda, então um
+> nome errado em `@Cacheable` falha na primeira chamada em vez de criar silenciosamente
+> um cache sem expiração. Um teste varre o classpath e garante que todo nome usado em
+> `@Cacheable` existe no catálogo.
 
 ---
 
@@ -374,7 +407,8 @@ brasil_panel/
 └── backend/                         # Spring Boot 3.5 · Java 21
     └── src/main/java/com/brasilpanel/backend/
         ├── config/
-        │   ├── cache/               # CacheConfig (Caffeine TTLs)
+        │   ├── cache/               # CacheConfig · CacheCatalog · CacheSpec
+        │   │                        # CacheTtlProperties
         │   ├── cors/                # CorsConfig
         │   ├── jwt/                 # JwtFilter · JwtService
         │   ├── seed/                # FinancialSeriesSeeder · StaticDataSeeder
@@ -400,7 +434,7 @@ brasil_panel/
         │   └── user/                # UserRepository
         ├── service/
         │   ├── api/                 # Um service por API externa (10 services)
-        │   ├── auth/                # AuthService
+        │   ├── auth/                # AuthService · LoginAttemptLimiter
         │   ├── financial/           # FinancialDataService · SnapshotService
         │   ├── static_data/         # StaticDataService
         │   └── userDetails/         # UserDetailsServiceImpl
@@ -436,6 +470,14 @@ docker exec <container> psql -U postgres -d brasil_panel -c "ALTER DEFAULT PRIVI
 Criar em `backend/backend/src/main/resources/application-dev.yml` (**não commitado**):
 
 ```yaml
+# Obrigatório: não há mais valor padrão versionado para o secret.
+# Gere com um RNG criptográfico (mínimo 32 bytes):
+#   $b = New-Object byte[] 48
+#   [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b)
+#   [Convert]::ToBase64String($b)
+jwt:
+  secret: 'SEU_SECRET_LOCAL_AQUI'
+
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/brasil_panel
@@ -488,11 +530,27 @@ npm run dev
 
 ## 🔒 Segurança e Credenciais
 
-- Autenticação via **JWT** (Bearer token) — `JwtFilter` intercepta todas as rotas protegidas
-- Rotas públicas: `/api/auth/**` e Swagger UI
+- Autenticação via **JWT em cookie `HttpOnly`** — inacessível ao JavaScript. `SameSite=Lax`
+  cobre CSRF; a flag `Secure` é controlada por `COOKIE_SECURE` (`true` em produção)
+- `JwtFilter` lê o cookie e, se ausente, o header `Authorization` — o header segue
+  disponível para Swagger, `curl` e testes
 - Senhas armazenadas com **BCrypt**
+- **Rate limiting** no login: 5 tentativas por e-mail a cada 15 minutos, depois `429`.
+  O contador é por instância (Caffeine em memória) — com múltiplas réplicas o limite
+  efetivo é multiplicado
+- **`JWT_SECRET` é obrigatório**: sem a variável de ambiente a aplicação não sobe. Não
+  existe valor padrão versionado — um default no repositório seria uma chave pública
+- Rotas públicas: dados econômicos, `register`, `verify-email`, `resend-code`, `login`
+  e `logout`. As demais exigem sessão; `/api/admin/**` exige `ROLE_ADMIN`
+- **Swagger só no perfil `dev`** — desabilitado em produção
+- `application-prod.yml` usa `ddl-auto: validate`: o Hibernate nunca altera o schema
+  de produção. Alterações de entidade exigem DDL aplicado antes do deploy
 - `application-dev.yml` está no `.gitignore` — **nunca commitado**
-- `application-prod.yml` usa exclusivamente variáveis de ambiente (`${DATABASE_URL}`, `${ALPHA_KEYS}`, `${METALS_KEY}`)
+- `application-prod.yml` usa exclusivamente variáveis de ambiente (`${DATABASE_URL}`,
+  `${ALPHA_KEYS}`, `${METALS_KEY}`, `${JWT_SECRET}`, `${COOKIE_SECURE}`)
+
+> 📘 Checklist completo de publicação, variáveis de ambiente e armadilhas de boot:
+> **[DEPLOY.md](DEPLOY.md)**
 
 ### Observações técnicas
 
