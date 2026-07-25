@@ -5,6 +5,7 @@ import jakarta.validation.ConstraintViolationException;
 import org.apache.catalina.connector.ClientAbortException;
 import org.springframework.context.MessageSourceResolvable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -72,6 +73,15 @@ public class GlobalExceptionHandler {
                 .findFirst()
                 .orElse("Dados inválidos");
         return ResponseEntity.badRequest().body(message);
+    }
+
+
+    // Credenciais inválidas no login.
+    // Sem este handler a BadCredentialsException caía no handler genérico de Exception
+    // e o usuário recebia 500 "Erro interno do servidor" ao simplesmente errar a senha.
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<String> handleBadCredentials(BadCredentialsException ex) {
+        return ResponseEntity.status(401).body("E-mail ou senha inválidos.");
     }
 
 
@@ -151,11 +161,8 @@ public class GlobalExceptionHandler {
     }
 
 
-    @ExceptionHandler(ClassCastException.class)
-    public ResponseEntity<String> handleClassCast(ClassCastException ex) {
-        return ResponseEntity.status(500).body(ex.getMessage());
-    }
-
+    // ClassCastException não tem handler próprio de propósito: a mensagem da exceção
+    // expõe nomes de classes internas. Cai no handler genérico, que responde 500 sem detalhes.
 
     // Erro ibge - api e busca
     @ExceptionHandler(IbgeException.class)
