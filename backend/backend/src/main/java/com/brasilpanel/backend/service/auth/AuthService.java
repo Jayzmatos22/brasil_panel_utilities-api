@@ -85,7 +85,11 @@ public class AuthService {
         userRepository.save(user);
 
         // Retorna JWT — o usuário está autenticado
-        return new AuthResponseDTO(jwtService.generateToken(user));
+        return new AuthResponseDTO(
+                jwtService.generateToken(user),
+                user.getEmail(),
+                user.getRole().name(),
+                jwtService.getExpirationMs());
     }
 
 
@@ -132,7 +136,11 @@ public class AuthService {
             throw new IllegalStateException("E-mail não verificado. Verifique sua caixa de entrada.");
         }
 
-        return new AuthResponseDTO(jwtService.generateToken(user));
+        return new AuthResponseDTO(
+                jwtService.generateToken(user),
+                user.getEmail(),
+                user.getRole().name(),
+                jwtService.getExpirationMs());
     }
 
 

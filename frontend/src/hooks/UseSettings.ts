@@ -2,6 +2,7 @@
 import { useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { authService } from '../api/services/Auth';
+import { clearSession } from '../lib/auth/jwt';
 import type { UpdateNameRequest, UpdatePasswordRequest, DeleteAccountRequest } from '../types/UserType';
 
 export function useUpdateName(onSuccess?: () => void) {
@@ -31,7 +32,7 @@ export function useDeleteAccount() {
     mutationFn: (data: DeleteAccountRequest) => authService.deleteAccount(data),
     onSuccess: () => {
       toast.success('Conta deletada.');
-      localStorage.removeItem('token');
+      clearSession();
       window.location.href = '/login-usuario';
     },
     onError: (err: Error) => toast.error(err.message ?? 'Erro ao deletar conta.'),

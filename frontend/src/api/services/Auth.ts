@@ -24,6 +24,9 @@ export const authService = {
   login: (data: LoginRequest) =>
     apiClient.post<AuthResponse>('/auth/login', data).then((r) => r.data),
 
+  // Só o backend consegue apagar o cookie httpOnly — daí o endpoint dedicado.
+  logout: () => apiClient.post<void>('/auth/logout').then((r) => r.data),
+
   updateName: (data: UpdateNameRequest) =>
   apiClient.patch<void>('/auth/update-name', data).then((r) => r.data),
 

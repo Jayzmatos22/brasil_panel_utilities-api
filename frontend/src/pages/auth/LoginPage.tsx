@@ -8,6 +8,7 @@ import { BrandLogo } from '../../components/brand/BrandLogo';
 import { FormField } from '../../components/forms/FormField';
 import { SubmitButton } from '../../components/forms/SubmitButton';
 import { AuthBrandPanel } from '../../components/forms/AuthBrandPanel';
+import { saveSession } from '../../lib/auth/jwt';
 
 export default function LoginPage() {
   const [email,    setEmail]    = useState('');
@@ -17,7 +18,8 @@ export default function LoginPage() {
   const { mutate, isPending } = useMutation({
     mutationFn: (data: LoginRequest) => authService.login(data),
     onSuccess: (res: AuthResponse) => {
-      localStorage.setItem('token', res.token);
+      // O JWT já veio em cookie httpOnly; aqui guardamos só o hint de exibição.
+      saveSession(res.email, res.role, res.expiresInMs);
       toast.success('Login realizado com sucesso!');
       setTimeout(() => navigate('/dashboard/economia', { replace: true }), 900);
     },

@@ -8,6 +8,7 @@ import type { AuthResponse } from '../../types/UserType';
 import { BrandLogo } from '../../components/brand/BrandLogo';
 import { AuthBrandPanel } from '../../components/forms/AuthBrandPanel';
 import { SubmitButton } from '../../components/forms/SubmitButton';
+import { saveSession } from '../../lib/auth/jwt';
 
 const DIGITS = 6;
 
@@ -38,7 +39,8 @@ export default function VerifyEmailPage() {
   const { mutate: verify, isPending: verifying } = useMutation({
     mutationFn: () => authService.verifyEmail({ email, code: digits.join('') }),
     onSuccess: (res: AuthResponse) => {
-      localStorage.setItem('token', res.token);
+      // O JWT já veio em cookie httpOnly; aqui guardamos só o hint de exibição.
+      saveSession(res.email, res.role, res.expiresInMs);
       toast.success('E-mail verificado! Bem-vindo ao Brasil Panel.');
       navigate('/dashboard/economia', { replace: true });
     },

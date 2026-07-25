@@ -26,6 +26,12 @@ public class JwtService {
     private static final String ISSUER = "brasil-panel";
 
 
+    /** Validade do token, para o cliente saber quando a sessão expira sem lê-lo. */
+    public long getExpirationMs() {
+        return expirationMs;
+    }
+
+
     // Chave de assinatura derivada do secret externo.
     // UTF-8 explícito: o charset padrão da JVM difere entre Windows (dev) e Linux (deploy),
     // o que geraria chaves distintas para o mesmo secret e invalidaria os tokens em produção.

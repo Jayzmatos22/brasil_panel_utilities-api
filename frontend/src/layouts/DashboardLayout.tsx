@@ -6,7 +6,8 @@ import {
   ShieldCheck, PanelLeftClose, PanelLeftOpen, Receipt, Ship, Banknote, Landmark
 } from 'lucide-react';
 import { BrandLogo } from '../components/brand/BrandLogo';
-import { getTokenEmail, isAdmin } from '../lib/auth/jwt';
+import { clearSession, getTokenEmail, isAdmin } from '../lib/auth/jwt';
+import { authService } from '../api/services/Auth';
 
 const NAV = [
   {
@@ -111,8 +112,15 @@ export default function DashboardLayout() {
   const initials  = userEmail[0]?.toUpperCase() ?? 'U';
   const pageTitle = PAGE_TITLES[location.pathname] ?? 'Brasil Panel';
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
+  const handleLogout = async () => {
+    // O cookie é httpOnly: só o backend consegue apagá-lo. Se a chamada falhar
+    // (rede fora, sessão já expirada), limpamos o hint local mesmo assim.
+    try {
+      await authService.logout();
+    } catch {
+      // ignorado de propósito — o logout local não pode depender da rede
+    }
+    clearSession();
     navigate('/login-usuario');
   };
 

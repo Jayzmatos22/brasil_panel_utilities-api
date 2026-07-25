@@ -8,7 +8,11 @@ export interface LoginRequest {
 }
 
 export interface AuthResponse {
+  /** Mantido por compatibilidade; o JWT efetivo vai em cookie httpOnly. */
   token: string;
+  email: string;
+  role: 'USER' | 'ADMIN';
+  expiresInMs: number;
 }
 
 // ─── Auth — POST /api/auth/register ──────────────────────────────────────────
