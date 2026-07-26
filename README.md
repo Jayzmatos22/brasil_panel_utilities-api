@@ -455,15 +455,23 @@ brasil_panel/
 ### 1. Banco de dados (Docker)
 
 ```bash
-# Criar o banco
-docker exec <container> psql -U postgres -c "CREATE DATABASE brasil_panel;"
-
-# Criar o usuário
-docker exec <container> psql -U postgres -c "CREATE USER meu_usuario WITH PASSWORD 'minha_senha';"
-docker exec <container> psql -U postgres -d brasil_panel -c "GRANT ALL PRIVILEGES ON DATABASE brasil_panel TO meu_usuario;"
-docker exec <container> psql -U postgres -d brasil_panel -c "GRANT ALL ON SCHEMA public TO meu_usuario;"
-docker exec <container> psql -U postgres -d brasil_panel -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO meu_usuario;"
+cd backend/backend
+docker compose up -d
 ```
+
+Só isso. O `compose.yaml` já cria o banco `brasil_panel`, o usuário e as permissões
+— não é preciso rodar nenhum `psql` manualmente.
+
+| | Valor |
+|---|---|
+| Banco | `brasil_panel` |
+| Usuário | `brasil_panel` |
+| Senha | `brasil_panel` |
+| Porta | `5432` |
+
+> Credenciais de desenvolvimento local, propositalmente simples: o container não
+> é exposto para fora da máquina. Em produção tudo vem de variáveis de ambiente
+> — ver [DEPLOY.md](DEPLOY.md).
 
 ### 2. Criar `application-dev.yml`
 
@@ -482,8 +490,8 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/brasil_panel
     driver-class-name: org.postgresql.Driver
-    username: meu_usuario
-    password: minha_senha
+    username: brasil_panel      # precisa bater com o compose.yaml
+    password: brasil_panel
   jpa:
     hibernate:
       ddl-auto: update

@@ -8,9 +8,13 @@
 #
 #   docker compose up -d
 #
-# Credenciais são de desenvolvimento local e podem ficar versionadas: o banco
-# não é exposto para fora da máquina. Em produção o banco é gerenciado (Neon),
-# com credenciais em variáveis de ambiente — ver DEPLOY.md.
+# Estas credenciais são a REFERÊNCIA para desenvolvimento local: o
+# application-dev.yml (gitignored, criado por cada dev) precisa usar exatamente
+# os mesmos valores. O README documenta esse passo.
+#
+# Podem ficar versionadas porque o banco não é exposto para fora da máquina. Em
+# produção o banco é gerenciado (Neon), com credenciais em variáveis de
+# ambiente — ver DEPLOY.md.
 services:
   postgres:
     image: 'postgres:18'
