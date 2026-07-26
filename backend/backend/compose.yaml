@@ -1,9 +1,33 @@
+# PostgreSQL para desenvolvimento local.
+#
+# Antes este arquivo era o template gerado pelo Spring Initializr: banco
+# `mydatabase`, usuário `myuser`, e `ports: ['5432']` sem mapeamento fixo — o
+# Docker escolhia uma porta aleatória no host. Nada disso batia com o
+# application-dev.yml, que espera `brasil_panel` em localhost:5432. Ou seja, o
+# compose não subia um banco utilizável pelo projeto.
+#
+#   docker compose up -d
+#
+# Credenciais são de desenvolvimento local e podem ficar versionadas: o banco
+# não é exposto para fora da máquina. Em produção o banco é gerenciado (Neon),
+# com credenciais em variáveis de ambiente — ver DEPLOY.md.
 services:
   postgres:
-    image: 'postgres:latest'
+    image: 'postgres:18'
+    container_name: brasil_panel_db
     environment:
-      - 'POSTGRES_DB=mydatabase'
-      - 'POSTGRES_PASSWORD=secret'
-      - 'POSTGRES_USER=myuser'
+      POSTGRES_DB: brasil_panel
+      POSTGRES_USER: brasil_panel
+      POSTGRES_PASSWORD: brasil_panel
     ports:
-      - '5432'
+      - '5432:5432'
+    volumes:
+      - brasil_panel_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U brasil_panel -d brasil_panel']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  brasil_panel_pgdata:
