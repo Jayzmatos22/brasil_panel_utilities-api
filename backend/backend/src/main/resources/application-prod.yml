@@ -17,6 +17,22 @@ spring:
   # (CacheConfig), e a auto-configuração de cache do Spring Boot recua na presença dele.
   # A propriedade seria inerte e daria a impressão falsa de estar controlando algo.
 
+  # O EmailService exige um JavaMailSender por construtor, e a auto-configuração
+  # só cria esse bean quando spring.mail.host existe. Sem estas linhas a
+  # aplicação NÃO SOBE em produção — falha ao injetar a dependência.
+  mail:
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
 alpha-vantage:
   keys: ${ALPHA_KEYS}
 
