@@ -13,6 +13,18 @@ spring:
 server:
   port: 8080
 
+# ── Actuator ─────────────────────────────────────────────────────────────────
+# Só o health é exposto. Os demais endpoints (env, beans, mappings, heapdump)
+# revelam configuração interna e não devem ficar acessíveis publicamente.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
 # ── JWT ──────────────────────────────────────────────────────────────────────
 # Em produção, sobrescreva via variável de ambiente: JWT_SECRET=<sua-chave-256-bits>
 jwt:

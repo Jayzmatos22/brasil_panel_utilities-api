@@ -44,6 +44,10 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> {
+                    // Health check — precisa ser público para o orquestrador
+                    // (Render) conseguir verificar se a aplicação subiu.
+                    auth.requestMatchers("/actuator/health").permitAll();
+
                     // Rotas admin — somente ROLE_ADMIN
                     auth.requestMatchers("/api/admin/**").hasRole("ADMIN");
 
