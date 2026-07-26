@@ -33,7 +33,8 @@ jobs:
       - name: Compilar Java (Install & Build)
         run: mvn clean compile
 
-      # 2. TEST (Executar os testes unitários e de integração)
+      # 2. TEST — roda no perfil `test`, com H2 em memória.
+      # Não requer PostgreSQL nem acesso de rede.
       - name: Executar Testes
         run: mvn test
 
@@ -66,12 +67,13 @@ jobs:
       - name: Instalar Dependências (npm ci)
         run: npm ci
 
-      # 2. TEST
-      - name: Executar Testes
-        run: npm test -- --watchAll=false
-        env:
-          CI: true
+      # 2. LINT
+      # Não existe suíte de testes no frontend ainda. O passo anterior chamava
+      # `npm test`, script que nunca existiu no package.json — o job falhava
+      # sempre e nem chegava no build.
+      - name: Verificar Lint (ESLint + React Hooks)
+        run: npm run lint
 
-      # 3. BUILD
-      - name: Build do Frontend (Vite/Webpack + TS Check)
+      # 3. BUILD (inclui type-check via tsc -b)
+      - name: Build do Frontend (Vite + TS Check)
         run: npm run build
