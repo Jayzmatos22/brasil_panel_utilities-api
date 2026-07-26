@@ -55,7 +55,11 @@ Exemplo (`vercel.json` na raiz do frontend):
 | `CORS_ALLOWED_ORIGINS` | **Sim** | Domínio do frontend. O default é `http://localhost:5173` — em produção o front seria bloqueado. Irrelevante se o rewrite estiver ativo, mas mantenha correto. |
 | `ALPHA_KEYS` | Sim | Chaves AlphaVantage, separadas por vírgula |
 | `METALS_KEY` | Sim | Chave Metals.dev |
-| `MAIL_FROM_ADDRESS` | Conforme uso | Remetente dos e-mails |
+| `MAIL_HOST` | **Sim** | Servidor SMTP. **Sem ela a aplicação não sobe** — ver armadilha #3 |
+| `MAIL_USERNAME` | **Sim** | Conta SMTP |
+| `MAIL_PASSWORD` | **Sim** | Senha de app (não a senha de login da conta) |
+| `MAIL_PORT` | Não | Default `587` |
+| `MAIL_FROM_ADDRESS` | Conforme uso | Remetente exibido |
 | `MAIL_FROM_NAME` | Conforme uso | |
 | `ADMIN_EMAIL` | Opcional | |
 | `ADMIN_PASSWORD` | Opcional | Se vazio, o admin **não** é criado no seed |
@@ -101,6 +105,13 @@ O valor de desenvolvimento fica em `application-dev.yml`, que é gitignored.
 desenvolvimento: aponta para `localhost:5432` e habilita o Swagger. A variável de
 ambiente tem precedência e resolve — mas não há aviso se for esquecida.
 
+### #3 — SMTP obrigatório
+
+O `EmailService` recebe um `JavaMailSender` por construtor, e a auto-configuração
+do Spring Boot só cria esse bean quando `spring.mail.host` existe. Sem `MAIL_HOST`,
+`MAIL_USERNAME` e `MAIL_PASSWORD` no ambiente, a aplicação **falha ao subir** — na
+injeção de dependência, antes de atender qualquer requisição.
+
 ### #2 — `ddl-auto: validate` contra banco vazio
 
 `application-prod.yml` usa `ddl-auto: validate`: o Hibernate **não cria nem altera**
@@ -120,15 +131,18 @@ A partir daí, toda alteração de entidade exige o DDL aplicado manualmente no 
 
 ## 5. Pendências de código antes do primeiro deploy
 
-| ID | Item | Motivo |
+Todas concluídas:
+
+| ID | Item | Situação |
 |---|---|---|
-| D1 | Consertar o CI | Está vermelho: `mvn test` exige PostgreSQL no runner, e `npm test` roda sem existir script `test` no `package.json` |
-| D4 | `curl -fsS` no `cd.yml` | Hoje o job fica verde mesmo se o deploy falhar |
-| D5 | CD depender do CI | Hoje é possível publicar com o build quebrado |
-| D6 | Actuator `/actuator/health` | O Render precisa de um health check path |
-| D3 | `.env.example` do frontend | Documenta `VITE_API_URL` |
-| D7 | `<artifactId>backend  </artifactId>` | Dois espaços no fim: o JAR sai como `backend  -0.0.1-SNAPSHOT.jar` |
-| D8 | H2 com escopo `test` | Hoje é `runtime` e vai junto no JAR de produção |
+| D1 | CI verde | ✅ `mvn test` roda com H2 (11 testes); `npm run lint` substituiu o `npm test` inexistente |
+| D2 | `compose.yaml` alinhado ao dev | ✅ `postgres:18`, porta fixa, volume e healthcheck |
+| D3 | `.env.example` do frontend | ✅ |
+| D4 | `curl -fsS` no `cd.yml` | ✅ |
+| D5 | CD depende de verificação | ✅ job `verificar` roda testes e build antes de publicar |
+| D6 | `/actuator/health` | ✅ público; demais endpoints não expostos |
+| D7 | `artifactId` sem espaços | ✅ JAR sai como `backend-0.0.1-SNAPSHOT.jar` |
+| D8 | H2 em escopo `test` | ✅ fora do JAR de produção |
 
 ---
 
