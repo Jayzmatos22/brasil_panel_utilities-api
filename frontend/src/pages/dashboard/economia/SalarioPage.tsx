@@ -136,17 +136,21 @@ export default function SalarioPage() {
   const brl = money("BRL");
   const fmt = money(meta.unit);
 
+  // A busca em SOURCES fica dentro do memo: `meta` é recriado a cada render, e
+  // depender de `meta.code` impedia o React Compiler de preservar a memoização.
+  // SOURCES é constante de módulo, então derivar aqui não muda o resultado.
   const points = useMemo<LinePoint[]>(() => {
     if (source === "bcb") {
       return (history ?? []).map((p) => ({ date: p.data, value: p.valor }));
     }
-    const serie = renda?.find((s) => s.codigo === meta.code);
+    const code = SOURCES.find((s) => s.key === source)!.code;
+    const serie = renda?.find((s) => s.codigo === code);
     if (!serie) return [];
     return serie.dados
       .filter((p) => p.valor != null)
       .map((p) => ({ date: p.data.slice(0, 10), value: p.valor as number }))
       .sort((a, b) => a.date.localeCompare(b.date));
-  }, [source, meta.code, history, renda]);
+  }, [source, history, renda]);
 
   const stats = useMemo(() => computeStats(points), [points]);
   const loadingChart = source === "bcb" ? loadingHistory : loadingRenda;

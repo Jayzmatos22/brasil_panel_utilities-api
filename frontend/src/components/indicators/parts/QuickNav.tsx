@@ -32,7 +32,7 @@ function useActiveSection(ids: string[]): string {
   const [active, setActive] = useState<string>(ids[0] ?? '');
 
   // Recria observers quando a lista de ids muda.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   const deps = ids.join('|');
 
   useEffect(() => {

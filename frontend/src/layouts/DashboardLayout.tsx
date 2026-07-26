@@ -108,8 +108,8 @@ export default function DashboardLayout() {
   const toggle = (group: string) =>
     setOpen(prev => ({ ...prev, [group]: !prev[group] }));
 
-  const userEmail = useMemo(getTokenEmail, []);
-  const admin     = useMemo(isAdmin, []);
+  const userEmail = useMemo(() => getTokenEmail(), []);
+  const admin     = useMemo(() => isAdmin(), []);
   const initials  = userEmail[0]?.toUpperCase() ?? 'U';
   const pageTitle = PAGE_TITLES[location.pathname] ?? 'Brasil Panel';
 
