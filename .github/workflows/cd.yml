@@ -4,11 +4,49 @@ on:
   workflow_dispatch:
 
 jobs:
+  # Impede publicar em cima de um build quebrado: o deploy manual não tinha
+  # nenhuma verificação, então era possível disparar com o CI vermelho.
+  verificar:
+    name: Verificar antes de publicar
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar código do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+          cache-dependency-path: '**/pom.xml'
+
+      - name: Testes do backend
+        working-directory: ./backend/backend
+        run: mvn test
+
+      - name: Configurar Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: Instalar dependências do frontend
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Build do frontend
+        working-directory: ./frontend
+        run: npm run build
+
   deploy:
     name: Deploy em Produção
     runs-on: ubuntu-latest
+    needs: verificar
 
     steps:
       - name: Disparar Webhook de Deploy
-        run: |
-          curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
+        # -f faz o curl retornar erro em status HTTP >= 400, e -S mostra a
+        # mensagem. Sem isso o job ficava verde mesmo quando o deploy falhava.
+        run: curl -fsS -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
