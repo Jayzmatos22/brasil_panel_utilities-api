@@ -1,0 +1,53 @@
+# Perfil de teste — não depende de nenhum serviço externo.
+#
+# Existe para o teste de contexto rodar no CI, onde não há PostgreSQL. Usa H2 em
+# memória e valores fictícios para as propriedades obrigatórias; nenhuma chamada
+# de rede acontece, porque os seeders são desativados neste perfil (@Profile("!test")).
+
+jwt:
+  secret: chave-apenas-para-testes-nao-usar-em-lugar-algum-32b+
+  expiration-ms: 86400000
+
+spring:
+  datasource:
+     # MODE=PostgreSQL aproxima o dialeto do banco real.
+    # NON_KEYWORDS: `value` e `year` são palavras reservadas no H2 mas não no
+    # PostgreSQL, e três entidades têm colunas com esses nomes. Liberar aqui é
+    # preferível a renomear colunas do schema de produção por limitação do H2.
+    url: jdbc:h2:mem:brasil_panel_test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;NON_KEYWORDS=VALUE,YEAR
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    open-in-view: false
+
+  # O JavaMailSender só é criado quando spring.mail.host existe, e o EmailService
+  # o exige por construtor. Nenhum e-mail é enviado durante o teste de contexto.
+  mail:
+    host: localhost
+    port: 2525
+
+app:
+  cors:
+    allowed-origins: http://localhost:5173
+  admin:
+    email: admin@test.local
+    password: ""          # vazio: o AdminSeeder não cria admin
+  mail:
+    from-address: no-reply@test.local
+    from-name: Brasil Panel (test)
+
+alpha-vantage:
+  keys: TEST_KEY
+metals:
+  api-key: TEST_KEY
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false

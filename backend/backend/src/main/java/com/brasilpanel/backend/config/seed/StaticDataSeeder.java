@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
@@ -28,6 +29,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 @Order(2)
+@Profile("!test")   // faz chamadas a BrasilAPI e IBGE — não deve rodar em teste
 public class StaticDataSeeder implements ApplicationRunner {
 
     private final RestClient restClient;
