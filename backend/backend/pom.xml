@@ -9,7 +9,7 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.brasilpanel</groupId>
-	<artifactId>backend  </artifactId>
+	<artifactId>backend</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name/>
 	<description/>
@@ -50,6 +50,13 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-cache</artifactId>
+		</dependency>
+
+		<!-- Health check para o orquestrador (Render) saber se a app subiu.
+		     Apenas /actuator/health é exposto — ver application.yaml. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
 
 		<!-- Email -->
@@ -141,11 +148,12 @@
 			<scope>test</scope>
 		</dependency>
 
-		<!-- H2 PARA TESTE INICIAL -->
+		<!-- H2 — banco em memória usado pelo perfil de teste.
+		     Escopo test (não runtime): não deve ir junto no JAR de produção. -->
 		<dependency>
 			<groupId>com.h2database</groupId>
 			<artifactId>h2</artifactId>
-			<scope>runtime</scope>
+			<scope>test</scope>
 		</dependency>
 	</dependencies>
 
