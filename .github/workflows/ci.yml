@@ -68,12 +68,13 @@ jobs:
         run: npm ci
 
       # 2. LINT
-      # Não existe suíte de testes no frontend ainda. O passo anterior chamava
-      # `npm test`, script que nunca existiu no package.json — o job falhava
-      # sempre e nem chegava no build.
       - name: Verificar Lint (ESLint + React Hooks)
         run: npm run lint
 
-      # 3. BUILD (inclui type-check via tsc -b)
+      # 3. TEST (Vitest + Testing Library, ambiente jsdom)
+      - name: Executar Testes
+        run: npm test
+
+      # 4. BUILD (inclui type-check via tsc -b)
       - name: Build do Frontend (Vite + TS Check)
         run: npm run build
