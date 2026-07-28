@@ -30,7 +30,11 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class AuthServiceTest {
+class
+
+
+
+AuthServiceTest {
 
     private static final String EMAIL = "usuario@exemplo.com";
     private static final String SENHA = "SenhaForte@123";
