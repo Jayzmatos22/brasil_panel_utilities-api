@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +31,12 @@ public class AuthService {
     private final LoginAttemptLimiter loginAttemptLimiter;
 
     private static final SecureRandom RANDOM = new SecureRandom();
+
+    // Mensagens deliberadamente genéricas: /verify-email e /resend-code não exigem
+    // senha, então qualquer diferença de resposta vira um oráculo de cadastro.
+    private static final String CODIGO_INVALIDO = "Código inválido.";
+    private static final String REENVIO_GENERICO =
+            "Se houver um cadastro pendente para este e-mail, um novo código foi enviado.";
 
 
     // ── Registro ──────────────────────────────────────────────────────────────
@@ -63,15 +70,18 @@ public class AuthService {
     // ── Verificação de e-mail ─────────────────────────────────────────────────
 
     public AuthResponseDTO verifyEmail(VerifyEmailRequestDTO dto) {
+        // Mensagem única para e-mail inexistente, conta já verificada e código
+        // errado: este endpoint não exige senha, então respostas distintas
+        // permitiriam descobrir quais e-mails têm conta e em que estado.
         UserEntity user = userRepository.findByEmail(dto.email())
-                .orElseThrow(() -> new IllegalArgumentException("Dados inválidos"));
+                .orElseThrow(() -> new IllegalArgumentException(CODIGO_INVALIDO));
 
         if (user.isVerified()) {
-            throw new IllegalArgumentException("E-mail já verificado. Faça o login.");
+            throw new IllegalArgumentException(CODIGO_INVALIDO);
         }
         if (user.getVerificationCode() == null
                 || !user.getVerificationCode().equals(dto.code())) {
-            throw new IllegalArgumentException("Código inválido.");
+            throw new IllegalArgumentException(CODIGO_INVALIDO);
         }
         if (user.getVerificationCodeExpiresAt() == null
                 || user.getVerificationCodeExpiresAt().isBefore(LocalDateTime.now())) {
@@ -96,13 +106,16 @@ public class AuthService {
     // ── Reenviar código ───────────────────────────────────────────────────────
 
     public RegisterResponseDTO resendCode(ResendCodeRequestDTO dto) {
-        UserEntity user = userRepository.findByEmail(dto.email())
-                .orElseThrow(() -> new IllegalArgumentException("Dados inválidos"));
+        // Resposta idêntica em todos os casos: e-mail inexistente e conta já
+        // verificada não podem ser distinguidos de um reenvio bem-sucedido, ou o
+        // endpoint vira um oráculo de quais e-mails estão cadastrados.
+        Optional<UserEntity> encontrado = userRepository.findByEmail(dto.email());
 
-        if (user.isVerified()) {
-            throw new IllegalArgumentException("E-mail já verificado. Faça o login.");
+        if (encontrado.isEmpty() || encontrado.get().isVerified()) {
+            return new RegisterResponseDTO(REENVIO_GENERICO);
         }
 
+        UserEntity user = encontrado.get();
         String code = generateCode();
         user.setVerificationCode(code);
         user.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(15));

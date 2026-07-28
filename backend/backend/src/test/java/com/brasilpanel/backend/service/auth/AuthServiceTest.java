@@ -164,13 +164,70 @@ class AuthServiceTest {
         }
 
         @Test
-        @DisplayName("conta já verificada não passa pela verificação de novo")
-        void alreadyVerifiedIsRejected() {
+        @DisplayName("conta já verificada responde igual a código errado")
+        void alreadyVerifiedIsIndistinguishableFromWrongCode() {
             when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(usuarioVerificado));
 
             assertThatThrownBy(() -> authService.verifyEmail(new VerifyEmailRequestDTO(EMAIL, "123456")))
                     .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("já verificado");
+                    // Revelar "já verificado" diria a um estranho que a conta existe.
+                    .hasMessageNotContainingAny("já verificado", "não encontrado")
+                    .hasMessageContaining("Código inválido");
+        }
+
+        @Test
+        @DisplayName("e-mail inexistente responde igual a código errado")
+        void unknownEmailIsIndistinguishableFromWrongCode() {
+            when(userRepository.findByEmail("estranho@exemplo.com")).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() ->
+                    authService.verifyEmail(new VerifyEmailRequestDTO("estranho@exemplo.com", "123456")))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Código inválido");
+        }
+    }
+
+    // ── Reenvio de código ────────────────────────────────────────────────────
+
+    @Nested
+    class ReenvioDeCodigo {
+
+        @Test
+        @DisplayName("conta pendente recebe um novo código")
+        void pendingAccountGetsANewCode() {
+            var naoVerificado = UserEntity.builder()
+                    .name("Usuário Teste").email(EMAIL).password("hash")
+                    .role(Role.USER).verified(false).build();
+            when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(naoVerificado));
+
+            authService.resendCode(new ResendCodeRequestDTO(EMAIL));
+
+            verify(emailService).sendVerificationCode(eq(EMAIL), anyString());
+            verify(userRepository).save(naoVerificado);
+        }
+
+        @Test
+        @DisplayName("e-mail inexistente devolve a mesma resposta, sem enviar nada")
+        void unknownEmailGetsTheSameAnswer() {
+            when(userRepository.findByEmail("estranho@exemplo.com")).thenReturn(Optional.empty());
+
+            var resposta = authService.resendCode(new ResendCodeRequestDTO("estranho@exemplo.com"));
+
+            // Sem exceção e com a mesma mensagem: o endpoint não vira oráculo de cadastro.
+            assertThat(resposta.message()).contains("Se houver um cadastro pendente");
+            verify(emailService, never()).sendVerificationCode(anyString(), anyString());
+        }
+
+        @Test
+        @DisplayName("conta já verificada devolve a mesma resposta, sem enviar nada")
+        void verifiedAccountGetsTheSameAnswer() {
+            when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(usuarioVerificado));
+
+            var resposta = authService.resendCode(new ResendCodeRequestDTO(EMAIL));
+
+            assertThat(resposta.message()).contains("Se houver um cadastro pendente");
+            verify(emailService, never()).sendVerificationCode(anyString(), anyString());
+            verify(userRepository, never()).save(any());
         }
     }
 

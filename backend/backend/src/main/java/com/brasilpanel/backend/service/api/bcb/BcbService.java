@@ -6,6 +6,7 @@ import com.brasilpanel.backend.model.FinancialDataPoint;
 import com.brasilpanel.backend.service.financial.FinancialDataService;
 import com.brasilpanel.backend.validators.api.BcbValidator;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,7 @@ import java.util.Optional;
 
 @RequiredArgsConstructor
 @Service
+@Slf4j
 public class BcbService implements BcbImplementations{
     private final RestClient restClient;
     private static final String VALOR = "valor";
@@ -94,8 +96,10 @@ public class BcbService implements BcbImplementations{
             throw new BcbApiException("Requisição interrompida");
 
         } catch (Exception e) {
-            e.printStackTrace();
-            throw new BcbApiException("Erro ao buscar dados da Selic "+ e.getMessage());
+            // O detalhe fica no log do servidor; o cliente recebe mensagem genérica.
+            // Repassar e.getMessage() expunha estado interno no corpo do HTTP 502.
+            log.error("Falha ao buscar a Selic na API do BCB", e);
+            throw new BcbApiException("Não foi possível obter os dados da Selic.");
         }
     }
 

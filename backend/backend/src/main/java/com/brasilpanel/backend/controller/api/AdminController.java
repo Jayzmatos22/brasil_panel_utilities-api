@@ -8,6 +8,9 @@ import com.brasilpanel.backend.repository.user.UserRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -27,14 +30,35 @@ public class AdminController {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
 
-    /** Lista todos os usuários cadastrados. */
-    @Operation(summary = "Listar usuários", description = "Retorna todos os usuários do sistema")
+    /** Tamanho máximo aceito, para o cliente não conseguir pedir a tabela inteira. */
+    private static final int TAMANHO_MAXIMO = 200;
+
+    /**
+     * Lista os usuários cadastrados, do mais recente para o mais antigo.
+     *
+     * <p>A consulta é paginada porque {@code findAll()} sem limite carrega a tabela
+     * inteira em memória e serializa tudo na resposta — custo que cresce sem teto
+     * conforme a base cresce.
+     *
+     * <p>O corpo continua sendo um array (e não um objeto de página) de propósito:
+     * o painel administrativo consome uma lista, e mudar o formato quebraria a tela
+     * sem entregar nada em troca enquanto não houver navegação por páginas na UI.
+     */
+    @Operation(summary = "Listar usuários",
+               description = "Retorna os usuários do sistema, paginados e ordenados por data de criação")
     @GetMapping("/users")
-    public ResponseEntity<List<UserResponseDTO>> listUsers() {
-        List<UserResponseDTO> users = userRepository.findAll()
-                .stream()
+    public ResponseEntity<List<UserResponseDTO>> listUsers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "100") int size) {
+
+        Pageable pagina = PageRequest.of(
+                Math.max(page, 0),
+                Math.clamp(size, 1, TAMANHO_MAXIMO),
+                Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        List<UserResponseDTO> users = userRepository.findAll(pagina)
                 .map(userMapper::toResponse)
-                .toList();
+                .getContent();
         return ResponseEntity.ok(users);
     }
 
