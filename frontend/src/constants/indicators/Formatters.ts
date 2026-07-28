@@ -5,11 +5,23 @@
  * qualquer contexto (componentes, helpers, testes, e-mail templates).
  */
 
-export const fmtPct = (v: number): string => `${v.toFixed(2)}%`;
+/**
+ * Decimal no padrão pt-BR (vírgula), com casas fixas.
+ *
+ * Existe porque `toFixed` sempre usa ponto: misturá-lo com `toLocaleString`
+ * fazia a mesma tela exibir "R$ 1.234,56" ao lado de "4.50%".
+ */
+const dec = (v: number, casas = 2): string =>
+  v.toLocaleString('pt-BR', {
+    minimumFractionDigits: casas,
+    maximumFractionDigits: casas,
+  });
+
+export const fmtPct = (v: number): string => `${dec(v)}%`;
 
 /** Sempre com sinal explícito (+/-) — para variações. */
 export const fmtPctSigned = (v: number): string =>
-  `${v > 0 ? '+' : ''}${v.toFixed(2)}%`;
+  `${v > 0 ? '+' : ''}${dec(v)}%`;
 
 export const fmtBRL = (v: number): string =>
   v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -23,9 +35,9 @@ export const fmtPts = (v: number): string =>
 /** Numérico compacto puro: 1.2B / 3.4M / 5k. */
 export const fmtCompact = (v: number): string => {
   const abs = Math.abs(v);
-  if (abs >= 1e9) return `${(v / 1e9).toFixed(2)}B`;
-  if (abs >= 1e6) return `${(v / 1e6).toFixed(2)}M`;
-  if (abs >= 1e3) return `${(v / 1e3).toFixed(1)}k`;
+  if (abs >= 1e9) return `${dec(v / 1e9)}B`;
+  if (abs >= 1e6) return `${dec(v / 1e6)}M`;
+  if (abs >= 1e3) return `${dec(v / 1e3, 1)}k`;
   return v.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
 };
 
@@ -51,13 +63,16 @@ export const fmtBRDate = (iso: string): string => {
  *   87.5     → "R$ 87,50 mi"
  *   1234.5   → "R$ 1,23 bi"
  *   0.5      → "R$ 500 mil"
+ *
+ * Até esta correção o código usava `toFixed`, então produzia "R$ 8.70 mi" —
+ * com ponto, contrariando os exemplos acima e o resto do painel.
  */
 export const fmtBRLTax = (v: number): string => {
   const abs = Math.abs(v);
-  if (abs >= 1000) return `R$ ${(v / 1000).toFixed(2)} bi`;
-  if (abs >= 1)    return `R$ ${v.toFixed(2)} mi`;
-  if (abs >= 0.001) return `R$ ${(v * 1000).toFixed(0)} mil`;
-  return `R$ ${v.toFixed(4)}`;
+  if (abs >= 1000) return `R$ ${dec(v / 1000)} bi`;
+  if (abs >= 1)    return `R$ ${dec(v)} mi`;
+  if (abs >= 0.001) return `R$ ${dec(v * 1000, 0)} mil`;
+  return `R$ ${dec(v, 4)}`;
 };
 
 
@@ -99,10 +114,10 @@ export const GRID_COLS_CLASS: Record<number, string> = {
 /** Para valores em milhões de USD (séries FOB de exportação). */
 export const fmtUSDCompact = (v: number): string => {
   const abs = Math.abs(v);
-  if (abs >= 1000)    return `US$ ${(v / 1000).toFixed(2)} bi`;
-  if (abs >= 1)       return `US$ ${v.toFixed(2)} mi`;
-  if (abs >= 0.001)   return `US$ ${(v * 1000).toFixed(0)} mil`;
-  return `US$ ${v.toFixed(4)}`;
+  if (abs >= 1000)    return `US$ ${dec(v / 1000)} bi`;
+  if (abs >= 1)       return `US$ ${dec(v)} mi`;
+  if (abs >= 0.001)   return `US$ ${dec(v * 1000, 0)} mil`;
+  return `US$ ${dec(v, 4)}`;
 };
 
 /** Para índices adimensionais (base 100). */

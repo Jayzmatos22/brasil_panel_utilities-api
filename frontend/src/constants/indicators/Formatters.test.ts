@@ -17,36 +17,36 @@ const semNbsp = (s: string) => s.replace(/\u00a0/g, ' ');
 
 describe('formatadores de exibição', () => {
   describe('percentuais', () => {
-    it('fmtPct usa duas casas', () => {
-      expect(fmtPct(4.5)).toBe('4.50%');
-      expect(fmtPct(0)).toBe('0.00%');
+    it('fmtPct usa duas casas com vírgula decimal', () => {
+      expect(fmtPct(4.5)).toBe('4,50%');
+      expect(fmtPct(0)).toBe('0,00%');
     });
 
     it('fmtPctSigned força o sinal em valores positivos', () => {
-      expect(fmtPctSigned(2.3)).toBe('+2.30%');
+      expect(fmtPctSigned(2.3)).toBe('+2,30%');
     });
 
     it('fmtPctSigned mantém o sinal natural em negativos', () => {
-      expect(fmtPctSigned(-1.75)).toBe('-1.75%');
+      expect(fmtPctSigned(-1.75)).toBe('-1,75%');
     });
 
     it('fmtPctSigned não põe sinal no zero', () => {
-      // Zero não é variação: exibir "+0.00%" sugeriria alta que não houve.
-      expect(fmtPctSigned(0)).toBe('0.00%');
+      // Zero não é variação: exibir "+0,00%" sugeriria alta que não houve.
+      expect(fmtPctSigned(0)).toBe('0,00%');
     });
   });
 
   describe('fmtCompact', () => {
     it('abrevia bilhões', () => {
-      expect(fmtCompact(1_200_000_000)).toBe('1.20B');
+      expect(fmtCompact(1_200_000_000)).toBe('1,20B');
     });
 
     it('abrevia milhões', () => {
-      expect(fmtCompact(3_400_000)).toBe('3.40M');
+      expect(fmtCompact(3_400_000)).toBe('3,40M');
     });
 
     it('abrevia milhares com uma casa', () => {
-      expect(fmtCompact(5_000)).toBe('5.0k');
+      expect(fmtCompact(5_000)).toBe('5,0k');
     });
 
     it('não abrevia abaixo de mil', () => {
@@ -54,7 +54,7 @@ describe('formatadores de exibição', () => {
     });
 
     it('respeita a magnitude de valores negativos', () => {
-      expect(fmtCompact(-2_500_000)).toBe('-2.50M');
+      expect(fmtCompact(-2_500_000)).toBe('-2,50M');
     });
   });
 
@@ -71,11 +71,12 @@ describe('formatadores de exibição', () => {
 
   describe('fmtBRLTax — entrada já em milhões', () => {
     it('converte para bilhões acima de mil milhões', () => {
-      expect(fmtBRLTax(1234.5)).toBe('R$ 1.23 bi');
+      expect(fmtBRLTax(1234.5)).toBe('R$ 1,23 bi');
     });
 
     it('mantém milhões entre 1 e 1000', () => {
-      expect(fmtBRLTax(87.5)).toBe('R$ 87.50 mi');
+      // Este é o caso que o Javadoc documentava e o código contrariava.
+      expect(fmtBRLTax(87.5)).toBe('R$ 87,50 mi');
     });
 
     it('converte frações de milhão para mil', () => {
@@ -83,17 +84,17 @@ describe('formatadores de exibição', () => {
     });
 
     it('cai para quatro casas em valores ínfimos', () => {
-      expect(fmtBRLTax(0.0001)).toBe('R$ 0.0001');
+      expect(fmtBRLTax(0.0001)).toBe('R$ 0,0001');
     });
   });
 
   describe('fmtUSDCompact — entrada já em milhões', () => {
     it('converte para bilhões', () => {
-      expect(fmtUSDCompact(2500)).toBe('US$ 2.50 bi');
+      expect(fmtUSDCompact(2500)).toBe('US$ 2,50 bi');
     });
 
     it('mantém milhões', () => {
-      expect(fmtUSDCompact(45.75)).toBe('US$ 45.75 mi');
+      expect(fmtUSDCompact(45.75)).toBe('US$ 45,75 mi');
     });
   });
 
