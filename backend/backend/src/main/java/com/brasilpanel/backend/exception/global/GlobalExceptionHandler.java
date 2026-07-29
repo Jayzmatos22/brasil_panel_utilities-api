@@ -126,6 +126,13 @@ public class GlobalExceptionHandler {
     }
 
     // Nome inválido de crypto
+    // CoinMarketCap — falha de comunicação ou cota esgotada
+    @ExceptionHandler(CoinMarketCapException.class)
+    public ResponseEntity<String> handleCoinMarketCapException(CoinMarketCapException ex) {
+        return ResponseEntity.status(502).body(ex.getMessage());
+    }
+
+
     @ExceptionHandler(CoinGeckoException.class)
     public ResponseEntity<String> handleCoinGeckoException(CoinGeckoException ex) {
         return ResponseEntity.status(404).body(ex.getMessage());

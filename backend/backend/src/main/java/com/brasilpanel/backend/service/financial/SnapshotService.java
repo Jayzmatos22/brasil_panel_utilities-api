@@ -3,9 +3,12 @@ package com.brasilpanel.backend.service.financial;
 import com.brasilpanel.backend.dto.api.alphaVantage.StockHistoryPointDTO;
 import com.brasilpanel.backend.dto.api.alphaVantage.StockQuoteDTO;
 import com.brasilpanel.backend.dto.api.coinGecko.CryptoCoinGeckoMarketDTO;
+import com.brasilpanel.backend.dto.api.coinMarketCap.CmcListingDTO;
+import com.brasilpanel.backend.dto.api.coinMarketCap.CmcQuoteDTO;
 import com.brasilpanel.backend.dto.api.metalsDev.LbmaFixingDTO;
 import com.brasilpanel.backend.dto.api.metalsDev.MetalHistoryPointDTO;
 import com.brasilpanel.backend.dto.api.metalsDev.MetalsDataDTO;
+import com.brasilpanel.backend.model.CmcCryptoSnapshot;
 import com.brasilpanel.backend.model.CryptoSnapshot;
 import com.brasilpanel.backend.model.LbmaFixingSnapshot;
 import com.brasilpanel.backend.model.MetalHistorySnapshot;
@@ -13,6 +16,7 @@ import com.brasilpanel.backend.model.MetalSnapshot;
 import com.brasilpanel.backend.model.PibEstadualSnapshot;
 import com.brasilpanel.backend.model.PibSnapshot;
 import com.brasilpanel.backend.model.StockSnapshot;
+import com.brasilpanel.backend.repository.snapshot.CmcCryptoSnapshotRepository;
 import com.brasilpanel.backend.repository.snapshot.CryptoSnapshotRepository;
 import com.brasilpanel.backend.repository.snapshot.LbmaFixingRepository;
 import com.brasilpanel.backend.repository.snapshot.MetalHistoryRepository;
@@ -49,6 +53,7 @@ public class SnapshotService {
     private final MetalHistoryRepository metalHistoryRepository;
     private final LbmaFixingRepository lbmaFixingRepository;
     private final CryptoSnapshotRepository cryptoRepository;
+    private final CmcCryptoSnapshotRepository cmcCryptoRepository;
     private final PibSnapshotRepository pibRepository;
     private final PibEstadualSnapshotRepository pibEstadualRepository;
 
@@ -349,6 +354,86 @@ public class SnapshotService {
     @Transactional(readOnly = true)
     public Optional<CryptoSnapshot> getLatestCrypto(String term) {
         return cryptoRepository.findLatestByTerm(term.trim().toLowerCase());
+    }
+
+    // ── Criptomoedas (CoinMarketCap) ──────────────────────────────────────
+
+    /**
+     * Persiste o batch de criptomoedas retornado pela CoinMarketCap.
+     * Cada item vira um registro separado com o mesmo fetchedAt, igual ao CoinGecko —
+     * mas em tabela própria, para que as duas fontes nunca se misturem numa consulta.
+     *
+     * <p>Itens sem cotação na moeda pedida são descartados: {@code currentPrice} é
+     * NOT NULL e uma moeda sem preço não tem utilidade no painel.
+     *
+     * @param list     moedas retornadas pela API
+     * @param currency moeda de referência dos preços (ex: "BRL")
+     */
+    @Transactional
+    public void saveCmcListings(List<CmcListingDTO> list, String currency) {
+        try {
+            LocalDateTime fetchedAt = LocalDateTime.now();
+
+            List<CmcCryptoSnapshot> snapshots = list.stream()
+                    .filter(dto -> dto.quoteIn(currency) != null
+                                && dto.quoteIn(currency).price() != null)
+                    .map(dto -> toCmcSnapshot(dto, dto.quoteIn(currency), currency, fetchedAt))
+                    .toList();
+
+            if (snapshots.isEmpty()) {
+                log.warn("CoinMarketCap: nenhuma moeda com cotação em {} — nada persistido", currency);
+                return;
+            }
+
+            cmcCryptoRepository.saveAll(snapshots);
+            log.debug("CMC snapshots salvos: {} moedas, ts={}", snapshots.size(), fetchedAt);
+
+        } catch (Exception e) {
+            log.warn("Falha ao persistir CMC snapshots: {}", e.getMessage());
+        }
+    }
+
+    private CmcCryptoSnapshot toCmcSnapshot(CmcListingDTO dto, CmcQuoteDTO quote,
+                                            String currency, LocalDateTime fetchedAt) {
+        return CmcCryptoSnapshot.builder()
+                .cmcId(dto.id())
+                .symbol(dto.symbol())
+                .name(dto.name())
+                .slug(dto.slug())
+                .cmcRank(dto.cmcRank())
+                .currentPrice(toBD(quote.price()))
+                .marketCap(toBD(quote.marketCap()))
+                .volume24h(toBD(quote.volume24h()))
+                .percentChange1h(toBD(quote.percentChange1h()))
+                .percentChange24h(toBD(quote.percentChange24h()))
+                .percentChange7d(toBD(quote.percentChange7d()))
+                .marketCapDominance(toBD(quote.marketCapDominance()))
+                .circulatingSupply(toBD(dto.circulatingSupply()))
+                .totalSupply(toBD(dto.totalSupply()))
+                .maxSupply(toBD(dto.maxSupply()))
+                .currency(currency)
+                .fetchedAt(fetchedAt)
+                .build();
+    }
+
+    /**
+     * Último batch da CoinMarketCap (todas as moedas do fetch mais recente),
+     * na ordem do ranking. Vazio se não houver snapshot.
+     */
+    @Transactional(readOnly = true)
+    public List<CmcCryptoSnapshot> getLatestCmcBatch() {
+        return cmcCryptoRepository.findTopByOrderByFetchedAtDesc()
+                .map(s -> cmcCryptoRepository.findByFetchedAtOrderByCmcRankAsc(s.getFetchedAt()))
+                .orElseGet(List::of);
+    }
+
+    /**
+     * Último snapshot de uma moeda na CoinMarketCap (leitura DB-first).
+     * Resolve por símbolo, slug ou nome — ex: "btc" e "bitcoin" retornam o mesmo registro.
+     */
+    @Transactional(readOnly = true)
+    public Optional<CmcCryptoSnapshot> getLatestCmcCrypto(String term) {
+        return cmcCryptoRepository.findLatestByTerm(term.trim().toLowerCase());
     }
 
     // ── PIB (World Bank) ──────────────────────────────────────────────────

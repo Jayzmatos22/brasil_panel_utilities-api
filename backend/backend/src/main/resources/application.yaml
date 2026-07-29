@@ -34,6 +34,15 @@ jwt:
   secret: ${JWT_SECRET}
   expiration-ms: 86400000  # 24 h
 
+# ── CoinMarketCap ────────────────────────────────────────────────────────────
+# Plano Basic: 15.000 créditos/mês, 50 req/min, 1 conversão de moeda por chamada.
+# Sem CMC_API_KEY a fonte fica desligada e o painel roda só com o CoinGecko —
+# de propósito, para a aplicação subir em ambientes que ainda não têm a chave.
+coinmarketcap:
+  api-key: ${CMC_API_KEY:}
+  # Top 100 cabe em 1 crédito (cobrança: 1 crédito por 200 data points).
+  listing-limit: 100
+
 # ── CORS ─────────────────────────────────────────────────────────────────────
 app:
   cors:
