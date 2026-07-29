@@ -212,7 +212,12 @@ final class CacheCatalog {
                 // CoinGecko free tier — 5 min é o mínimo razoável
                 new CacheSpec("crypto-list", ttl.realtime(), 20),
                 // Preço por nome: cache separado e keyed por moeda
-                new CacheSpec("crypto-by-name", ttl.realtime(), 100));
+                new CacheSpec("crypto-by-name", ttl.realtime(), 100),
+                // CoinMarketCap — o TTL aqui não afeta o consumo de créditos: um miss
+                // cai no Postgres, nunca na API. Só o scheduler gasta crédito.
+                new CacheSpec("cmc-listings", ttl.realtime(), 20),
+                new CacheSpec("cmc-quote-by-symbol", ttl.realtime(), 100),
+                new CacheSpec("cmc-global", ttl.realtime(), 1));
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────

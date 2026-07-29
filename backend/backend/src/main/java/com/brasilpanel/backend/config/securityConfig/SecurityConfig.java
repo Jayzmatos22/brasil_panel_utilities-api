@@ -63,6 +63,7 @@ public class SecurityConfig {
                             //
                             "/api/banks/**",
                             "/api/coingecko/**",
+                            "/api/coinmarketcap/**",
                             "/api/cep/**",
                             "/api/bcb/**",
                             "/api/frankfurter",
