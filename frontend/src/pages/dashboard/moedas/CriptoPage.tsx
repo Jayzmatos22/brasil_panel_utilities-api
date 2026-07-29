@@ -1,12 +1,16 @@
-// API: CoinGecko
-// Endpoints consumidos:
-//   GET /crypto/market      → useCryptoMarket()
-//   GET /crypto/name/{name} → useCryptoByName(name)
+// Duas fontes de criptomoedas, explicitas e alternaveis pelo usuario:
+//   CoinGecko     → GET /api/coingecko           | GET /api/coingecko/{name}
+//   CoinMarketCap → GET /api/coinmarketcap       | GET /api/coinmarketcap/{term}
+//
+// Ambas sao servidas de snapshots do backend, entao trocar de fonte nao dispara
+// chamada a API externa. A CoinMarketCap ainda traz variacao de 1h e 7d.
 
 import { useState, useMemo, useEffect, type ChangeEvent } from 'react';
 import { motion } from 'motion/react';
 import { LoaderCircle, TrendingUp, TrendingDown, Search, BarChart3, Minus } from 'lucide-react';
 import { useCryptoMarket, useCryptoByName } from '../../../hooks/UseCrypto';
+import { useCmcMarket, useCmcByTerm } from '../../../hooks/UseCmcCrypto';
+import type { CryptoSource, CryptoRow } from '../../../types/CriptoType';
 import { BarChartEcharts } from '../../../components/charts/BarChartEcharts';
 import { AnimatedNumber } from '../../../components/AnimatedNumber';
 import { container, item } from '../../../lib/motion/presets';
@@ -24,17 +28,81 @@ const bannerImage = Object.values(CRIPTO_IMAGES)[0];
 // ============================================================================
 // PÁGINA PRINCIPAL
 // ============================================================================
+const SOURCE_LABEL: Record<CryptoSource, string> = {
+  coingecko: 'CoinGecko',
+  coinmarketcap: 'CoinMarketCap',
+};
+
+/** "há 4 min" — deixa explicito que o dado vem de um snapshot, nao de chamada ao vivo */
+function timeAgo(iso?: string): string | null {
+  if (!iso) return null;
+  const diffMin = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (Number.isNaN(diffMin) || diffMin < 0) return null;
+  if (diffMin < 1) return 'agora';
+  if (diffMin < 60) return `há ${diffMin} min`;
+  return `há ${Math.floor(diffMin / 60)} h`;
+}
+
 export default function CriptoPage() {
   const [search, setSearch] = useState('');
   const [debounced, setDebounced] = useState('');
-  
+  const [source, setSource] = useState<CryptoSource>('coingecko');
+
+  const isCmc = source === 'coinmarketcap';
+
   useEffect(() => {
     const t = setTimeout(() => setDebounced(search.trim().toLowerCase()), 400);
     return () => clearTimeout(t);
   }, [search]);
 
-  const { data: market,    isLoading: loadingMarket } = useCryptoMarket();
-  const { data: byName,    isLoading: loadingByName, isError: byNameError } = useCryptoByName(debounced);
+  // Só a fonte ativa fica habilitada — evita manter duas queries girando à toa.
+  const { data: geckoMarket, isLoading: loadingGecko } = useCryptoMarket();
+  const { data: cmcMarket,   isLoading: loadingCmc   } = useCmcMarket(isCmc);
+
+  const { data: geckoByName, isLoading: loadingGeckoName, isError: geckoNameError } =
+    useCryptoByName(isCmc ? '' : debounced);
+  const { data: cmcByTerm,   isLoading: loadingCmcName,  isError: cmcNameError } =
+    useCmcByTerm(debounced, isCmc);
+
+  const loadingMarket = isCmc ? loadingCmc : loadingGecko;
+  const loadingByName = isCmc ? loadingCmcName : loadingGeckoName;
+  const byNameError   = isCmc ? cmcNameError : geckoNameError;
+
+  // Preço da busca: a CMC devolve a moeda inteira, o CoinGecko só id + preço.
+  const searchResult = isCmc
+    ? (cmcByTerm ? { label: cmcByTerm.symbol, price: cmcByTerm.currentPrice } : null)
+    : (geckoByName && typeof geckoByName.priceBrl === 'number'
+        ? { label: geckoByName.id, price: geckoByName.priceBrl }
+        : null);
+
+  // Fonte da verdade da tabela: as duas fontes viram a mesma linha normalizada,
+  // com os campos exclusivos da CMC opcionais.
+  const rows: CryptoRow[] = useMemo(() => {
+    if (isCmc) {
+      return (cmcMarket ?? []).map((c) => ({
+        key: String(c.id),
+        symbol: c.symbol,
+        name: c.name,
+        imageUrl: c.imageUrl,
+        currentPrice: c.currentPrice,
+        marketCap: c.marketCap,
+        priceChange24h: c.percentChange24h,
+        percentChange1h: c.percentChange1h,
+        percentChange7d: c.percentChange7d,
+      }));
+    }
+    return (geckoMarket ?? []).map((c) => ({
+      key: c.id,
+      symbol: c.symbol,
+      name: c.name,
+      imageUrl: c.imageUrl,
+      currentPrice: c.currentPrice,
+      marketCap: c.marketCap,
+      priceChange24h: c.priceChange24h,
+    }));
+  }, [isCmc, cmcMarket, geckoMarket]);
+
+  const updatedAt = isCmc ? timeAgo(cmcMarket?.[0]?.fetchedAt) : null;
 
   const brl = (v: number) =>
     v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 6 });
@@ -46,20 +114,20 @@ export default function CriptoPage() {
     typeof v === 'number' ? `${v >= 0 ? '+' : ''}${v.toFixed(2)}%` : '-';
 
   const { gainers, losers, topCap } = useMemo(() => {
-    if (!market) return { gainers: [], losers: [], topCap: [] };
-    
-    const validChanges = [...market].filter((c) => typeof c.priceChange24h === 'number');
-    const byChange = validChanges.sort((a, b) => b.priceChange24h - a.priceChange24h);
-    
+    if (!rows.length) return { gainers: [], losers: [], topCap: [] };
+
+    const validChanges = rows.filter((c) => typeof c.priceChange24h === 'number');
+    const byChange = [...validChanges].sort((a, b) => b.priceChange24h - a.priceChange24h);
+
     return {
       gainers: byChange.slice(0, 10).map((c) => ({ label: c.symbol.toUpperCase(), value: c.priceChange24h })),
       losers: byChange.slice(-10).map((c) => ({ label: c.symbol.toUpperCase(), value: c.priceChange24h })),
-      topCap: [...market]
+      topCap: [...rows]
         .sort((a, b) => b.marketCap - a.marketCap)
         .slice(0, 10)
         .map((c) => ({ label: c.symbol.toUpperCase(), value: c.marketCap })),
     };
-  }, [market]);
+  }, [rows]);
 
   return (
     <motion.div className="flex flex-col gap-6" variants={container} initial="hidden" animate="show">
@@ -90,6 +158,41 @@ export default function CriptoPage() {
           <p className="text-slate-300 text-sm mt-1 max-w-xl">
             Cotações e tendências do mercado global em tempo real
           </p>
+
+          {/* Seletor de fonte — as duas convivem, nunca se substituem. Preços
+              divergem entre elas por metodologia, então a origem fica sempre visível. */}
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <div
+              role="group"
+              aria-label="Fonte de dados"
+              className="inline-flex rounded-lg border border-slate-600/70 bg-slate-950/70 p-1 backdrop-blur-sm"
+            >
+              {(Object.keys(SOURCE_LABEL) as CryptoSource[]).map((key) => {
+                const active = source === key;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setSource(key)}
+                    aria-pressed={active}
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer
+                      focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400
+                      ${active
+                        ? 'bg-yellow-400 text-slate-900 shadow-sm'
+                        : 'text-slate-300 hover:text-white hover:bg-slate-800/70'}`}
+                  >
+                    {SOURCE_LABEL[key]}
+                  </button>
+                );
+              })}
+            </div>
+
+            {updatedAt && (
+              <span className="text-[11px] text-slate-400">
+                snapshot atualizado {updatedAt}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Metade Direita: Card de Busca (Colado no topo, base e direita) */}
@@ -116,15 +219,15 @@ export default function CriptoPage() {
           {byNameError && debounced && !loadingByName && (
             <span className="text-red-400 text-xs">Criptomoeda "{debounced}" não encontrada.</span>
           )}
-          {byName && typeof byName.priceBrl === 'number' && (
+          {searchResult && (
             <motion.div
               initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
               className="flex justify-between items-center bg-cyan-950 rounded-md px-3 py-2 border border-slate-500 mt-1"
             >
-              <span className="text-white font-medium text-xs uppercase">{byName.id}</span>
+              <span className="text-white font-medium text-xs uppercase">{searchResult.label}</span>
               <span className="text-green-400 font-mono font-bold text-sm">
-                <AnimatedNumber value={byName.priceBrl} format={brl} />
+                <AnimatedNumber value={searchResult.price} format={brl} />
               </span>
             </motion.div>
           )}
@@ -133,15 +236,26 @@ export default function CriptoPage() {
 
       {/* Top 100 */}
       <motion.div variants={item} whileHover={{ y: -4 }} className="bg-slate-900 border border-slate-700 rounded-xl p-5">
-        <h2 className="text-yellow-500 font-semibold text-sm uppercase tracking-wider mb-4">
-          Top 100 por Market Cap
-        </h2>
+        <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+          <h2 className="text-yellow-500 font-semibold text-sm uppercase tracking-wider">
+            Top 100 por Market Cap
+          </h2>
+          <span className="text-[11px] font-medium text-slate-400 border border-slate-700 rounded-full px-2.5 py-1">
+            fonte: {SOURCE_LABEL[source]}
+          </span>
+        </div>
 
         {loadingMarket ? (
           <div className="flex items-center gap-2 text-slate-400 text-sm">
             <LoaderCircle size={16} className="animate-spin" /> Carregando mercado...
           </div>
-        ) : market ? (
+        ) : !rows.length ? (
+          <p className="text-slate-400 text-sm">
+            {isCmc
+              ? 'Fonte CoinMarketCap indisponível — verifique se a chave da API está configurada no backend.'
+              : 'Sem dados.'}
+          </p>
+        ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm ">
               <thead>
@@ -150,16 +264,18 @@ export default function CriptoPage() {
                   <th className="text-left py-2 px-3 text-blue-500 font-medium">Moeda</th>
                   <th className="text-right py-2 px-3 text-green-500 font-medium">Preço (BRL)</th>
                   <th className="text-right py-2 px-3 text-red-500 font-medium">Market Cap</th>
+                  {isCmc && <th className="text-right py-2 px-3 text-blue-400 font-medium">1h</th>}
                   <th className="text-right py-2 px-3 text-blue-500 font-medium">24h</th>
+                  {isCmc && <th className="text-right py-2 px-3 text-blue-400 font-medium">7d</th>}
                 </tr>
               </thead>
               <tbody>
-                {market.map((coin, i) => {
+                {rows.map((coin, i) => {
                   const hasPriceChange = typeof coin.priceChange24h === 'number';
                   const up = hasPriceChange && coin.priceChange24h >= 0;
 
                   return (
-                    <tr key={coin.id} className="border-b border-slate-800 hover:bg-slate-800 transition-colors">
+                    <tr key={coin.key} className="border-b border-slate-800 hover:bg-slate-800 transition-colors">
                       <td className="py-2 px-3 text-slate-500">{i + 1}</td>
                       <td className="py-2 px-3">
                         <div className="flex items-center gap-2">
@@ -170,7 +286,16 @@ export default function CriptoPage() {
                       </td>
                       <td className="py-2 px-3 text-right font-mono text-white">{brl(coin.currentPrice)}</td>
                       <td className="py-2 px-3 text-right font-mono text-slate-300">{compact(coin.marketCap)}</td>
-                      
+
+                      {isCmc && (
+                        <td className={`py-2 px-3 text-right font-mono ${
+                          typeof coin.percentChange1h !== 'number' ? 'text-slate-500'
+                            : coin.percentChange1h >= 0 ? 'text-green-400' : 'text-red-400'
+                        }`}>
+                          {typeof coin.percentChange1h === 'number' ? pct(coin.percentChange1h) : '—'}
+                        </td>
+                      )}
+
                       <td className={`py-2 px-3 text-right font-mono flex items-center justify-end gap-1 ${
                         !hasPriceChange ? 'text-slate-500' : up ? 'text-green-400' : 'text-red-400'
                       }`}>
@@ -185,13 +310,22 @@ export default function CriptoPage() {
                           </>
                         )}
                       </td>
+
+                      {isCmc && (
+                        <td className={`py-2 px-3 text-right font-mono ${
+                          typeof coin.percentChange7d !== 'number' ? 'text-slate-500'
+                            : coin.percentChange7d >= 0 ? 'text-green-400' : 'text-red-400'
+                        }`}>
+                          {typeof coin.percentChange7d === 'number' ? pct(coin.percentChange7d) : '—'}
+                        </td>
+                      )}
                     </tr>
                   );
                 })}
               </tbody>
             </table>
           </div>
-        ) : null}
+        )}
       </motion.div>
 
       {/* Comparativos (24h) */}
