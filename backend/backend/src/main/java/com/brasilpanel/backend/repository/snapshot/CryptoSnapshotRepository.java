@@ -2,6 +2,7 @@ package com.brasilpanel.backend.repository.snapshot;
 
 import com.brasilpanel.backend.model.CryptoSnapshot;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -42,4 +43,17 @@ public interface CryptoSnapshotRepository extends JpaRepository<CryptoSnapshot, 
             LIMIT 1
             """)
     Optional<CryptoSnapshot> findLatestByTerm(@Param("term") String term);
+
+    /**
+     * Apaga snapshots anteriores ao corte, num único statement.
+     *
+     * <p>Delete derivado ({@code deleteByFetchedAtBefore}) carregaria cada entidade em
+     * memória antes de remover — inviável num expurgo que pode alcançar centenas de
+     * milhares de linhas.
+     *
+     * @return quantas linhas foram removidas
+     */
+    @Modifying
+    @Query("DELETE FROM CryptoSnapshot c WHERE c.fetchedAt < :cutoff")
+    int deleteOlderThan(@Param("cutoff") LocalDateTime cutoff);
 }

@@ -2,6 +2,7 @@ package com.brasilpanel.backend.repository.snapshot;
 
 import com.brasilpanel.backend.model.CmcCryptoSnapshot;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -33,4 +34,14 @@ public interface CmcCryptoSnapshotRepository extends JpaRepository<CmcCryptoSnap
             LIMIT 1
             """)
     Optional<CmcCryptoSnapshot> findLatestByTerm(@Param("term") String term);
+
+    /**
+     * Apaga snapshots anteriores ao corte, num único statement.
+     * Ver a justificativa em {@code CryptoSnapshotRepository#deleteOlderThan}.
+     *
+     * @return quantas linhas foram removidas
+     */
+    @Modifying
+    @Query("DELETE FROM CmcCryptoSnapshot c WHERE c.fetchedAt < :cutoff")
+    int deleteOlderThan(@Param("cutoff") LocalDateTime cutoff);
 }

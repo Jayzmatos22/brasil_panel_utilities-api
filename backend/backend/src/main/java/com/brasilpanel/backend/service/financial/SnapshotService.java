@@ -36,6 +36,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.ToIntFunction;
 
 /**
  * Persiste snapshots de ações, metais e criptomoedas.
@@ -517,6 +518,63 @@ public class SnapshotService {
     @Transactional(readOnly = true)
     public List<PibEstadualSnapshot> getPibEstadualByYear(int year) {
         return pibEstadualRepository.findByYearOrderByValueDesc(year);
+    }
+
+    // ── Expurgo de snapshots ──────────────────────────────────────────────
+
+    /** Remove snapshots do CoinGecko anteriores à janela de retenção. */
+    @Transactional
+    public int pruneCryptoSnapshots(int retentionDays) {
+        return prune(retentionDays,
+                cryptoRepository.findTopByOrderByFetchedAtDesc().map(CryptoSnapshot::getFetchedAt),
+                cryptoRepository::deleteOlderThan,
+                "CoinGecko");
+    }
+
+    /** Remove snapshots da CoinMarketCap anteriores à janela de retenção. */
+    @Transactional
+    public int pruneCmcSnapshots(int retentionDays) {
+        return prune(retentionDays,
+                cmcCryptoRepository.findTopByOrderByFetchedAtDesc().map(CmcCryptoSnapshot::getFetchedAt),
+                cmcCryptoRepository::deleteOlderThan,
+                "CoinMarketCap");
+    }
+
+    /**
+     * Expurgo com uma invariante: <b>o batch mais recente nunca é apagado</b>, mesmo
+     * que já esteja fora da janela de retenção.
+     *
+     * <p>Sem isso, um scheduler parado por dias (API fora do ar, chave expirada) faria
+     * o expurgo esvaziar a tabela e derrubar junto a leitura DB-first — o painel ficaria
+     * sem nenhuma cotação para servir, e sem forma de se recuperar sozinho. Manter o
+     * último batch degrada a experiência para "dado velho" em vez de "dado nenhum".
+     *
+     * <p>Limitar o corte ao batch mais recente também torna o método imune a
+     * configuração absurda: retenção 0 ou negativa apaga tudo menos o último batch,
+     * nunca a tabela inteira.
+     */
+    private int prune(int retentionDays,
+                      Optional<LocalDateTime> latestBatch,
+                      ToIntFunction<LocalDateTime> delete,
+                      String source) {
+        if (latestBatch.isEmpty()) {
+            return 0;
+        }
+
+        LocalDateTime cutoff = LocalDateTime.now().minusDays(retentionDays);
+        LocalDateTime effectiveCutoff = cutoff.isBefore(latestBatch.get()) ? cutoff : latestBatch.get();
+
+        try {
+            int removed = delete.applyAsInt(effectiveCutoff);
+            if (removed > 0) {
+                log.info("Expurgo {}: {} snapshots removidos (anteriores a {})",
+                        source, removed, effectiveCutoff);
+            }
+            return removed;
+        } catch (Exception e) {
+            log.warn("Falha no expurgo de snapshots {}: {}", source, e.getMessage());
+            return 0;
+        }
     }
 
     // ── Utilitários ───────────────────────────────────────────────────────

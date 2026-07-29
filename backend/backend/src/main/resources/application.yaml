@@ -62,6 +62,15 @@ app:
     cookie:
       secure: ${COOKIE_SECURE:false}
 
+  # ── Retenção de snapshots ──────────────────────────────────────────────────
+  # Só as tabelas de cripto crescem rápido o bastante para precisar de expurgo
+  # (~24 mil linhas/dia somando as duas fontes). O painel não exibe histórico de
+  # cripto: a janela existe para diagnóstico, não para consulta.
+  # O batch mais recente nunca é apagado, mesmo fora da janela.
+  snapshot:
+    retention:
+      crypto-days: ${SNAPSHOT_RETENTION_DAYS:7}
+
   # ── Cache (Caffeine) ───────────────────────────────────────────────────────
   # Janelas de expiração por cadência da fonte de dados. Os defaults ficam em
   # CacheTtlProperties; descomente aqui (ou no yml do perfil) para sobrescrever.
