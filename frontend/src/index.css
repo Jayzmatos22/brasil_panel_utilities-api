@@ -1,1 +1,126 @@
 @import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TOKENS — camada de design do Brasil Panel
+   ═══════════════════════════════════════════════════════════════════════════
+
+   Antes desta camada o projeto não tinha tokens: `tailwind.config.js` usava
+   `module.exports` num pacote ESM e o Tailwind v4 não lê esse arquivo sem uma
+   diretiva `@config`. Na prática todo espaçamento, raio, tipo e sombra era
+   valor solto inline — daí as 6 escalas concorrentes de padding de card e as
+   ~35 sombras arbitrárias distintas.
+
+   Regra de ouro dos tokens fluidos abaixo: o teto de cada clamp() é
+   exatamente o valor que o projeto já usava. No desktop nada muda de
+   aparência; a correção acontece só nas larguras onde hoje quebra.
+
+   Unidades:
+     vw   → tokens de página (o casco responde ao viewport)
+     cqi  → tokens de conteúdo (respondem ao container, não à janela)
+            Sem container ancestral, cqi degrada para o viewport — seguro.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@theme {
+  /* ── Breakpoints ──────────────────────────────────────────────────────────
+     Mesmos valores do padrão Tailwind — redeclarados para ficarem explícitos
+     e versionados. Os 136 usos existentes de sm:/md:/lg:/xl: seguem válidos.
+
+     Governam apenas o CASCO (sidebar, header, split-screen de auth).
+     Dentro de <main> o viewport mente: em 1024px de janela o conteúdo tem
+     696px por causa da sidebar de 280px. Lá usamos container queries. */
+  --breakpoint-sm: 40rem;   /*  640px */
+  --breakpoint-md: 48rem;   /*  768px */
+  --breakpoint-lg: 64rem;   /* 1024px */
+  --breakpoint-xl: 80rem;   /* 1280px */
+  --breakpoint-2xl: 96rem;  /* 1536px */
+
+  /* ── Espaçamento semântico ────────────────────────────────────────────────
+     Substitui as 6 escalas concorrentes de padding de card (p-3/4/5/6/8/10)
+     e as 4 rampas responsivas divergentes (p-6 sm:p-8, p-5 sm:p-6,
+     p-6 sm:p-10, p-8 sm:p-10).
+
+     p-3 e p-4 de chips e linhas densas permanecem na escala numérica: são
+     outro nível semântico, não ruído. */
+  --spacing-gutter: clamp(1rem, 0.75rem + 1.2vw, 1.5rem);   /* 16→24  padding do <main> */
+  --spacing-card: clamp(1rem, 0.8rem + 1cqi, 2rem);         /* 16→32  padding de card */
+  --spacing-banner: clamp(1.25rem, 1rem + 2cqi, 2.5rem);    /* 20→40  padding de hero */
+  --spacing-section: clamp(1.5rem, 1.2rem + 1.5vw, 2rem);   /* 24→32  gap entre seções */
+
+  /* Altura mínima dos banners de página. Hoje min-h-65 (260px) fixo consome
+     mais de 60% da tela em 375px. */
+  --spacing-banner-min: clamp(11rem, 28vw, 16.25rem);       /* 176→260 */
+
+  /* Altura dos gráficos de linha principais. Fonte única para o canvas do
+     ECharts e para o estado vazio do ChartPanel, que precisam coincidir. */
+  --spacing-chart: clamp(13rem, 40vw, 18.75rem);            /* 208→300 */
+
+  /* ── Tipografia fluida ────────────────────────────────────────────────────
+     text-metric substitui os text-5xl/text-4xl fixos dos números grandes.
+     Em 375px o card de indicador tem 295px úteis e "128.456,78 pts" em 48px
+     ocupa ~310px — transbordo. Com o clamp: 28px na base, 48px no desktop. */
+  --text-metric: clamp(1.75rem, 1.4rem + 2.5cqi, 3rem);     /* 28→48  números */
+  --text-metric--line-height: 1.05;
+  --text-metric--letter-spacing: -0.02em;
+
+  --text-display: clamp(1.75rem, 1.3rem + 2.2vw, 3rem);     /* 28→48  h1 de banner */
+  --text-display--line-height: 1.1;
+  --text-display--letter-spacing: -0.02em;
+
+  --text-title: clamp(1.25rem, 1.1rem + 0.8cqi, 1.5rem);    /* 20→24  título de seção */
+  --text-title--line-height: 1.2;
+
+  /* Nomeia os três tamanhos arbitrários abaixo de text-xs que o projeto já
+     usa (~55 ocorrências de text-[10px] / text-[11px] / text-[9px]).
+     Adoção incremental: aplicados apenas nos arquivos tocados por layout. */
+  --text-micro: 0.6875rem;                                  /* era text-[11px] */
+  --text-micro--line-height: 1.35;
+  --text-eyebrow: 0.625rem;                                 /* era text-[10px] */
+  --text-eyebrow--line-height: 1.4;
+  --text-nano: 0.5625rem;                                   /* era text-[9px]  */
+  --text-nano--line-height: 1.4;
+
+  /* ── Raio ─────────────────────────────────────────────────────────────────
+     Nomeia a hierarquia que o código já segue de forma aproximada. */
+  --radius-panel: 1rem;      /* era rounded-2xl — painel de página */
+  --radius-card: 0.75rem;    /* era rounded-xl  — card interno */
+  --radius-control: 0.5rem;  /* era rounded-lg  — botão / input */
+
+  /* ── Sombra ───────────────────────────────────────────────────────────────
+     Colapsa as ~35 sombras arbitrárias em duas famílias. Aplicadas apenas
+     onde já houver edição de layout; as demais superfícies ficam intactas
+     para não alterar a identidade visual. */
+  --shadow-panel: 0 8px 40px -15px rgb(0 0 0 / 0.5);
+  --shadow-panel-sm: 0 8px 30px -12px rgb(0 0 0 / 0.6);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   VARIANTES
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Ponteiro grosso (toque). Permite cumprir o alvo de 44×44px em telas de
+   toque SEM engordar a interface no desktop — a densidade atual faz parte da
+   identidade visual e não deve ser sacrificada por um requisito que só vale
+   para dedo. Uso: `coarse:min-h-11 coarse:min-w-11`. */
+@custom-variant coarse (@media (pointer: coarse));
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   UTILITIES
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Grid intrínseco. Substitui as cadeias
+   `grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4` — que existem em
+   5 cópias no projeto — por um grid que se resolve pelo espaço disponível.
+
+   O `min(100%, …)` é o que garante zero overflow em 320px: sem ele, um
+   minmax(16rem, 1fr) força 256px de largura mínima mesmo num container de
+   240px, transbordando.
+
+   Ajuste a largura-alvo do cartão por elemento:
+     <div className="grid-auto-cards gap-3" style={{ '--card-min': '15rem' }}> */
+@utility grid-auto-cards {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(100%, var(--card-min, 16rem)), 1fr)
+  );
+}

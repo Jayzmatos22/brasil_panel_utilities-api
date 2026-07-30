@@ -1,6 +1,7 @@
 import { memo, useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
 import type { EChartsOption } from 'echarts';
+import { useEchartsAutoResize } from '../../hooks/UseEchartsAutoResize';
 
 export interface LinePoint {
   date: string;
@@ -35,7 +36,9 @@ export const LineChartEchartsCompact = memo(function LineChartEchartsCompact({
 
     return {
       backgroundColor: 'transparent',
-      grid: { left: 48, right: 8, top: 12, bottom: 24 },
+      // Idem LineChartEcharts: os 48px fixos viravam 20% de um card de grid a
+      // 240px. containLabel reserva só o necessário.
+      grid: { left: 4, right: 8, top: 12, bottom: 4, containLabel: true },
       tooltip: {
         trigger: 'axis',
         backgroundColor: '#0f172a',
@@ -88,8 +91,11 @@ export const LineChartEchartsCompact = memo(function LineChartEchartsCompact({
     } as EChartsOption;
   }, [points, color, valueFormatter]);
 
+  const chartRef = useEchartsAutoResize<ReactECharts>();
+
   return (
     <ReactECharts
+      ref={chartRef}
       option={option}
       style={{ height, width: '100%' }}
       notMerge

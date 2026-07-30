@@ -6,6 +6,7 @@ import { GridComponent, TooltipComponent } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
 import type { EChartsCoreOption } from 'echarts/core';
 import ReactEChartsCore from 'echarts-for-react/esm/core';
+import { useEchartsAutoResize } from '../../hooks/UseEchartsAutoResize';
 
 echarts.use([BarChart, GridComponent, TooltipComponent, CanvasRenderer]);
 
@@ -67,5 +68,6 @@ export function BarChartEcharts({ items, color = '#eab308', valueFormatter }: Ba
 
   // Altura proporcional ao nº de barras para os rótulos não ficarem espremidos.
   const height = Math.max(240, items.length * 22 + 32);
-  return <ReactEChartsCore echarts={echarts} option={option} style={{ height, width: '100%' }} notMerge />;
+  const chartRef = useEchartsAutoResize<ReactEChartsCore>();
+  return <ReactEChartsCore ref={chartRef} echarts={echarts} option={option} style={{ height, width: '100%' }} notMerge />;
 }

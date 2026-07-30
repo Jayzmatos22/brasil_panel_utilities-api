@@ -41,8 +41,8 @@ export const ChartPanel = memo(function ChartPanel({
     <motion.div
       id={id}
       variants={itemVariants}
-      className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/2
-                 backdrop-blur-md p-6 shadow-[0_8px_40px_-15px_rgba(0,0,0,0.5)] scroll-mt-24"
+      className="group @container/panel relative overflow-hidden rounded-panel border border-white/10 bg-white/2
+                 backdrop-blur-md p-card shadow-panel scroll-mt-24"
     >
       {/* Glow decorativo no canto — intensifica no hover. */}
       <div
@@ -78,7 +78,7 @@ export const ChartPanel = memo(function ChartPanel({
       </div>
 
       {points.length === 0 ? (
-        <div className="flex h-[300px] items-center justify-center text-center text-xs text-slate-500">
+        <div className="flex h-chart items-center justify-center text-center text-xs text-slate-500">
           {emptyHint}
         </div>
       ) : (

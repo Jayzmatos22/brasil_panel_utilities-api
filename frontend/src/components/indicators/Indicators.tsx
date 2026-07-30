@@ -37,8 +37,11 @@ export * from './Helpers';
 export * from '../../constants/indicators/Motion';
 export * from '../../constants/indicators/TimeWindows';
 export * from '../../constants/indicators/Formatters';
-// Adicione no Indicators.tsx
-export * from './hooks/UseResponsiveValue';
+// Hook genérico de leitura reativa da janela. Mora em src/hooks/ junto com os
+// demais hooks do projeto — deixou de ser específico de indicadores quando o
+// DashboardLayout passou a usá-lo. Segue reexportado aqui para não quebrar os
+// imports das páginas que o consomem por este barrel.
+export * from '../../hooks/UseResponsiveValue';
 
 export * from './parts/PageBanner';
 export * from './parts/IndicesSummaryPanel';

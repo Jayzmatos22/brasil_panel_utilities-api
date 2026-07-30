@@ -9,6 +9,7 @@ import { BrandLogo } from '../components/brand/BrandLogo';
 import { clearSession, getTokenEmail, isAdmin } from '../lib/auth/jwt';
 import { authService } from '../api/services/Auth';
 import { ErrorBoundary } from '../components/ErrorBoundary';
+import { useResponsiveValue } from '../hooks/UseResponsiveValue';
 
 const NAV = [
   {
@@ -80,30 +81,52 @@ const PAGE_TITLES: Record<string, string> = {
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   [
     'flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-150',
+    // 34px de altura no desktop (densidade preservada) → 44px no toque.
+    'coarse:min-h-11',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60',
     isActive
       ? 'bg-yellow-500/10 text-yellow-400 font-medium'
       : 'text-slate-400 hover:text-white hover:bg-slate-800/70',
   ].join(' ');
 
-const isMobile = () => window.innerWidth < 768;
+/**
+ * Largura a partir da qual a sidebar deixa de ser overlay e passa a ocupar
+ * espaço no fluxo (docked). Alinhado ao breakpoint `lg` do tema.
+ *
+ * Era 768 (`md`), e essa era a pior quebra do layout: a partir de 768px a
+ * sidebar de 280px entrava no fluxo já aberta, e a área de conteúdo caía de
+ * 608px (em 640px de janela) para 440px — encolhia justamente ao crescer a
+ * janela. Com 1024 sobram 720px e o conteúdo só cresce de um breakpoint para
+ * o seguinte.
+ */
+const DOCKED_MIN_WIDTH = 1024;
+
+/** Leitura pontual da janela. Para uso reativo, ver `isDocked` no componente. */
+const isDockedViewport = () => window.innerWidth >= DOCKED_MIN_WIDTH;
 
 export default function DashboardLayout() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [sidebarOpen, setSidebarOpen] = useState(() => !isMobile());
+  // Reativo ao resize: antes o layout lia window.innerWidth só no evento, e
+  // redimensionar a janela com a sidebar aberta deixava a trava de scroll do
+  // body presa (o efeito abaixo não reexecutava). Agora `isDocked` muda com a
+  // janela e reavalia tudo que depende do modo.
+  const isDocked = useResponsiveValue(isDockedViewport);
+
+  const [sidebarOpen, setSidebarOpen] = useState(isDockedViewport);
   const [open, setOpen] = useState<Record<string, boolean>>({
     Admin: true, Economia: true, 'Comércio Exterior': true, Mercado: true, Moedas: true, Brasil: true,
   });
 
-  // FIX: Travar o scroll do body quando a sidebar mobile estiver aberta
+  // Trava o scroll do body enquanto a sidebar estiver aberta em modo overlay.
+  // O cleanup destrava ao desmontar — sem ele, sair do dashboard com o drawer
+  // aberto deixaria a página inteira sem scroll.
   useEffect(() => {
-    if (isMobile() && sidebarOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-  }, [sidebarOpen]);
+    const shouldLockScroll = !isDocked && sidebarOpen;
+    document.body.style.overflow = shouldLockScroll ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [sidebarOpen, isDocked]);
 
   const toggle = (group: string) =>
     setOpen(prev => ({ ...prev, [group]: !prev[group] }));
@@ -125,20 +148,35 @@ export default function DashboardLayout() {
     navigate('/login-usuario');
   };
 
-  const closeSidebarOnMobile = () => {
-    if (isMobile()) setSidebarOpen(false);
+  // Renomeado de `closeSidebarOnMobile`: o gatilho passou a ser "está em modo
+  // overlay?", que agora inclui tablets até 1023px — o nome antigo descreveria
+  // errado o comportamento.
+  const closeSidebarOnOverlay = () => {
+    if (!isDocked) setSidebarOpen(false);
   };
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-950">
 
       {/* ── Header ───────────────────────────────────────────────────────── */}
+      {/* px-gutter (era px-5) alinha o padding do header ao do <main>, de modo
+          que a logo passa a ficar na mesma coluna do conteúdo. */}
       <header className="h-14 shrink-0 bg-slate-900 border-b border-slate-800
-                         flex items-center justify-between px-5 z-40">
+                         flex items-center justify-between px-gutter z-40">
         <div className="flex items-center gap-3">
+          {/* `p-2 -m-2` amplia a área de clique de 18px para 34px com
+              deslocamento de layout ZERO — a margem negativa cancela o
+              crescimento da caixa. `coarse:` leva a 44px só em telas de toque,
+              preservando a densidade do desktop. */}
           <button
             onClick={() => setSidebarOpen(prev => !prev)}
-            className="text-slate-400 hover:text-yellow-400 transition-colors cursor-pointer"
+            aria-label={sidebarOpen ? 'Fechar menu lateral' : 'Abrir menu lateral'}
+            aria-expanded={sidebarOpen}
+            aria-controls="sidebar-nav"
+            className="inline-flex items-center justify-center p-2 -m-2 rounded-control
+                       text-slate-400 hover:text-yellow-400 transition-colors cursor-pointer
+                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60
+                       coarse:min-h-11 coarse:min-w-11"
           >
             {sidebarOpen ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
           </button>
@@ -157,29 +195,54 @@ export default function DashboardLayout() {
           <div className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center text-slate-950 text-xs font-bold shrink-0">
             {initials}
           </div>
-          <button onClick={() => navigate('/dashboard/settings')} className="text-slate-500 hover:text-amber-400 transition-colors"><Settings size={15} /></button>
-          <button onClick={handleLogout} className="text-slate-500 hover:text-rose-400 transition-colors"><LogOut size={15} /></button>
+          <button
+            onClick={() => navigate('/dashboard/settings')}
+            aria-label="Configurações da conta"
+            className="inline-flex items-center justify-center p-2 -m-2 rounded-control
+                       text-slate-500 hover:text-amber-400 transition-colors
+                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60
+                       coarse:min-h-11 coarse:min-w-11"
+          >
+            <Settings size={15} />
+          </button>
+          <button
+            onClick={handleLogout}
+            aria-label="Sair da conta"
+            className="inline-flex items-center justify-center p-2 -m-2 rounded-control
+                       text-slate-500 hover:text-rose-400 transition-colors
+                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/60
+                       coarse:min-h-11 coarse:min-w-11"
+          >
+            <LogOut size={15} />
+          </button>
         </div>
       </header>
 
       {/* ── Corpo ────────────────────────────────────────────────────────── */}
       <div className="flex flex-1 overflow-hidden relative">
 
-        {/* Backdrop mobile - Z-45 */}
+        {/* Backdrop do modo overlay — agora até lg (era md), acompanhando a
+            sidebar. Z-45 */}
         {sidebarOpen && (
           <div
-            className="fixed inset-0 bg-black/80 backdrop-blur-md z-45 md:hidden"
+            className="fixed inset-0 bg-black/80 backdrop-blur-md z-45 lg:hidden"
             onClick={() => setSidebarOpen(false)}
           />
         )}
 
-        {/* Sidebar - Z-50 e Largura Mobile 280px */}
+        {/* Sidebar — overlay até 1023px, docked a partir de lg (1024px).
+            `top-14` mantém o drawer abaixo do header de h-14: antes o `top-0`
+            cobria o próprio botão que o fecha. Em lg o `lg:top-0` zera o
+            offset, já que aí ela volta ao fluxo. */}
         <aside
+          id="sidebar-nav"
+          inert={!sidebarOpen}
+          aria-hidden={!sidebarOpen}
           className={[
             'flex flex-col overflow-y-auto overflow-x-hidden aside-bg',
             'transition-all duration-300 ease-in-out',
             'border-r border-slate-800',
-            'fixed md:relative top-0 md:top-0 bottom-0 z-50',
+            'fixed lg:relative top-14 lg:top-0 bottom-0 z-50',
             sidebarOpen ? 'w-[280px]' : 'w-0 border-r-0',
           ].join(' ')}
         >
@@ -188,7 +251,12 @@ export default function DashboardLayout() {
               {/* Seção Admin */}
               {admin && (
                 <div className="mb-1">
-                  <button onClick={() => toggle(ADMIN_NAV.group)} className="w-full flex items-center gap-2 px-3 py-2 text-amber-400 text-xs font-semibold uppercase tracking-wider cursor-pointer">
+                  <button
+                    onClick={() => toggle(ADMIN_NAV.group)}
+                    aria-expanded={open[ADMIN_NAV.group]}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-control text-amber-400 text-xs font-semibold uppercase tracking-wider cursor-pointer
+                               coarse:min-h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60"
+                  >
                     <ADMIN_NAV.icon size={13} />
                     <span className="flex-1 text-left">{ADMIN_NAV.group}</span>
                     {open[ADMIN_NAV.group] ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
@@ -196,7 +264,7 @@ export default function DashboardLayout() {
                   {open[ADMIN_NAV.group] && (
                     <div className="ml-3 pl-3 border-l border-amber-500/20">
                       {ADMIN_NAV.items.map((item) => (
-                        <NavLink key={item.path} to={item.path} end className={linkClass} onClick={closeSidebarOnMobile}>
+                        <NavLink key={item.path} to={item.path} end className={linkClass} onClick={closeSidebarOnOverlay}>
                           <item.icon size={13} /> {item.label}
                         </NavLink>
                       ))}
@@ -208,7 +276,12 @@ export default function DashboardLayout() {
               {/* Grupos de Navegação */}
               {NAV.map(({ group, icon: GroupIcon, items }) => (
                 <div key={group} className="mb-1">
-                  <button onClick={() => toggle(group)} className="w-full flex items-center gap-2 px-3 py-2 text-slate-300 text-xs font-semibold uppercase tracking-wider cursor-pointer">
+                  <button
+                    onClick={() => toggle(group)}
+                    aria-expanded={open[group]}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-control text-slate-300 text-xs font-semibold uppercase tracking-wider cursor-pointer
+                               coarse:min-h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60"
+                  >
                     <GroupIcon size={13} className="text-amber-400" />
                     <span className="flex-1 text-left">{group}</span>
                     {open[group] ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
@@ -216,7 +289,7 @@ export default function DashboardLayout() {
                   {open[group] && (
                     <div className="ml-3 pl-3 border-l border-slate-800">
                       {items.map((item) => (
-                        <NavLink key={item.path} to={item.path} end className={linkClass} onClick={closeSidebarOnMobile}>
+                        <NavLink key={item.path} to={item.path} end className={linkClass} onClick={closeSidebarOnOverlay}>
                           <item.icon size={13} /> {item.label}
                         </NavLink>
                       ))}
@@ -228,8 +301,15 @@ export default function DashboardLayout() {
           </div>
         </aside>
 
-        {/* Conteúdo principal - overflow-y-auto garante scroll independente */}
-        <main className="flex-1 p-4 md:p-6 overflow-y-auto w-full relative z-0">
+        {/* Conteúdo principal — overflow-y-auto garante scroll independente.
+            `min-w-0` é a peça central contra o overflow horizontal: sem ele um
+            filho de flex se recusa a encolher abaixo da largura do próprio
+            conteúdo, e o excesso vazava para ser cortado pelo overflow-hidden
+            da linha acima (transbordo invisível, sem scrollbar).
+            `@container/main` publica a largura real do conteúdo para que os
+            componentes respondam ao espaço que ocupam, e não ao viewport — que
+            aqui mente em 280px por causa da sidebar. */}
+        <main className="flex-1 min-w-0 p-gutter overflow-y-auto w-full relative z-0 @container/main">
           {/* As páginas são carregadas sob demanda (lazy). O Suspense fica aqui,
               e não acima do layout, para que a sidebar e o header permaneçam na
               tela enquanto o chunk da página é baixado.
