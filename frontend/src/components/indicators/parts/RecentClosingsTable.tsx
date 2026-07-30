@@ -36,8 +36,8 @@ export const RecentClosingsTable = memo(function RecentClosingsTable({
     <motion.div
       id={id}
       variants={itemVariants}
-      className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/2
-                 backdrop-blur-md shadow-[0_8px_40px_-15px_rgba(0,0,0,0.5)] scroll-mt-24"
+      className="relative overflow-hidden rounded-panel border border-white/10 bg-white/2
+                 backdrop-blur-md shadow-panel scroll-mt-24"
     >
       <div className="flex items-center gap-3 border-b border-white/5 px-6 py-4">
         <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-indigo-500/10 text-indigo-300">
@@ -53,8 +53,12 @@ export const RecentClosingsTable = memo(function RecentClosingsTable({
         </div>
       </div>
 
-      <div className="overflow-x-auto px-2 pb-2">
-        <table className="w-full border-collapse text-sm">
+      {/* `min-w` é o que faz o overflow-x-auto FUNCIONAR: com a tabela apenas
+          `w-full` ela nunca excede o container, o scroll jamais é acionado e as
+          células só comprimem e quebram linha. Com largura mínima, abaixo dela
+          o usuário rola de fato. */}
+      <div className="overflow-x-auto overscroll-x-contain px-2 pb-2">
+        <table className="w-full min-w-96 border-collapse text-sm">
           <thead>
             <tr className="text-left text-[11px] uppercase tracking-wider text-slate-500">
               <th className="px-4 py-2 font-medium">Data</th>
