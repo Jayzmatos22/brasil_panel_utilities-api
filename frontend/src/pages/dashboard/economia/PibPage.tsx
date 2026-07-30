@@ -417,7 +417,7 @@ export default function PibPage() {
 
   return (
     <motion.div
-      className="flex flex-col gap-6"
+      className="@container/page flex flex-col gap-6"
       variants={container}
       initial="hidden"
       animate="show"
@@ -492,13 +492,13 @@ export default function PibPage() {
          ═════════════════════════════════════════════════════════════════ */}
       <motion.div
         variants={item}
-        className="grid grid-cols-1 lg:grid-cols-5 gap-4"
+        className="grid grid-cols-1 @4xl/page:grid-cols-5 gap-4"
       >
         {/* ✦ CARD 1 — "PIB mais recente" */}
         <motion.section
           whileHover={{ y: -2 }}
           transition={{ type: "spring", stiffness: 220, damping: 22 }}
-          className="lg:col-span-3 relative overflow-hidden rounded-2xl border border-slate-800 shadow-[0_30px_60px_-30px_rgba(0,39,118,0.6)]"
+          className="@4xl/page:col-span-3 relative overflow-hidden rounded-2xl border border-slate-800 shadow-[0_30px_60px_-30px_rgba(0,39,118,0.6)]"
           style={{
             background:
               "linear-gradient(135deg, #050b1f 0%, #0a1430 35%, #001b52 100%)",
@@ -547,7 +547,7 @@ export default function PibPage() {
             ) : (
               currentPib && (
                 <>
-                  <p className="text-5xl sm:text-6xl font-semibold tracking-tight text-white tabular-nums leading-none">
+                  <p className="text-metric font-semibold text-white tabular-nums">
                     <AnimatedNumber
                       value={currentPib.value}
                       format={compactBrl}
@@ -572,7 +572,7 @@ export default function PibPage() {
         <motion.section
           whileHover={{ y: -2 }}
           transition={{ type: "spring", stiffness: 220, damping: 22 }}
-          className="lg:col-span-2 relative overflow-hidden rounded-2xl border border-emerald-900/40"
+          className="@4xl/page:col-span-2 relative overflow-hidden rounded-2xl border border-emerald-900/40"
           style={{
             background:
               "linear-gradient(160deg, #04140c 0%, #061a14 50%, #0a2e1f 100%)",
@@ -875,11 +875,16 @@ export default function PibPage() {
                         "radial-gradient(ellipse at 50% 0%, #FFDF00 0%, transparent 60%)",
                     }}
                   />
-                  <div className="relative p-4">
+                  {/* A tabela mensal tem 4 colunas fixas: em 375px eram ~66px
+                      por coluna para valores como "R$ 1,2 tri". Em vez de
+                      empilhar (o que destruiria a leitura tabular), ganha
+                      largura mínima e rolagem horizontal — mesma estratégia
+                      das outras 5 tabelas do projeto. */}
+                  <div className="relative p-4 overflow-x-auto overscroll-x-contain">
                     {monthlyDataForCompareYear &&
                     monthlyComparisonRows.length > 0 ? (
                       /* ── TABELA COMPARAÇÃO MENSAL ── */
-                      <div className="flex flex-col divide-y divide-slate-800/40">
+                      <div className="flex min-w-lg flex-col divide-y divide-slate-800/40">
                         {/* Cabeçalho da Tabela */}
                         <div className="grid grid-cols-4 gap-4 pb-3 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
                           <span>Mês</span>

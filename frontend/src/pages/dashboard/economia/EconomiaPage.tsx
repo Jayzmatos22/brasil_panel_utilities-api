@@ -189,7 +189,7 @@ function EconomiaPage() {
 
   return (
     <motion.section
-      className="flex flex-col gap-8 max-w-5xl mx-auto py-6"
+      className="@container/page flex flex-col gap-section max-w-5xl mx-auto py-6"
       variants={containerVariants}
       initial="hidden"
       animate="show"
@@ -223,7 +223,7 @@ function EconomiaPage() {
       >
         {ibovespaLatest && (
           <div className="flex flex-col gap-2">
-            <p className="text-5xl font-bold text-indigo-400 tracking-tight drop-shadow-[0_2px_10px_rgba(129,140,248,0.3)]">
+            <p className="text-metric font-bold text-indigo-400 tracking-tight drop-shadow-[0_2px_10px_rgba(129,140,248,0.3)]">
               {formatPts(ibovespaLatest.value)}{" "}
               <span className="text-2xl text-indigo-400/50">pts</span>
             </p>
@@ -299,7 +299,7 @@ function EconomiaPage() {
       >
         {dollar && (
           <div className="flex flex-col gap-2">
-            <p className="text-5xl font-bold text-green-400 tracking-tight drop-shadow-[0_2px_10px_rgba(74,222,128,0.3)]">
+            <p className="text-metric font-bold text-green-400 tracking-tight drop-shadow-[0_2px_10px_rgba(74,222,128,0.3)]">
               {brl(dollar.value)}
             </p>
             <p className="text-slate-300 text-xs mt-1 font-mono">
@@ -328,7 +328,7 @@ function EconomiaPage() {
       >
         {selic && (
           <div className="flex flex-col gap-3">
-            <p className="text-5xl font-bold text-red-400 tracking-tight drop-shadow-[0_2px_10px_rgba(248,113,113,0.3)]">
+            <p className="text-metric font-bold text-red-400 tracking-tight drop-shadow-[0_2px_10px_rgba(248,113,113,0.3)]">
               {pct(selic.currentRate)}
             </p>
             <div className="flex flex-col mt-2">
@@ -368,7 +368,7 @@ function EconomiaPage() {
       >
         {cdi && (
           <div className="flex flex-col gap-2">
-            <p className="text-5xl font-bold text-blue-400 tracking-tight drop-shadow-[0_2px_10px_rgba(96,165,250,0.3)]">
+            <p className="text-metric font-bold text-blue-400 tracking-tight drop-shadow-[0_2px_10px_rgba(96,165,250,0.3)]">
               {pct(cdi.annualRate)}
             </p>
             <div className="flex flex-col mt-2">
@@ -401,7 +401,7 @@ function EconomiaPage() {
       >
         {ipca && (
           <div className="flex flex-col gap-3">
-            <p className="text-5xl font-bold text-slate-100 tracking-tight drop-shadow-[0_2px_10px_rgba(241,245,249,0.2)]">
+            <p className="text-metric font-bold text-slate-100 tracking-tight drop-shadow-[0_2px_10px_rgba(241,245,249,0.2)]">
               {pct(ipca.currentMonth)}
             </p>
             <div className="flex flex-col mt-2">
