@@ -35,7 +35,7 @@ import {
   describeAmplitude,
   describeVolatility,
   describeLast5Trend,
-  useResponsiveValue, findBannerImage
+  findBannerImage
 } from "../../../components/indicators/Indicators";
 
 import type { IpeaSerie } from "../../../types/IpeaType";
@@ -45,14 +45,6 @@ import type {
   TaxHookResult,
 } from "../../../types/utilities/Economy";
 
-
-
-// Formatação de tela baseado no dispositivo
-
-import {
-  getResponsiveGridCols,
-  GRID_COLS_CLASS,
-} from "../../../constants/indicators/Formatters";
 
 // 1. Dados estáticos dos tributos (array + derivados)
 import {
@@ -266,14 +258,10 @@ const buildTaxObservations = (
 // ════════════════════════════════════════════════════════════════════════════
 // Componente: ComparativoGrid — grid 2x3 de mini-gráficos
 // ════════════════════════════════════════════════════════════════════════════
-// Mapa estático para Tailwind purge funcionar.
-
 const ComparativoGrid = memo(function ComparativoGrid({
   series,
   id,
 }: ComparativoGridProps & { id?: string }) {
-  const cols = useResponsiveValue(() => getResponsiveGridCols(series.length));
-
   const panels = useMemo(() => {
     return series.map((s) => {
       const metrics = computeMetrics(s.data);
@@ -320,7 +308,7 @@ const ComparativoGrid = memo(function ComparativoGrid({
               Comparativo — últimos 12 meses
             </h4>
             <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
-              {series.length} tributos · {cols} coluna(s) no tamanho atual
+              {series.length} tributos · escalas independentes
             </p>
           </div>
         </div>
@@ -332,7 +320,8 @@ const ComparativoGrid = memo(function ComparativoGrid({
         </span>
       </div>
 
-      <div className={`${GRID_COLS_CLASS[cols] ?? GRID_COLS_CLASS[3]} gap-3`}>
+      {/* Grid intrínseco: as colunas caem do espaço real do container. */}
+      <div className="grid-auto-cards gap-3 [--card-min:15rem]">
         {panels.map((p) => (
           <ChartGridPanel
             key={p.key}
@@ -499,7 +488,7 @@ function ImpostosPage() {
 
   return (
     <motion.section
-      className="flex flex-col gap-8 max-w-5xl mx-auto py-6"
+      className="@container/page flex flex-col gap-section max-w-5xl mx-auto py-6"
       variants={containerVariants}
       initial="hidden"
       animate="show"
@@ -555,7 +544,7 @@ function ImpostosPage() {
               {latest && (
                 <div className="flex flex-col gap-2">
                   <p
-                    className="text-4xl font-bold tracking-tight"
+                    className="text-metric font-bold"
                     style={{ color: spec.accent }}
                   >
                     {fmtBRLTax(latest.value)}

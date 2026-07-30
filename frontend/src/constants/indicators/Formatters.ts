@@ -91,22 +91,19 @@ export const fmtBRLTax = (v: number): string => {
  *
  * @returns número de colunas (1, 2, 3 ou 4)
  */
-export const getResponsiveGridCols = (itemCount: number): number => {
-  if (typeof window === 'undefined') return 1; // SSR-safe
-  const w = window.innerWidth;
-  if (w < 640) return 1;            // mobile
-  if (w < 1024) return 2;           // tablet
-  if (w < 1280) return itemCount >= 6 ? 3 : 2;  // desktop
-  return itemCount >= 8 ? 4 : 3;    // wide
-};
-
-// Opções grid
-export const GRID_COLS_CLASS: Record<number, string> = {
-  1: 'grid grid-cols-1',
-  2: 'grid grid-cols-1 sm:grid-cols-2',
-  3: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
-  4: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4',
-};
+/*
+ * REMOVIDOS: `getResponsiveGridCols` e `GRID_COLS_CLASS`.
+ *
+ * Decidiam o nº de colunas de um grid lendo window.innerWidth e devolvendo uma
+ * string de classes que JÁ era responsiva por conta própria — o layout era
+ * decidido duas vezes, por JS e por CSS, e nenhum dos dois enxergava os 280px
+ * que a sidebar tira da área de conteúdo. Ainda recomputavam a cada frame de
+ * resize.
+ *
+ * Substituídos pela utility `grid-auto-cards` (src/index.css): grid intrínseco
+ * auto-fit/minmax que se resolve pelo espaço real do container. A largura-alvo
+ * do card é ajustada por elemento com `[--card-min:15rem]`.
+ */
 
 
 

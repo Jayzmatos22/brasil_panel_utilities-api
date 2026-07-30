@@ -34,8 +34,6 @@ import {
   describeAmplitude,
   describeVolatility,
   describeLast5Trend,
-  getResponsiveGridCols,
-  useResponsiveValue,
   findBannerImage,
 } from "../../../../components/indicators/Indicators";
 
@@ -219,19 +217,10 @@ const buildCambioObservations = (
 };
 
 // ─── ComparativoGrid ───────────────────────────────────────────────────────
-const GRID_COLS_CLASS: Record<number, string> = {
-  1: "grid grid-cols-1",
-  2: "grid grid-cols-1 sm:grid-cols-2",
-  3: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
-  4: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4",
-};
-
 const ComparativoGrid = memo(function ComparativoGrid({
   series,
   id,
 }: ComparativoGridProps & { id?: string }) {
-  const cols = useResponsiveValue(() => getResponsiveGridCols(series.length));
-
   const panels = useMemo(() => {
     return series.map((s) => {
       const metrics = computeMetrics(s.data);
@@ -256,15 +245,15 @@ const ComparativoGrid = memo(function ComparativoGrid({
     <motion.div
       id={id}
       variants={itemVariants}
-      className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/2
-                 backdrop-blur-md p-6 shadow-[0_8px_40px_-15px_rgba(0,0,0,0.5)] scroll-mt-24"
+      className="relative overflow-hidden rounded-panel border border-white/10 bg-white/2
+                 backdrop-blur-md p-card shadow-panel scroll-mt-24"
     >
       <div
         aria-hidden
         className="pointer-events-none absolute -top-20 -right-20 h-48 w-48 rounded-full blur-3xl opacity-25"
         style={{ background: "#a78bfa" }}
       />
-      <div className="relative mb-5 flex items-start justify-between gap-3">
+      <div className="relative mb-5 flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <span
             className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10"
@@ -290,7 +279,8 @@ const ComparativoGrid = memo(function ComparativoGrid({
         </span>
       </div>
 
-      <div className={`${GRID_COLS_CLASS[cols] ?? GRID_COLS_CLASS[4]} gap-3`}>
+      {/* Grid intrínseco: as colunas caem do espaço real do container. */}
+      <div className="grid-auto-cards gap-3 [--card-min:15rem]">
         {panels.map((p) => (
           <ChartGridPanel
             key={p.key}
@@ -450,7 +440,7 @@ function CambioContratadoComercialPage() {
 
   return (
     <motion.section
-      className="flex flex-col gap-8 max-w-5xl mx-auto py-6"
+      className="@container/page flex flex-col gap-section max-w-5xl mx-auto py-6"
       variants={containerVariants}
       initial="hidden"
       animate="show"
@@ -500,7 +490,7 @@ function CambioContratadoComercialPage() {
               {latest && (
                 <div className="flex flex-col gap-2">
                   <p
-                    className="text-4xl font-bold tracking-tight"
+                    className="text-metric font-bold"
                     style={{ color: spec.accent }}
                   >
                     {fmt(latest.value)}

@@ -11,7 +11,11 @@ import { useEffect, useState } from 'react';
  * @returns valor computado (recomputado a cada resize)
  *
  * @example
- *   const cols = useResponsiveValue(() => getResponsiveGridCols(6));
+ *   const isDocked = useResponsiveValue(() => window.innerWidth >= 1024);
+ *
+ * Prefira CSS — container queries, grid intrínseco — sempre que a decisão for
+ * puramente de layout. Use este hook só quando o valor precisar existir em JS
+ * de fato, como o modo overlay/docked da sidebar, que governa estado de React.
  */
 export function useResponsiveValue<T>(compute: () => T): T {
   const [value, setValue] = useState<T>(compute);

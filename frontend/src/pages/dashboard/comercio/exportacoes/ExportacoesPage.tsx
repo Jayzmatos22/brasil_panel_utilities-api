@@ -37,8 +37,6 @@ import {
   describeAmplitude,
   describeVolatility,
   describeLast5Trend,
-  getResponsiveGridCols,
-  useResponsiveValue,
   findBannerImage,
 } from "../../../../components/indicators/Indicators";
 
@@ -255,19 +253,10 @@ const buildExportObservations = (
 };
 
 // ─── Componente: ComparativoGrid ───────────────────────────────────────────
-const GRID_COLS_CLASS: Record<number, string> = {
-  1: "grid grid-cols-1",
-  2: "grid grid-cols-1 sm:grid-cols-2",
-  3: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
-  4: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4",
-};
-
 const ComparativoGrid = memo(function ComparativoGrid({
   series,
   id,
 }: ComparativoGridProps & { id?: string }) {
-  const cols = useResponsiveValue(() => getResponsiveGridCols(series.length));
-
   const panels = useMemo(() => {
     return series.map((s) => {
       const metrics = computeMetrics(s.data);
@@ -326,7 +315,11 @@ const ComparativoGrid = memo(function ComparativoGrid({
         </span>
       </div>
 
-      <div className={`${GRID_COLS_CLASS[cols] ?? GRID_COLS_CLASS[4]} gap-3`}>
+      {/* Grid intrínseco: as colunas caem do espaço real do container. Antes o
+          nº de colunas era decidido DUAS vezes — por JS lendo window.innerWidth
+          e de novo pelos breakpoints da classe — e nenhum dos dois enxergava os
+          280px que a sidebar tira do conteúdo. */}
+      <div className="grid-auto-cards gap-3 [--card-min:15rem]">
         {panels.map((p) => {
           const spec = EXPORT_SPECS.find((s) => s.key === p.key);
           const fmt = spec ? fmtForSpec(spec) : fmtUSDCompact;
@@ -518,7 +511,7 @@ function ExportacoesPage() {
 
   return (
     <motion.section
-      className="flex flex-col gap-8 max-w-5xl mx-auto py-6"
+      className="@container/page flex flex-col gap-section max-w-5xl mx-auto py-6"
       variants={containerVariants}
       initial="hidden"
       animate="show"
@@ -580,7 +573,7 @@ function ExportacoesPage() {
               {latest && (
                 <div className="flex flex-col gap-2">
                   <p
-                    className="text-4xl font-bold tracking-tight"
+                    className="text-metric font-bold"
                     style={{ color: spec.accent }}
                   >
                     {fmt(latest.value)}

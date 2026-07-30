@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
   fmtBRDate,
   fmtBRL,
@@ -9,7 +9,6 @@ import {
   fmtPctSigned,
   fmtPts,
   fmtUSDCompact,
-  getResponsiveGridCols,
 } from './Formatters';
 
 /** ICU insere espaço não-quebrável em moeda; normalizar evita teste instável. */
@@ -112,39 +111,9 @@ describe('formatadores de exibição', () => {
     });
   });
 
-  describe('getResponsiveGridCols', () => {
-    const larguraOriginal = window.innerWidth;
-
-    const definirLargura = (px: number) => {
-      Object.defineProperty(window, 'innerWidth', {
-        value: px,
-        writable: true,
-        configurable: true,
-      });
-    };
-
-    afterEach(() => definirLargura(larguraOriginal));
-
-    it('usa coluna única no mobile', () => {
-      definirLargura(500);
-      expect(getResponsiveGridCols(12)).toBe(1);
-    });
-
-    it('usa duas colunas no tablet', () => {
-      definirLargura(800);
-      expect(getResponsiveGridCols(12)).toBe(2);
-    });
-
-    it('no desktop, três colunas só a partir de seis itens', () => {
-      definirLargura(1100);
-      expect(getResponsiveGridCols(6)).toBe(3);
-      expect(getResponsiveGridCols(5)).toBe(2);
-    });
-
-    it('em telas largas, quatro colunas a partir de oito itens', () => {
-      definirLargura(1400);
-      expect(getResponsiveGridCols(8)).toBe(4);
-      expect(getResponsiveGridCols(7)).toBe(3);
-    });
-  });
+  // Os 4 testes de `getResponsiveGridCols` foram removidos junto com a função.
+  // Ela decidia colunas lendo window.innerWidth; o grid intrínseco
+  // (`grid-auto-cards`) resolve isso em CSS pelo espaço real do container, o
+  // que não é observável por teste unitário — a cobertura equivalente é
+  // visual/E2E, na verificação de larguras da FASE 4.
 });
