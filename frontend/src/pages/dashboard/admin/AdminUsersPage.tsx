@@ -63,7 +63,7 @@ export default function AdminUsersPage() {
   const totalCount = users?.length ?? 0;
 
   return (
-    <motion.div className="flex flex-col gap-6" variants={container} initial="hidden" animate="show">
+    <motion.div className="@container/page flex flex-col gap-6" variants={container} initial="hidden" animate="show">
 
       {/* ── Hero Section (Vídeo + Título + Cards) ── */}
       <motion.div 
@@ -79,7 +79,8 @@ export default function AdminUsersPage() {
             loop
             playsInline
             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 
-                       h-full aspect-9-16 object-cover scale-[180%] -rotate-90 
+                       h-full aspect-[9/16] object-cover scale-[180%] -rotate-90
+                       motion-reduce:hidden
                        opacity-40 pointer-events-none"
             aria-hidden="true"
           />
@@ -173,8 +174,8 @@ export default function AdminUsersPage() {
             <span>Carregando usuários…</span>
           </div>
         ) : users && users.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm" role="table">
+          <div className="overflow-x-auto overscroll-x-contain">
+            <table className="w-full min-w-lg text-sm" role="table">
               <thead>
                 <tr className="border-b border-slate-800/80">
                   <th scope="col" className="text-left py-3 px-4 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Usuário</th>

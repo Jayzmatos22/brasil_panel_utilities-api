@@ -130,7 +130,7 @@ export default function CriptoPage() {
   }, [rows]);
 
   return (
-    <motion.div className="flex flex-col gap-6" variants={container} initial="hidden" animate="show">
+    <motion.div className="@container/page flex flex-col gap-6" variants={container} initial="hidden" animate="show">
       
       {/* HEADER DINÂMICO SPLIT-VIEW (Card colado) */}
       <motion.div 
@@ -153,8 +153,8 @@ export default function CriptoPage() {
         )}
 
         {/* Metade Esquerda: Títulos (com padding interno próprio) */}
-        <div className="relative z-10 flex-1 flex flex-col justify-center p-6 md:p-8">
-          <h1 className="text-2xl md:text-3xl font-bold text-white">Criptomoedas</h1>
+        <div className="relative z-10 min-w-0 flex-1 flex flex-col justify-center p-card">
+          <h1 className="text-title font-bold text-white">Criptomoedas</h1>
           <p className="text-slate-300 text-sm mt-1 max-w-xl">
             Cotações e tendências do mercado global em tempo real
           </p>
@@ -196,8 +196,8 @@ export default function CriptoPage() {
         </div>
 
         {/* Metade Direita: Card de Busca (Colado no topo, base e direita) */}
-        <div className="relative z-10 w-full md:w-80 lg:w-96 bg-slate-950/60 backdrop-blur-sm border-t md:border-t-0 md:border-l
-                         border-slate-500/30 p-6 flex flex-col justify-center gap-3 shrink-0 ">
+        <div className="relative z-10 w-full @3xl/page:w-80 @5xl/page:w-96 bg-slate-950/60 backdrop-blur-sm border-t @3xl/page:border-t-0 @3xl/page:border-l
+                         border-slate-500/30 p-card flex flex-col justify-center gap-3 shrink-0 ">
           <h2 className="text-yellow-400 font-semibold text-xs uppercase tracking-wider">Buscar por Nome</h2>
           <div className="relative">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-900" />
@@ -256,17 +256,22 @@ export default function CriptoPage() {
               : 'Sem dados.'}
           </p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm ">
+          // 7 colunas (fonte CoinMarketCap) em 343px davam ~49px cada, e o
+          // overflow-x-auto não funcionava por causa do w-full. Agora: largura
+          // mínima real + as duas colunas menos essenciais escondidas em
+          // container estreito — mesma estratégia de AdminUsersPage e
+          // BancosPage, que já faziam isso.
+          <div className="overflow-x-auto overscroll-x-contain">
+            <table className="w-full min-w-3xl text-sm ">
               <thead>
                 <tr className="border-b-2 border-white/20 rounded-lg bg-slate-950">
                   <th className="text-left py-2 px-3 text-slate-500 font-medium">#</th>
                   <th className="text-left py-2 px-3 text-blue-500 font-medium">Moeda</th>
                   <th className="text-right py-2 px-3 text-green-500 font-medium">Preço (BRL)</th>
                   <th className="text-right py-2 px-3 text-red-500 font-medium">Market Cap</th>
-                  {isCmc && <th className="text-right py-2 px-3 text-blue-400 font-medium">1h</th>}
+                  {isCmc && <th className="hidden @3xl/page:table-cell text-right py-2 px-3 text-blue-400 font-medium">1h</th>}
                   <th className="text-right py-2 px-3 text-blue-500 font-medium">24h</th>
-                  {isCmc && <th className="text-right py-2 px-3 text-blue-400 font-medium">7d</th>}
+                  {isCmc && <th className="hidden @3xl/page:table-cell text-right py-2 px-3 text-blue-400 font-medium">7d</th>}
                 </tr>
               </thead>
               <tbody>
@@ -288,7 +293,7 @@ export default function CriptoPage() {
                       <td className="py-2 px-3 text-right font-mono text-slate-300">{compact(coin.marketCap)}</td>
 
                       {isCmc && (
-                        <td className={`py-2 px-3 text-right font-mono ${
+                        <td className={`hidden @3xl/page:table-cell py-2 px-3 text-right font-mono ${
                           typeof coin.percentChange1h !== 'number' ? 'text-slate-500'
                             : coin.percentChange1h >= 0 ? 'text-green-400' : 'text-red-400'
                         }`}>
@@ -296,23 +301,28 @@ export default function CriptoPage() {
                         </td>
                       )}
 
-                      <td className={`py-2 px-3 text-right font-mono flex items-center justify-end gap-1 ${
+                      {/* O `flex` estava na <td>, o que quebra o modelo de
+                          tabela: a célula deixa de participar da largura da
+                          coluna. Vai para um <span> interno. */}
+                      <td className={`py-2 px-3 text-right font-mono ${
                         !hasPriceChange ? 'text-slate-500' : up ? 'text-green-400' : 'text-red-400'
                       }`}>
-                        {hasPriceChange ? (
-                          <>
-                            {up ? <TrendingUp size={13} /> : <TrendingDown size={13} />}
-                            {up ? '+' : ''}{coin.priceChange24h.toFixed(2)}%
-                          </>
-                        ) : (
-                          <>
-                            <Minus size={13} /> N/A
-                          </>
-                        )}
+                        <span className="flex items-center justify-end gap-1">
+                          {hasPriceChange ? (
+                            <>
+                              {up ? <TrendingUp size={13} /> : <TrendingDown size={13} />}
+                              {up ? '+' : ''}{coin.priceChange24h.toFixed(2)}%
+                            </>
+                          ) : (
+                            <>
+                              <Minus size={13} /> N/A
+                            </>
+                          )}
+                        </span>
                       </td>
 
                       {isCmc && (
-                        <td className={`py-2 px-3 text-right font-mono ${
+                        <td className={`hidden @3xl/page:table-cell py-2 px-3 text-right font-mono ${
                           typeof coin.percentChange7d !== 'number' ? 'text-slate-500'
                             : coin.percentChange7d >= 0 ? 'text-green-400' : 'text-red-400'
                         }`}>
@@ -329,7 +339,7 @@ export default function CriptoPage() {
       </motion.div>
 
       {/* Comparativos (24h) */}
-      <motion.div variants={item} className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <motion.div variants={item} className="grid-auto-cards gap-4 [--card-min:20rem]">
         {/* Card: Maiores Altas */}
         <motion.div whileHover={{ y: -4 }} className="bg-white/85 border border-slate-200 shadow-sm rounded-xl p-5 flex flex-col gap-4">
           <div className="flex items-center gap-2">

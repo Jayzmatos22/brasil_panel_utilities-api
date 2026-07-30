@@ -50,7 +50,7 @@ export default function BancosPage() {
 
   return (
     <motion.div
-      className="flex flex-col gap-8 bg-[#020617] min-h-screen py-6" // Assuming slate-950 page background
+      className="@container/page flex flex-col gap-section bg-[#020617] min-h-screen py-6" // Assuming slate-950 page background
       variants={container}
       initial="hidden"
       animate="show"
@@ -207,7 +207,9 @@ export default function BancosPage() {
             Instituições Ativas {banks && `(${filtered.length})`}
           </h2>
 
-          <div className="relative">
+          {/* `w-72` (288px) sem base fluida transbordava em 320px, onde o card
+              deixa apenas 240px úteis. Base w-full, 288px a partir de sm. */}
+          <div className="relative w-full sm:w-auto">
             <Search
               size={14}
               className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"
@@ -218,8 +220,8 @@ export default function BancosPage() {
                 setSearch(e.target.value)
               }
               placeholder="Filtrar por nome ou código..."
-              className="h-10 pl-10 pr-4 rounded-xl bg-white/5 text-white border border-white/10 
-                         placeholder-slate-500 outline-none focus:ring-2 focus:ring-yellow-400/30 transition-all text-sm w-72"
+              className="h-10 pl-10 pr-4 rounded-control bg-white/5 text-white border border-white/10
+                         placeholder-slate-500 outline-none focus:ring-2 focus:ring-yellow-400/30 transition-all text-sm w-full sm:w-72"
             />
           </div>
         </div>
@@ -230,8 +232,10 @@ export default function BancosPage() {
             Carregando bancos...
           </div>
         ) : (
-          <div className="overflow-x-auto max-h-[500px] overflow-y-auto styled-scrollbar">
-            <table className="w-full text-sm">
+          // `styled-scrollbar` nunca existiu no CSS do projeto; a classe real
+          // é `scrollbar-thin`, definida em App.css.
+          <div className="overflow-x-auto overscroll-x-contain max-h-125 overflow-y-auto scrollbar-thin">
+            <table className="w-full min-w-md text-sm">
               <thead className="sticky top-0 bg-slate-950/90 backdrop-blur-sm z-10">
                 <tr className="border-b border-white/10">
                   <th className="text-left py-3 px-4 text-slate-500 font-medium w-24 text-xs uppercase tracking-wider">
