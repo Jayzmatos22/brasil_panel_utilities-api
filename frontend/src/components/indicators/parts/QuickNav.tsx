@@ -2,7 +2,14 @@
  * QuickNav.tsx — barra de navegação rápida entre seções.
  *
  * Comportamento:
- *  - Sticky no topo (top-3) com blur, fica visível durante o scroll
+ *  - Barra com blur, ancorada no rodapé do PageBanner
+ *
+ *    NÃO é sticky. Já declarou `sticky top-3`, mas a regra nunca teve efeito:
+ *    o root do PageBanner é `overflow-hidden`, e isso desabilita position:sticky
+ *    em todos os descendentes. Fazer a nav grudar de verdade exige tirá-la de
+ *    dentro do banner, o que a descolaria visualmente do card nas 8 páginas —
+ *    decisão de design, não de responsividade. O `sticky` morto foi removido
+ *    para o código dizer a verdade sobre o que faz.
  *  - Pills coloridas por seção (cor vem de cada NavItem)
  *  - Seção ativa destacada via IntersectionObserver (faixa central do viewport)
  *  - Click → scroll suave + atualiza URL com #id sem jump nativo
@@ -97,7 +104,7 @@ export const QuickNav = memo(function QuickNav({ items }: { items: NavItem[] }) 
     <motion.nav
       variants={itemVariants}
       aria-label="Navegação rápida entre indicadores"
-      className="sticky top-3 z-30"
+      className="relative z-30"
     >
       <div
         className="flex gap-1.5 overflow-x-auto pb-1
@@ -114,9 +121,10 @@ export const QuickNav = memo(function QuickNav({ items }: { items: NavItem[] }) 
               onClick={handleClick(item.id)}
               aria-current={isActive ? 'true' : undefined}
               className="group flex shrink-0 items-center gap-1.5 whitespace-nowrap
-                         rounded-lg px-2.5 py-1.5 text-xs font-medium
+                         rounded-control px-2.5 py-1.5 text-xs font-medium
                          transition-all duration-200 focus:outline-none
-                         focus-visible:ring-2 focus-visible:ring-white/40"
+                         focus-visible:ring-2 focus-visible:ring-white/40
+                         coarse:min-h-11 coarse:px-3"
               style={{
                 background: isActive ? `${item.color}1f` : 'transparent',
                 color: isActive ? item.color : '#94a3b8',
