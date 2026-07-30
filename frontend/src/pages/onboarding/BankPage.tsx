@@ -121,7 +121,7 @@ export default function BankPage() {
     <main className="min-h-screen flex items-center justify-center bg-slate-950 p-4">
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-4xl bg-slate-900 border border-slate-700 p-8 rounded-xl shadow-lg flex flex-col gap-6"
+        className="@container/form w-full max-w-4xl bg-slate-900 border border-slate-700 p-card rounded-card shadow-lg flex flex-col gap-6"
       >
         {/* TÍTULO */}
         <div className="flex items-center gap-2 border-b border-slate-700 pb-4">
@@ -159,7 +159,7 @@ export default function BankPage() {
                     <li
                       key={bank.ispb}
                       onClick={() => handleSelectBank(bank as { name: string; code: number; ispb: string })}
-                      className="p-3 hover:bg-slate-700 cursor-pointer text-white text-sm flex justify-between border-b border-slate-700 last:border-0"
+                      className="p-3 hover:bg-slate-700 cursor-pointer text-white text-sm flex justify-between gap-3 border-b border-slate-700 last:border-0 coarse:min-h-11 coarse:items-center"
                     >
                       <span>{bank.name}</span>
                       <span className="text-slate-400 text-xs">Cód. {bank.code}</span>
@@ -237,8 +237,10 @@ export default function BankPage() {
               />
             </div>
 
-            {/* Validade, CVV, Tipo */}
-            <div className="grid grid-cols-3 gap-3">
+            {/* Validade, CVV, Tipo — 3 colunas fixas davam ~85px por campo em
+                375px, truncando o placeholder "MM/AA" num input de h-12. Na
+                base ficam 2 colunas, com o Tipo ocupando a linha inteira. */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <div className="flex flex-col gap-1">
                 <label className={labelClass}>Validade</label>
                 <PatternFormat
@@ -259,7 +261,7 @@ export default function BankPage() {
                   className={inputClass}
                 />
               </div>
-              <div className="flex flex-col gap-1">
+              <div className="col-span-2 sm:col-span-1 flex flex-col gap-1">
                 <label className={labelClass}>Tipo</label>
                 <select
                   value={cardType}
