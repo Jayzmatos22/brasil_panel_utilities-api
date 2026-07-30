@@ -117,8 +117,8 @@ export const PeriodExplorer = memo(function PeriodExplorer({
     <motion.div
       id={id}
       variants={itemVariants}
-      className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/2
-                 backdrop-blur-md p-6 shadow-[0_8px_40px_-15px_rgba(0,0,0,0.5)] scroll-mt-24"
+      className="group @container/panel relative overflow-hidden rounded-panel border border-white/10 bg-white/2
+                 backdrop-blur-md p-card shadow-panel scroll-mt-24"
     >
       <div
         aria-hidden
@@ -152,7 +152,7 @@ export const PeriodExplorer = memo(function PeriodExplorer({
             <button
               type="button"
               onClick={() => setMode("single")}
-              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors coarse:min-h-11 ${
                 mode === "single"
                   ? "bg-violet-500/20 text-violet-200"
                   : "text-slate-400 hover:text-slate-200"
@@ -164,7 +164,7 @@ export const PeriodExplorer = memo(function PeriodExplorer({
             <button
               type="button"
               onClick={() => setMode("range")}
-              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors coarse:min-h-11 ${
                 mode === "range"
                   ? "bg-violet-500/20 text-violet-200"
                   : "text-slate-400 hover:text-slate-200"
@@ -182,7 +182,7 @@ export const PeriodExplorer = memo(function PeriodExplorer({
               <select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(e.target.value)}
-                className="rounded-lg border border-white/10 bg-slate-900/70 px-3 py-1.5 text-xs font-medium text-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-500/50 hover:border-white/20 transition-colors"
+                className="rounded-control border border-white/10 bg-slate-900/70 px-3 py-1.5 text-xs font-medium text-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-500/50 hover:border-white/20 transition-colors coarse:min-h-11"
                 aria-label="Selecionar ano"
               >
                 {yearOptions.map((y) => (
@@ -199,7 +199,7 @@ export const PeriodExplorer = memo(function PeriodExplorer({
                 <select
                   value={startYear}
                   onChange={(e) => setStartYear(e.target.value)}
-                  className="rounded-lg border border-white/10 bg-slate-900/70 px-3 py-1.5 text-xs font-medium text-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-500/50 hover:border-white/20 transition-colors"
+                  className="rounded-control border border-white/10 bg-slate-900/70 px-3 py-1.5 text-xs font-medium text-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-500/50 hover:border-white/20 transition-colors coarse:min-h-11"
                   aria-label="Ano inicial"
                 >
                   {yearOptions.map((y) => (
@@ -214,7 +214,7 @@ export const PeriodExplorer = memo(function PeriodExplorer({
                 <select
                   value={endYear}
                   onChange={(e) => setEndYear(e.target.value)}
-                  className="rounded-lg border border-white/10 bg-slate-900/70 px-3 py-1.5 text-xs font-medium text-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-500/50 hover:border-white/20 transition-colors"
+                  className="rounded-control border border-white/10 bg-slate-900/70 px-3 py-1.5 text-xs font-medium text-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-500/50 hover:border-white/20 transition-colors coarse:min-h-11"
                   aria-label="Ano final"
                 >
                   {yearOptions.map((y) => (

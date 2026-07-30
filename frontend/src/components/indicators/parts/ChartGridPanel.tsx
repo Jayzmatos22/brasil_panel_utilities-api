@@ -31,7 +31,7 @@ export const ChartGridPanel = memo(function ChartGridPanel({
   return (
     <div
       id={id}
-      className="relative overflow-hidden rounded-xl border border-white/10 bg-white/2
+      className="relative overflow-hidden rounded-card border border-white/10 bg-white/2
                  backdrop-blur-md p-4 scroll-mt-24"
     >
       <div

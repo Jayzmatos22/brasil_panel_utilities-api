@@ -58,7 +58,7 @@ export const PageBanner = memo(function PageBanner({
   return (
     <motion.section
       variants={itemVariants}
-      className="relative overflow-hidden rounded-2xl bg-slate-950/40" // Fundo semi-transparente para o container
+      className="@container/banner relative overflow-hidden rounded-panel bg-slate-950/40" // Fundo semi-transparente para o container
     >
       {/* 1. Camada de Profundidade (A imagem que "sai" do fundo) */}
       {image && (
@@ -98,7 +98,10 @@ export const PageBanner = memo(function PageBanner({
       <div className="absolute inset-0 z-10 bg-linear-to-t from-slate-950 via-transparent to-slate-950/50" />
 
       {/* Conteúdo (Z-index alto para ficar acima de tudo) */}
-      <div className="relative z-20 flex min-h-65 flex-col justify-between p-8 lg:p-10">
+      {/* min-h-65 (260px) fixo + p-8 faziam o banner ocupar mais de 60% da tela
+          em 375px, antes de qualquer dado aparecer. Ambos passam a ser fluidos:
+          176→260px de altura e 20→40px de padding. */}
+      <div className="relative z-20 flex min-h-banner-min flex-col justify-between p-banner">
         <div className="flex flex-col gap-3">
           {badge && (
             <motion.span
@@ -111,7 +114,7 @@ export const PageBanner = memo(function PageBanner({
             </motion.span>
           )}
           
-          <h1 className="text-4xl lg:text-5xl font-bold tracking-tight text-white">
+          <h1 className="text-display font-bold text-white">
             {titleAccent ? (
               <>
                 {title.replace(titleAccent, "").trim()}{" "}
@@ -132,7 +135,7 @@ export const PageBanner = memo(function PageBanner({
         </div>
 
         {navItems && navItems.length > 0 && (
-          <div className="mt-10">
+          <div className="mt-section">
             <QuickNav items={navItems} />
           </div>
         )}

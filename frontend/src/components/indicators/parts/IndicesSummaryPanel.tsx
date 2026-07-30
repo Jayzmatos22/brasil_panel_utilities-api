@@ -36,9 +36,9 @@ export const IndicesSummaryPanel = memo(function IndicesSummaryPanel({
     <motion.div
       id={id}
       variants={itemVariants}
-      className="relative overflow-hidden rounded-2xl border border-white/10
+      className="relative overflow-hidden rounded-panel border border-white/10
                  bg-linear-to-br from-slate-950/60 to-slate-900/40
-                 backdrop-blur-md p-6 shadow-[0_8px_40px_-15px_rgba(0,0,0,0.5)] scroll-mt-24"
+                 backdrop-blur-md p-card shadow-panel scroll-mt-24"
     >
       <div className="mb-5 flex items-center gap-3">
         <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-violet-500/10 text-violet-300">
@@ -50,7 +50,9 @@ export const IndicesSummaryPanel = memo(function IndicesSummaryPanel({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+      {/* Grid intrínseco: as colunas se resolvem pelo espaço disponível, em vez
+          de por 4 breakpoints de viewport que não enxergam a sidebar. */}
+      <div className="grid-auto-cards gap-2 [--card-min:9rem]">
         {items.map((item) => (
           <div
             key={item.key}

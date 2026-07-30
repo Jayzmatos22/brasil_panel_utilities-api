@@ -51,13 +51,18 @@ export const IndicatorCard = memo(function IndicatorCard({
     <motion.article
       id={id}
       variants={itemVariants}
-      // scroll-mt-24 reserva espaço para a QuickNav sticky ao rolar até aqui.
-      className="group relative flex flex-col lg:flex-row overflow-hidden bg-white/2
-                 backdrop-blur-md border border-white/10 rounded-2xl
-                 shadow-[0_8px_40px_-15px_rgba(0,0,0,0.5)] scroll-mt-24"
+      // scroll-mt-24 reserva o deslocamento do topo ao ancorar nesta seção.
+      //
+      // O split em 2 colunas responde ao CONTAINER, não ao viewport: com `lg:`
+      // ele disparava a 1024px de janela, largura em que a área de conteúdo tem
+      // só 696px por causa da sidebar — e o card já entrava espremido.
+      // `@3xl/page` espera o container ter 768px de fato.
+      className="group relative flex flex-col @3xl/page:flex-row overflow-hidden bg-white/2
+                 backdrop-blur-md border border-white/10 rounded-panel
+                 shadow-panel scroll-mt-24"
     >
       {/* ── Painel visual (esquerda) ── */}
-      <div className="relative lg:w-2/5 aspect-video lg:aspect-auto shrink-0 overflow-hidden">
+      <div className="relative @3xl/page:w-2/5 aspect-video @3xl/page:aspect-auto shrink-0 overflow-hidden">
         <div className={`absolute inset-0 bg-linear-to-br ${gradient}`} />
 
         {img && (
@@ -83,7 +88,7 @@ export const IndicatorCard = memo(function IndicatorCard({
         {/* Gradiente para baixo para legibilidade do título no canto inferior. */}
         <div className="absolute inset-0 bg-linear-to-t from-[#020617] via-[#020617]/60 to-transparent" />
 
-        <div className="absolute bottom-0 left-0 p-6 flex flex-col gap-2 z-10">
+        <div className="absolute bottom-0 left-0 p-card flex flex-col gap-2 z-10">
           <div className="flex items-center gap-3">
             <span
               className="w-9 h-9 rounded-xl bg-amber-500/90 text-slate-950 flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/20 backdrop-blur-sm"
@@ -102,7 +107,7 @@ export const IndicatorCard = memo(function IndicatorCard({
       </div>
 
       {/* ── Painel de conteúdo (direita) ── */}
-      <div className="flex-1 flex flex-col p-6 lg:p-8 gap-5">
+      <div className="flex-1 min-w-0 flex flex-col p-card gap-5">
         <div
           className="min-h-32.5 flex flex-col justify-center"
           role="status"
