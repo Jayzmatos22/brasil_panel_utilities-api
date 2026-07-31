@@ -48,11 +48,12 @@ public class CryptoCoinMarketCapController {
     }
 
     @Operation(summary = "Criptomoeda por símbolo ou nome",
-               description = "Resolve por símbolo, slug ou nome (ex: btc, bitcoin). "
-                           + "Moedas fora do ranking acompanhado são buscadas na API.")
+               description = "Resolve por símbolo, slug ou nome (ex: btc, bitcoin) dentro do "
+                           + "ranking acompanhado. Não consome créditos: moeda fora do "
+                           + "snapshot é 404, nunca uma consulta à API.")
     @ApiResponse(responseCode = "200", description = "Moeda encontrada")
     @ApiResponse(responseCode = "400", description = "Termo de busca inválido")
-    @ApiResponse(responseCode = "502", description = "Moeda não encontrada ou erro na CoinMarketCap")
+    @ApiResponse(responseCode = "404", description = "Moeda fora do ranking acompanhado")
     @GetMapping("/{term}")
     public ResponseEntity<CmcMarketDTO> getCryptoByTerm(@PathVariable String term) {
         return ResponseEntity.ok(coinMarketCapService.returnCryptoByTerm(term));

@@ -3,10 +3,10 @@ package com.brasilpanel.backend.service.api.coinMarketCap;
 import com.brasilpanel.backend.dto.api.coinMarketCap.CmcGlobalDTO;
 import com.brasilpanel.backend.dto.api.coinMarketCap.CmcListingDTO;
 import com.brasilpanel.backend.dto.api.coinMarketCap.CmcMarketDTO;
-import com.brasilpanel.backend.dto.api.coinMarketCap.CmcQuoteDTO;
 import com.brasilpanel.backend.dto.api.coinMarketCap.CmcResponseDTO;
 import com.brasilpanel.backend.dto.api.coinMarketCap.CmcStatusDTO;
 import com.brasilpanel.backend.exception.customized.CoinMarketCapException;
+import com.brasilpanel.backend.exception.customized.CoinMarketCapNotFoundException;
 import com.brasilpanel.backend.model.CmcCryptoSnapshot;
 import com.brasilpanel.backend.service.financial.SnapshotService;
 import com.brasilpanel.backend.validators.api.CryptoCoinMarketCap;
@@ -24,9 +24,7 @@ import org.springframework.web.client.RestClient;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -37,9 +35,13 @@ import java.util.Optional;
  * um refresh a cada 10 min custa ~4.320 créditos/mês — 29% da cota.
  *
  * <p><b>A leitura é DB-first.</b> O scheduler reabastece a tabela e as consultas de
- * usuário são servidas do banco; a API só é acionada quando o banco está vazio ou
- * quando alguém busca uma moeda fora do batch. Ligar tráfego de usuário direto na API
- * queimaria a cota do mês em horas.
+ * usuário são servidas do banco. O <b>único</b> caminho de leitura que pode tocar a API
+ * é o primeiro boot, com a tabela ainda vazia.
+ *
+ * <p>Busca por termo <b>nunca</b> vai à API: {@code /api/coinmarketcap/**} é público, e
+ * um termo desconhecido custando 1 crédito deixaria qualquer um esvaziar a cota do mês
+ * iterando símbolos inexistentes — o que derrubaria também o refresh do scheduler.
+ * Moeda fora do batch acompanhado é 404.
  */
 @Service
 @Slf4j
@@ -48,10 +50,6 @@ public class CoinMarketCapService {
 
     private static final String LISTINGS_URL =
             "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest";
-
-    /** v2 porque a v1 de quotes está depreciada; o formato de data muda (mapa de listas). */
-    private static final String QUOTES_URL =
-            "https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest";
 
     /** Header de autenticação da CoinMarketCap — a chave nunca vai na URL, que é logada. */
     private static final String API_KEY_HEADER = "X-CMC_PRO_API_KEY";
@@ -108,19 +106,19 @@ public class CoinMarketCapService {
     }
 
     /**
-     * Busca por símbolo, slug ou nome. Resolve do banco quando a moeda está no batch
-     * (o caso comum); só cai na API para moedas fora do ranking acompanhado.
+     * Busca por símbolo, slug ou nome, estritamente dentro do batch acompanhado.
+     *
+     * @throws CoinMarketCapNotFoundException quando a moeda não está no batch — de
+     *         propósito, em vez de cotá-la na API (ver nota de cota na classe)
      */
     @Cacheable(value = "cmc-quote-by-symbol", key = "#term")
     public CmcMarketDTO returnCryptoByTerm(String term) {
         validator.validTerm(term);
 
-        Optional<CmcCryptoSnapshot> snapshot = snapshotService.getLatestCmcCrypto(term);
-        if (snapshot.isPresent()) {
-            return toMarketDTO(snapshot.get());
-        }
-
-        return fetchQuoteFromApi(term);
+        return snapshotService.getLatestCmcCrypto(term)
+                .map(CoinMarketCapService::toMarketDTO)
+                .orElseThrow(() -> new CoinMarketCapNotFoundException(
+                        "Criptomoeda '" + term + "' não encontrada"));
     }
 
     /**
@@ -207,46 +205,6 @@ public class CoinMarketCapService {
         }
     }
 
-    /**
-     * Cotação avulsa de uma moeda fora do batch. Consome 1 crédito.
-     *
-     * <p>Busca por símbolo (ex: "btc"): a v2 aceita {@code symbol} ou {@code slug},
-     * e o símbolo cobre a forma como as pessoas costumam digitar.
-     */
-    private CmcMarketDTO fetchQuoteFromApi(String term) {
-        String symbol = term.trim().toUpperCase();
-
-        if (!isEnabled() || !creditGuard.hasBudget()) {
-            throw new CoinMarketCapException("Criptomoeda '" + term + "' não encontrada");
-        }
-
-        String uri = QUOTES_URL + "?symbol=" + symbol + "&convert=" + BRL;
-
-        try {
-            CmcResponseDTO<Map<String, List<CmcListingDTO>>> response = restClient.get()
-                    .uri(uri)
-                    .header(API_KEY_HEADER, apiKey)
-                    .retrieve()
-                    .onStatus(HttpStatusCode::isError, this::handleErrorResponse)
-                    .body(new ParameterizedTypeReference<CmcResponseDTO<Map<String, List<CmcListingDTO>>>>() {});
-
-            Map<String, List<CmcListingDTO>> data = validateEnvelope(response);
-
-            List<CmcListingDTO> matches = data.get(symbol);
-            if (matches == null || matches.isEmpty()) {
-                throw new CoinMarketCapException("Criptomoeda '" + term + "' não encontrada");
-            }
-
-            return toMarketDTO(matches.get(0), LocalDateTime.now());
-
-        } catch (CoinMarketCapException e) {
-            throw e;
-        } catch (Exception e) {
-            log.error("Erro ao buscar cotação '{}' na CoinMarketCap: {}", symbol, e.getMessage());
-            throw new CoinMarketCapException("Erro na comunicação com a CoinMarketCap");
-        }
-    }
-
     // ── Validação e erros ───────────────────────────────────────────────────
 
     private void handleErrorResponse(HttpRequest request, ClientHttpResponse httpResponse)
@@ -309,28 +267,6 @@ public class CoinMarketCapService {
                 bd(s.getMarketCapDominance()),
                 logoUrl(s.getCmcId()),
                 s.getFetchedAt());
-    }
-
-    private static CmcMarketDTO toMarketDTO(CmcListingDTO dto, LocalDateTime fetchedAt) {
-        CmcQuoteDTO quote = dto.quoteIn(BRL);
-        if (quote == null) {
-            throw new CoinMarketCapException("Cotação em " + BRL + " indisponível para " + dto.symbol());
-        }
-        return new CmcMarketDTO(
-                dto.id(),
-                dto.symbol(),
-                dto.name(),
-                dto.slug(),
-                dto.cmcRank(),
-                quote.price(),
-                quote.marketCap(),
-                quote.volume24h(),
-                quote.percentChange1h(),
-                quote.percentChange24h(),
-                quote.percentChange7d(),
-                quote.marketCapDominance(),
-                logoUrl(dto.id()),
-                fetchedAt);
     }
 
     private static Double bd(BigDecimal v) {

@@ -125,11 +125,16 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(502).body(ex.getMessage());
     }
 
-    // Nome inválido de crypto
     // CoinMarketCap — falha de comunicação ou cota esgotada
     @ExceptionHandler(CoinMarketCapException.class)
     public ResponseEntity<String> handleCoinMarketCapException(CoinMarketCapException ex) {
         return ResponseEntity.status(502).body(ex.getMessage());
+    }
+
+    // CoinMarketCap — moeda fora do batch acompanhado (erro do cliente, não da fonte)
+    @ExceptionHandler(CoinMarketCapNotFoundException.class)
+    public ResponseEntity<String> handleCoinMarketCapNotFound(CoinMarketCapNotFoundException ex) {
+        return ResponseEntity.status(404).body(ex.getMessage());
     }
 
 

@@ -3,6 +3,7 @@ package com.brasilpanel.backend.service.api.coinMarketCap;
 import com.brasilpanel.backend.dto.api.coinMarketCap.CmcGlobalDTO;
 import com.brasilpanel.backend.dto.api.coinMarketCap.CmcMarketDTO;
 import com.brasilpanel.backend.exception.customized.CoinMarketCapException;
+import com.brasilpanel.backend.exception.customized.CoinMarketCapNotFoundException;
 import com.brasilpanel.backend.model.CmcCryptoSnapshot;
 import com.brasilpanel.backend.service.financial.SnapshotService;
 import com.brasilpanel.backend.validators.api.CryptoCoinMarketCap;
@@ -52,23 +53,6 @@ class CoinMarketCapServiceTest {
                   }}
                 }
               ]
-            }
-            """;
-
-    private static final String JSON_QUOTE = """
-            {
-              "status": {"error_code": 0, "error_message": null, "credit_count": 1},
-              "data": {"DOGE": [
-                {
-                  "id": 74, "name": "Dogecoin", "symbol": "DOGE", "slug": "dogecoin", "cmc_rank": 8,
-                  "quote": {"BRL": {
-                    "price": 1.25, "volume_24h": 900000.0,
-                    "percent_change_1h": 0.5, "percent_change_24h": 1.5,
-                    "percent_change_7d": -2.0, "market_cap": 180000000.0,
-                    "market_cap_dominance": 0.4
-                  }}
-                }
-              ]}
             }
             """;
 
@@ -170,19 +154,22 @@ class CoinMarketCapServiceTest {
         server.verify();
     }
 
+    /**
+     * O endpoint de busca é público. Se moeda fora do batch caísse na API, cada termo
+     * inexistente custaria 1 crédito e daria para esvaziar a cota do mês iterando
+     * símbolos — levando junto o refresh do scheduler. Por isso: 404, sem chamada.
+     */
     @Test
-    @DisplayName("returnCryptoByTerm cai na API para moeda fora do batch")
-    void returnCryptoByTerm_foraDoBatch_buscaNaApi() {
+    @DisplayName("returnCryptoByTerm devolve 404 para moeda fora do batch, sem gastar crédito")
+    void returnCryptoByTerm_foraDoBatch_naoChamaApi() {
         when(snapshotService.getLatestCmcCrypto(anyString())).thenReturn(Optional.empty());
 
-        server.expect(requestTo(org.hamcrest.Matchers.containsString("symbol=DOGE")))
-                .andRespond(withSuccess(JSON_QUOTE, MediaType.APPLICATION_JSON));
+        assertThatThrownBy(() -> service.returnCryptoByTerm("doge"))
+                .isInstanceOf(CoinMarketCapNotFoundException.class)
+                .hasMessageContaining("doge");
 
-        CmcMarketDTO result = service.returnCryptoByTerm("doge");
-
-        assertThat(result.symbol()).isEqualTo("DOGE");
-        assertThat(result.currentPrice()).isEqualTo(1.25);
-        server.verify();
+        server.verify();   // nenhuma requisição esperada = nenhuma feita
+        verify(creditGuard, never()).record(anyInt());
     }
 
     // ── Panorama derivado (sem custo em créditos) ───────────────────────────
