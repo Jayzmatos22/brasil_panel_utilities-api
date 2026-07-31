@@ -104,11 +104,19 @@ export default function CriptoPage() {
 
   const updatedAt = isCmc ? timeAgo(cmcMarket?.[0]?.fetchedAt) : null;
 
-  const brl = (v: number) =>
-    v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 6 });
+  // A CoinMarketCap devolve currentPrice e marketCap nulos em moedas que não
+  // cota (ex.: BT / Bozkurt Token). Os formatadores aceitam null e devolvem um
+  // travessão, em vez de estourar no `.toLocaleString()` de null e derrubar a
+  // página inteira para o ErrorBoundary.
+  const brl = (v: number | null | undefined) =>
+    typeof v === 'number'
+      ? v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 6 })
+      : '—';
 
-  const compact = (v: number) =>
-    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact' }).format(v);
+  const compact = (v: number | null | undefined) =>
+    typeof v === 'number'
+      ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact' }).format(v)
+      : '—';
 
   const pct = (v: number) => 
     typeof v === 'number' ? `${v >= 0 ? '+' : ''}${v.toFixed(2)}%` : '-';
@@ -122,7 +130,11 @@ export default function CriptoPage() {
     return {
       gainers: byChange.slice(0, 10).map((c) => ({ label: c.symbol.toUpperCase(), value: c.priceChange24h })),
       losers: byChange.slice(-10).map((c) => ({ label: c.symbol.toUpperCase(), value: c.priceChange24h })),
-      topCap: [...rows]
+      // Predicado de tipo em vez de filtro booleano: sem ele o TypeScript não
+      // estreita e `marketCap` seguiria `number | null` no sort e no map.
+      // Moeda sem market cap não pertence a um ranking por market cap.
+      topCap: rows
+        .filter((c): c is CryptoRow & { marketCap: number } => typeof c.marketCap === 'number')
         .sort((a, b) => b.marketCap - a.marketCap)
         .slice(0, 10)
         .map((c) => ({ label: c.symbol.toUpperCase(), value: c.marketCap })),
@@ -227,7 +239,11 @@ export default function CriptoPage() {
             >
               <span className="text-white font-medium text-xs uppercase">{searchResult.label}</span>
               <span className="text-green-400 font-mono font-bold text-sm">
-                <AnimatedNumber value={searchResult.price} format={brl} />
+                {typeof searchResult.price === 'number' ? (
+                  <AnimatedNumber value={searchResult.price} format={brl} />
+                ) : (
+                  <span className="text-slate-400 font-normal">sem cotação</span>
+                )}
               </span>
             </motion.div>
           )}

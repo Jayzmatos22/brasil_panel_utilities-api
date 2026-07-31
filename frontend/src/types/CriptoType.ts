@@ -26,9 +26,12 @@ export interface CmcMarket {
   symbol: string;
   name: string;
   slug: string;
-  rank: number;
-  currentPrice: number;
-  marketCap: number;
+  // Moedas obscuras da CMC vêm sem cotação, sem market cap e sem rank — a API
+  // devolve null nesses campos. Declarar `number` aqui era uma mentira que
+  // desligava o compilador e derrubava a página no primeiro `.toLocaleString()`.
+  rank: number | null;
+  currentPrice: number | null;
+  marketCap: number | null;
   volume24h: number;
   percentChange1h: number;
   percentChange24h: number;
@@ -58,8 +61,9 @@ export interface CryptoRow {
   symbol: string;
   name: string;
   imageUrl: string;
-  currentPrice: number;
-  marketCap: number;
+  /** null quando a fonte não cota a moeda — ver CmcMarket. */
+  currentPrice: number | null;
+  marketCap: number | null;
   priceChange24h: number;
   percentChange1h?: number;
   percentChange7d?: number;
