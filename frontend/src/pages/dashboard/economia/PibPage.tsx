@@ -477,7 +477,7 @@ export default function PibPage() {
             </span>
           </div>
 
-          <h1 className="text-3xl sm:text-5xl font-semibold tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)]">
+          <h1 className="text-display font-semibold text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)]">
             PIB do <span className="text-[#FFDF00]">Brasil</span>
           </h1>
           <p className="mt-3 max-w-2xl text-sm sm:text-base text-slate-200/50 leading-relaxed drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
@@ -679,7 +679,7 @@ export default function PibPage() {
               />
             ) : pibByYear ? (
               <div className="pt-2 border-t border-emerald-900/30">
-                <p className="text-3xl sm:text-4xl font-semibold tracking-tight text-emerald-300 tabular-nums leading-none">
+                <p className="text-metric font-semibold text-emerald-300 tabular-nums">
                   <AnimatedNumber value={pibByYear.value} format={compactBrl} />
                 </p>
                 <p className="mt-2 text-xs text-slate-400 font-mono tabular-nums">

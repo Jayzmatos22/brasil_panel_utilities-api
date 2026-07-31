@@ -117,7 +117,7 @@ export default function BancosPage() {
             </span>
           </div>
 
-          <h1 className="text-3xl sm:text-5xl font-semibold tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.5)] mb-6">
+          <h1 className="text-display font-semibold text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.5)] mb-6">
             Bancos do <span className="text-[#FFDF00]">Brasil</span>
           </h1>
 
