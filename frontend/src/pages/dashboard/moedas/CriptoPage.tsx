@@ -217,7 +217,7 @@ export default function CriptoPage() {
               value={search}
               onChange={(e: ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
               placeholder="Ex: bitcoin, ethereum..."
-              className="w-full h-9 pl-9 pr-3 rounded-md bg-slate-900/80 text-black border border-slate-700
+              className="w-full h-9 coarse:min-h-11 pl-9 pr-3 rounded-md bg-slate-900/80 text-black border border-slate-700
                          placeholder-slate-500 outline-none focus:ring-2 bg-white focus:ring-yellow-500 transition-all text-sm"
             />
           </div>

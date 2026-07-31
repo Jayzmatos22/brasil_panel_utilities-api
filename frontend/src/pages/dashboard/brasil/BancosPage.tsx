@@ -133,7 +133,7 @@ export default function BancosPage() {
                 setCodeInput(e.target.value)
               }
               placeholder="Código da instituição (Ex: 341)"
-              className="flex-1 h-12 px-5 rounded-xl bg-white/10 backdrop-blur-md text-white border border-white/20 
+              className="w-full sm:flex-1 h-12 px-5 rounded-xl bg-white/10 backdrop-blur-md text-white border border-white/20
                          placeholder-slate-300/70 outline-none focus:ring-2 focus:ring-yellow-400/50 focus:border-yellow-400/50 
                          transition-all text-sm font-mono shadow-[0_4px_20px_rgba(0,0,0,0.3)]"
             />
@@ -220,7 +220,7 @@ export default function BancosPage() {
                 setSearch(e.target.value)
               }
               placeholder="Filtrar por nome ou código..."
-              className="h-10 pl-10 pr-4 rounded-control bg-white/5 text-white border border-white/10
+              className="h-10 coarse:min-h-11 pl-10 pr-4 rounded-control bg-white/5 text-white border border-white/10
                          placeholder-slate-500 outline-none focus:ring-2 focus:ring-yellow-400/30 transition-all text-sm w-full sm:w-72"
             />
           </div>

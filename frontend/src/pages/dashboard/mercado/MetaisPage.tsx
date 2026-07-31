@@ -483,7 +483,7 @@ export default function MetaisPage() {
                   value={effectiveMetal}
                   onChange={(e) => setSelected(e.target.value as MetalKey)}
                   disabled={availableMetals.length === 0}
-                  className="h-8 px-3 rounded-lg bg-slate-900/80 text-sm text-white border border-slate-800
+                  className="h-8 coarse:min-h-11 px-3 rounded-lg bg-slate-900/80 text-sm text-white border border-slate-800
                              outline-none focus:ring-2 focus:ring-amber-400/40 focus:border-amber-400/40
                              hover:border-slate-700 transition-all duration-150
                              disabled:opacity-40 disabled:cursor-not-allowed appearance-none

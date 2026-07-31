@@ -48,13 +48,13 @@ export default function AcoesPage() {
           value={input}
           onChange={(e: ChangeEvent<HTMLInputElement>) => setInput(e.target.value)}
           placeholder="Ex: AAPL, PETR4.SAO"
-          className="flex-1 h-10 px-3 rounded-md bg-slate-800 text-white border border-slate-600
+          className="flex-1 min-w-0 h-10 coarse:min-h-11 px-3 rounded-md bg-slate-800 text-white border border-slate-600
                      placeholder-slate-500 outline-none focus:ring-2 focus:ring-yellow-500 transition-all text-sm"
         />
         <button
           type="submit"
-          className="h-10 px-4 bg-yellow-500 hover:bg-yellow-600 cursor-pointer text-white rounded-md
-                     flex items-center gap-2 font-semibold text-sm transition-all active:scale-95 hover:scale-105"
+          className="h-10 coarse:min-h-11 shrink-0 px-4 bg-yellow-500 hover:bg-yellow-600 cursor-pointer text-white rounded-md
+                     flex items-center justify-center gap-2 font-semibold text-sm transition-all active:scale-95 hover:scale-105"
         >
           <Search size={15} />
           Buscar

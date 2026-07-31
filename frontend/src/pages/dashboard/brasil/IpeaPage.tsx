@@ -338,7 +338,7 @@ const TabBar = memo(function TabBar({ active, onChange }: TabBarProps) {
             onClick={() => onChange(spec.key)}
             aria-pressed={isActive}
             className="group flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-all duration-200
-                       border focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+                       border focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 coarse:min-h-11"
             style={{
               background: isActive
                 ? `${spec.accent}1a`
@@ -438,7 +438,7 @@ const CategoryHeader = memo(function CategoryHeader({
               onFilterChange(e.target.value)
             }
             placeholder="Buscar série..."
-            className="w-full h-10 pl-9 pr-9 rounded-lg bg-slate-900/70 border border-white/10
+            className="w-full h-10 coarse:min-h-11 pl-9 pr-9 rounded-lg bg-slate-900/70 border border-white/10
                        text-slate-200 text-sm placeholder:text-slate-600
                        focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50
                        hover:border-white/20 transition-colors"
