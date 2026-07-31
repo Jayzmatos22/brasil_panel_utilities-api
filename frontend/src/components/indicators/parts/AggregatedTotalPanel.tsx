@@ -83,7 +83,7 @@ export const AggregatedTotalPanel = memo(function AggregatedTotalPanel({
         <div className="relative flex flex-col gap-5">
           {/* Valor total + mês de referência */}
           <div className="flex flex-col gap-1">
-            <p className="text-4xl font-bold tracking-tight" style={{ color: accent }}>
+            <p className="text-metric font-bold" style={{ color: accent }}>
               {valueFormatter(aggregate.totalCurrent)}
             </p>
             <p className="text-slate-400 text-xs font-mono">
@@ -92,7 +92,7 @@ export const AggregatedTotalPanel = memo(function AggregatedTotalPanel({
           </div>
 
           {/* Variações M/M e YoY lado a lado */}
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <div className="grid-auto-cards gap-2 [--card-min:12rem]">
             <div className="rounded-lg border border-white/5 bg-white/2 px-4 py-3">
               <p className="text-[10px] uppercase tracking-wider text-slate-500">Variação M/M</p>
               <p
@@ -139,7 +139,7 @@ export const AggregatedTotalPanel = memo(function AggregatedTotalPanel({
                 />
               ))}
             </div>
-            <div className="grid grid-cols-2 gap-1.5 text-xs sm:grid-cols-3">
+            <div className="grid-auto-cards gap-1.5 text-xs [--card-min:8rem]">
               {aggregate.shares.map((sh) => (
                 <div key={sh.key} className="flex items-center gap-1.5">
                   <span

@@ -79,7 +79,7 @@ export default function IbgePage() {
 
   return (
     <motion.div
-      className="flex flex-col gap-8 max-w-6xl mx-auto"
+      className="@container/page flex flex-col gap-section max-w-6xl mx-auto"
       variants={container}
       initial="hidden"
       animate="show"
@@ -135,7 +135,7 @@ export default function IbgePage() {
               IBGE · Território
             </span>
           </div>
-          <h1 className="text-3xl sm:text-5xl font-semibold tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.5)]">
+          <h1 className="text-display font-semibold text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.5)]">
             Estados e <span className="text-[#FFDF00]">Municípios</span>
           </h1>
           <p className="mt-3 max-w-2xl text-sm sm:text-base text-slate-300/90 leading-relaxed">
@@ -233,7 +233,7 @@ export default function IbgePage() {
       {/* ══════════════════════════════════════════════════════════════════
           RANKING & STATE INFO GRID
          ══════════════════════════════════════════════════════════════════ */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid-auto-cards gap-6 [--card-min:17rem]">
         {/* Ranking Chart */}
         <motion.div
           variants={item}
@@ -360,13 +360,13 @@ export default function IbgePage() {
             </div>
 
             {loadingCities ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              <div className="grid-auto-cards gap-3 [--card-min:8rem]">
                 {Array.from({ length: 8 }).map((_, i) => (
                   <SkeletonBlock key={i} className="h-10 w-full" />
                 ))}
               </div>
             ) : cities && cities.length > 0 ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 max-h-100 overflow-y-auto scrollbar-thin pr-2">
+              <div className="grid-auto-cards gap-3 [--card-min:8rem] max-h-100 overflow-y-auto scrollbar-thin pr-2">
                 {cities.map((city) => (
                   <CityChip key={city.id} name={city.nome} />
                 ))}

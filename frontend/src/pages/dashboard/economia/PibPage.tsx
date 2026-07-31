@@ -984,7 +984,7 @@ export default function PibPage() {
             />
           ) : stats ? (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid-auto-cards gap-3 [--card-min:11rem]">
                 {statBlocks.map((block, idx) => (
                   <div
                     key={idx}

@@ -36,7 +36,7 @@ export default function AcoesPage() {
   const positive = stock && stock.change >= 0;
 
   return (
-    <motion.div className="flex flex-col gap-6" variants={container} initial="hidden" animate="show">
+    <motion.div className="@container/page flex flex-col gap-6" variants={container} initial="hidden" animate="show">
 
       <motion.h1 variants={item} className="text-2xl font-bold text-white">
         Cotação de Ações
@@ -100,10 +100,10 @@ export default function AcoesPage() {
       {stock && !isLoading && (
         <motion.div
         variants={item}
-        className="flex flex-col lg:flex-row overflow-hidden acoes-card-resultado-busca border border-slate-700 rounded-xl max-w-2xl group transition-all duration-200 hover:border-slate-500"
+        className="flex flex-col @2xl/page:flex-row overflow-hidden acoes-card-resultado-busca border border-slate-700 rounded-card max-w-2xl group transition-all duration-200 hover:border-slate-500"
       >
           {/* Painel da imagem */}
-          <div className="relative lg:w-2/5 h-48 lg:h-auto shrink-0 overflow-hidden">
+          <div className="relative @2xl/page:w-2/5 h-48 @2xl/page:h-auto shrink-0 overflow-hidden">
             <div className="absolute inset-0 bg-linear-to-br from-slate-900 to-blue-900" />
             {acoesImage && (
               <img
@@ -113,7 +113,7 @@ export default function AcoesPage() {
                 onError={(e) => { e.currentTarget.style.display = 'none'; }}
               />
             )}
-            <div className="absolute inset-0 bg-linear-to-t from-slate-950/70 to-transparent lg:bg-linear-to-r lg:from-transparent lg:to-slate-900/80" />
+            <div className="absolute inset-0 bg-linear-to-t from-slate-950/70 to-transparent @2xl/page:bg-linear-to-r @2xl/page:from-transparent @2xl/page:to-slate-900/80" />
           </div>
 
           {/* Conteúdo */}
@@ -126,7 +126,7 @@ export default function AcoesPage() {
               </span>
             </div>
 
-            <p className="text-4xl font-bold text-white">
+            <p className="text-metric font-bold text-white">
               <AnimatedNumber value={stock.price} format={(v) => `$${v.toFixed(2)}`} />
             </p>
 

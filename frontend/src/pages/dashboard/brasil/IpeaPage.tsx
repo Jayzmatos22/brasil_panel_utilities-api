@@ -269,7 +269,7 @@ const SerieCard = memo(function SerieCard({ serie, accent }: SerieCardProps) {
           </div>
 
           {/* Stats extras — sempre visíveis abaixo do gráfico */}
-          <div className="px-4 pb-4 pt-2 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs border-t border-white/5">
+          <div className="px-4 pb-4 pt-2 grid-auto-cards gap-2 text-xs border-t border-white/5 [--card-min:7rem]">
             <StatBox
               label="Máxima"
               value={fmtCompact(Math.max(...points.map((p) => p.value)))}
@@ -425,7 +425,7 @@ const CategoryHeader = memo(function CategoryHeader({
         </div>
 
         {/* Filtro de busca */}
-        <div className="relative flex-1 min-w-50 max-w-xs">
+        <div className="relative flex-1 min-w-0 sm:min-w-50 max-w-xs">
           <Search
             size={14}
             className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none"
@@ -521,7 +521,7 @@ const TabContent = memo(function TabContent({
       variants={containerVariants}
       initial="hidden"
       animate="show"
-      className="grid grid-cols-1 gap-3 lg:grid-cols-2"
+      className="grid-auto-cards gap-3 [--card-min:20rem]"
     >
       {filtered.map((serie) => (
         <SerieCard key={serie.codigo} serie={serie} accent={accent} />
@@ -584,7 +584,7 @@ function IpeaPage() {
 
   return (
     <motion.section
-      className="flex flex-col gap-6 max-w-6xl mx-auto py-6"
+      className="@container/page flex flex-col gap-6 max-w-6xl mx-auto py-6"
       variants={containerVariants}
       initial="hidden"
       animate="show"

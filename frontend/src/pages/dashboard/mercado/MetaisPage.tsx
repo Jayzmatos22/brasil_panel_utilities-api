@@ -226,7 +226,7 @@ export default function MetaisPage() {
 
   return (
     <motion.div
-      className="flex flex-col gap-7"
+      className="@container/page flex flex-col gap-7"
       variants={container}
       initial="hidden"
       animate="show"
@@ -298,7 +298,7 @@ export default function MetaisPage() {
       {metals && (
         <motion.div
           variants={item}
-          className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-4 gap-3"
+          className="grid-auto-cards gap-3 [--card-min:10rem]"
         >
           {METALS.map(({ key, label, emoji, img }) => {
             const image = findMetalImage(img);
@@ -376,7 +376,7 @@ export default function MetaisPage() {
               title="Variação nos 30 dias"
               description="Comparativo do início ao fim da série (USD / troy oz)"
             />
-            <div className="p-5 sm:p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="p-card grid-auto-cards gap-3 [--card-min:11rem]">
               {variations.map(
                 ({ key, label, emoji, first, last, diff, pct }) => {
                   const up = pct > 0;
@@ -538,7 +538,7 @@ export default function MetaisPage() {
             {loadingLbma ? (
               <LoadingRow label="Carregando fixing…" />
             ) : lbma ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="grid-auto-cards gap-3 [--card-min:14rem]">
                 {LBMA_FIXINGS.map(({ label, emoji, am, pm }) => (
                   <div
                     key={label}

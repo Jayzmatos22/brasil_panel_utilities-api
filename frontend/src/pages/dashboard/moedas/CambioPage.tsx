@@ -80,7 +80,7 @@ export default function CambioPage() {
 
   return (
     <motion.div
-      className="flex flex-col gap-8 max-w-6xl mx-auto py-6"
+      className="@container/page flex flex-col gap-section max-w-6xl mx-auto py-6"
       variants={container}
       initial="hidden"
       animate="show"
@@ -100,7 +100,7 @@ export default function CambioPage() {
       </motion.header>
 
       {/* ── CONVERSOR PANEL ────────────────────────────────────────────── */}
-      <motion.section id="sec-conversor" variants={item} className="bg-slate-900/50 border border-white/10 backdrop-blur-md rounded-2xl p-8 shadow-xl scroll-mt-24">
+      <motion.section id="sec-conversor" variants={item} className="bg-slate-900/50 border border-white/10 backdrop-blur-md rounded-panel p-card shadow-xl scroll-mt-24">
           <div className="flex flex-col gap-6">
             <div>
               <h2 className="text-white font-semibold text-sm uppercase tracking-wider mb-1 flex items-center gap-2">
@@ -137,7 +137,7 @@ export default function CambioPage() {
               <div className="flex items-center gap-2 text-slate-400 text-sm h-12"><LoaderCircle size={16} className="animate-spin text-emerald-400" /> Calculando...</div>
             ) : rate && rate.rates[to] != null ? (
               <div className="mt-2">
-                <p className="text-4xl sm:text-5xl font-bold text-emerald-300 tracking-tight"><AnimatedNumber value={rate.rates[to]} format={fmt} /> <span className="text-xl text-emerald-500">{to}</span></p>
+                <p className="text-metric font-bold text-emerald-300"><AnimatedNumber value={rate.rates[to]} format={fmt} /> <span className="text-xl text-emerald-500">{to}</span></p>
                 <p className="text-slate-500 text-xs mt-2 font-mono">Referência: {rate.date}</p>
               </div>
             ) : null}
@@ -150,8 +150,8 @@ export default function CambioPage() {
         {loadingLast30 ? (
           <div className="flex items-center gap-2 text-slate-400 text-sm py-4"><LoaderCircle size={16} className="animate-spin text-emerald-400" /> Carregando...</div>
         ) : last30 ? (
-          <div className="overflow-x-auto max-h-75 overflow-y-auto">
-            <table className="w-full text-sm">
+          <div className="overflow-x-auto overscroll-x-contain max-h-75 overflow-y-auto">
+            <table className="w-full min-w-xs text-sm">
               <thead className="sticky top-0 z-10 bg-slate-950/90 border-b border-white/10">
                 <tr><th className="text-left py-3 px-4 text-slate-400 font-medium">Data</th><th className="text-right py-3 px-4 text-slate-400 font-medium">Taxa</th></tr>
               </thead>
@@ -186,7 +186,7 @@ export default function CambioPage() {
           <div className="flex items-center gap-2 text-slate-400 text-sm py-4"><LoaderCircle size={16} className="animate-spin text-emerald-400" /> Carregando...</div>
         ) : stats ? (
           <div className="flex flex-col gap-6">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid-auto-cards gap-4 [--card-min:11rem]">
               <div className="bg-slate-900/60 border border-white/5 rounded-xl p-4 flex flex-col gap-2">
                 <span className="text-slate-400 text-xs font-medium uppercase tracking-wider">Variação</span>
                 <span className={`flex items-center gap-1.5 font-mono font-semibold text-lg ${stats.change > 0 ? "text-emerald-400" : stats.change < 0 ? "text-red-400" : "text-slate-300"}`}>

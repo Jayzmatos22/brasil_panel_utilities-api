@@ -158,7 +158,7 @@ export default function SalarioPage() {
 
   return (
     <motion.div
-      className="flex flex-col gap-8 max-w-6xl mx-auto"
+      className="@container/page flex flex-col gap-section max-w-6xl mx-auto"
       variants={container}
       initial="hidden"
       animate="show"
@@ -168,14 +168,14 @@ export default function SalarioPage() {
          ══════════════════════════════════════════════════════════════════ */}
       <motion.header
         variants={item}
-        className="group relative flex flex-col lg:flex-row overflow-hidden rounded-2xl bg-slate-950 shadow-2xl shadow-emerald-900/20"
+        className="group relative flex flex-col @3xl/page:flex-row overflow-hidden rounded-panel bg-slate-950 shadow-2xl shadow-emerald-900/20"
         style={{
           transform: "perspective(1200px) rotateX(1deg)",
           transformOrigin: "bottom center",
         }}
       >
         {/* Visual Panel */}
-        <div className="relative lg:w-2/5 h-56 lg:h-auto shrink-0 overflow-hidden">
+        <div className="relative @3xl/page:w-2/5 h-56 @3xl/page:h-auto shrink-0 overflow-hidden">
           <div className="absolute inset-0 bg-linear-to-br from-emerald-900 to-green-800" />
 
           {bannerImage && (
@@ -198,7 +198,7 @@ export default function SalarioPage() {
           )}
 
           {/* Deep overlay for text pop */}
-          <div className="absolute inset-0 bg-linear-to-t from-slate-950 via-slate-950/60 to-transparent lg:bg-linear-to-r lg:from-transparent lg:via-slate-950/40 lg:to-slate-950" />
+          <div className="absolute inset-0 bg-linear-to-t from-slate-950 via-slate-950/60 to-transparent @3xl/page:bg-linear-to-r @3xl/page:from-transparent @3xl/page:via-slate-950/40 @3xl/page:to-slate-950" />
         </div>
 
         {/* Content Panel */}
@@ -210,7 +210,7 @@ export default function SalarioPage() {
             </span>
           </div>
 
-          <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.5)]">
+          <h1 className="text-display font-semibold text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.5)]">
             Salário <span className="text-[#FFDF00]">Mínimo</span>
           </h1>
           <p className="text-slate-400 text-sm max-w-md">
@@ -225,7 +225,7 @@ export default function SalarioPage() {
           ) : latest ? (
             <div className="mt-2 flex items-baseline gap-4">
               <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-5 py-3 shadow-[0_0_30px_rgba(16,185,129,0.1)]">
-                <p className="text-3xl sm:text-4xl font-bold text-emerald-300 tracking-tight">
+                <p className="text-metric font-bold text-emerald-300">
                   <AnimatedNumber value={latest.valor} format={brl} />
                 </p>
               </div>
@@ -242,7 +242,7 @@ export default function SalarioPage() {
          ══════════════════════════════════════════════════════════════════ */}
       <motion.section
         variants={item}
-        className="relative bg-slate-900/50 border border-white/10 backdrop-blur-md rounded-2xl p-6 lg:p-8 shadow-xl shadow-black/20"
+        className="relative bg-slate-900/50 border border-white/10 backdrop-blur-md rounded-panel p-card shadow-xl shadow-black/20"
       >
         <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
           <h2 className="text-white font-semibold text-sm uppercase tracking-wider flex items-center gap-2">
@@ -290,7 +290,7 @@ export default function SalarioPage() {
           </div>
         ) : stats ? (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 ">
+            <div className="grid-auto-cards gap-4 mb-6 [--card-min:11rem]">
               <StatCard
                 title="Variação no período"
                 value={`${stats.pct > 0 ? "+" : ""}${stats.pct.toFixed(2)}%`}

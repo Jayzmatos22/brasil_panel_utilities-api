@@ -139,7 +139,7 @@ export default function AdminUsersPage() {
           </div>
 
           {/* Stats row com Glassmorphism */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="grid-auto-cards gap-3 [--card-min:8rem]">
             <div className="rounded-xl border border-slate-700/40 bg-slate-950/60 backdrop-blur-md px-4 py-3.5 transition-all duration-200 hover:bg-slate-900/70">
               <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">Total</p>
               <p className="mt-1 text-2xl font-bold text-white tabular-nums drop-shadow-sm">

@@ -60,9 +60,9 @@ export const EducationalInsightsPanel = memo(function EducationalInsightsPanel({
     <motion.div
       id={id}
       variants={itemVariants}
-      className="relative overflow-hidden rounded-2xl border border-white/10
+      className="relative overflow-hidden rounded-panel border border-white/10
                  bg-linear-to-br from-indigo-950/40 via-violet-950/20 to-slate-950/40
-                 backdrop-blur-md p-6 shadow-[0_8px_40px_-15px_rgba(0,0,0,0.5)] scroll-mt-24"
+                 backdrop-blur-md p-card shadow-panel scroll-mt-24"
     >
       <div className="mb-5 flex items-center gap-3">
         <span
@@ -82,7 +82,7 @@ export const EducationalInsightsPanel = memo(function EducationalInsightsPanel({
       </div>
 
       {insights.length > 0 && (
-        <div className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="mb-5 grid-auto-cards gap-2 [--card-min:9rem]">
           {insights.map((it) => (
             <InsightItem key={it.label} {...it} />
           ))}
