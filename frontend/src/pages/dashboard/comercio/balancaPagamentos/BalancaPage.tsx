@@ -365,7 +365,7 @@ const PeriodExplorerWithSelector = memo(function PeriodExplorerWithSelector({
           <select
             value={selectedKey}
             onChange={(e) => setSelectedKey(e.target.value)}
-            className="rounded-lg border border-white/10 bg-slate-900/70 px-3 py-1.5 text-xs font-medium text-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-500/50 hover:border-white/20 transition-colors"
+            className="rounded-control border border-white/10 bg-slate-900/70 px-3 py-1.5 text-xs font-medium text-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-500/50 hover:border-white/20 transition-colors coarse:min-h-11"
             aria-label="Selecionar série"
           >
             {BALANCA_SPECS.map((s) => (

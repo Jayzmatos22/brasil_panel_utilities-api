@@ -189,7 +189,7 @@ export default function SettingsAuthPage() {
 
   return (
     <motion.div
-      className="@container/page relative flex flex-col gap-section max-w-3xl mx-auto w-full pb-12"
+      className="@container/page relative overflow-x-clip flex flex-col gap-section max-w-3xl mx-auto w-full pb-12"
       variants={container}
       initial="hidden"
       animate="show"

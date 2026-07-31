@@ -162,8 +162,8 @@ export default function DashboardLayout() {
       {/* px-gutter (era px-5) alinha o padding do header ao do <main>, de modo
           que a logo passa a ficar na mesma coluna do conteúdo. */}
       <header className="h-14 shrink-0 bg-slate-900 border-b border-slate-800
-                         flex items-center justify-between px-gutter z-40">
-        <div className="flex items-center gap-3">
+                         flex items-center justify-between gap-2 px-gutter z-40">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 overflow-hidden">
           {/* `p-2 -m-2` amplia a área de clique de 18px para 34px com
               deslocamento de layout ZERO — a margem negativa cancela o
               crescimento da caixa. `coarse:` leva a 44px só em telas de toque,
@@ -187,7 +187,7 @@ export default function DashboardLayout() {
           {pageTitle}
         </span>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1 sm:gap-3 shrink-0">
           <div className="hidden sm:flex flex-col items-end">
             <span className="text-white text-xs font-medium leading-tight">{userEmail.split('@')[0]}</span>
             <span className="text-slate-500 text-[10px] leading-tight">{userEmail}</span>

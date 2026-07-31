@@ -175,7 +175,7 @@ export default function CriptoPage() {
                     type="button"
                     onClick={() => setSource(key)}
                     aria-pressed={active}
-                    className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer coarse:min-h-11
                       focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400
                       ${active
                         ? 'bg-yellow-400 text-slate-900 shadow-sm'

@@ -106,7 +106,7 @@ export default function RegisterPage() {
             <button
               type="button"
               onClick={() => navigate('/login-usuario')}
-              className="text-amber-400 hover:text-amber-300 font-medium transition-colors cursor-pointer"
+              className="text-amber-400 hover:text-amber-300 font-medium transition-colors cursor-pointer rounded-control px-2 coarse:min-h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60"
             >
               Entrar no painel
             </button>
