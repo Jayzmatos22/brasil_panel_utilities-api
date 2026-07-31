@@ -136,7 +136,7 @@ export default function CriptoPage() {
       <motion.div 
         variants={item} 
         // Retiramos o p-6 daqui e usamos flex-col/row direto na raiz para as "metades" ocuparem tudo
-        className="relative overflow-hidden rounded-xl border-3 border-blue-500 flex flex-col md:flex-row min-h-[200px] float-card border-b-3 group"
+        className="relative overflow-hidden rounded-card border-3 border-blue-500 flex flex-col @3xl/page:flex-row min-h-50 float-card border-b-3 group"
       >
         {/* Fundo da imagem global */}
         {bannerImage ? (
