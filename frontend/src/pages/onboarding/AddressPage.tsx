@@ -54,7 +54,7 @@ export default function AddressPage() {
     <main className="min-h-screen flex items-center justify-center bg-slate-950 p-4">
       <form
         onSubmit={handleSubmit}
-        className="border border-gray-500 w-full max-w-md shadow-2xl flex flex-col p-10 rounded-xl bg-slate-900"
+        className="border border-gray-500 w-full max-w-md shadow-2xl flex flex-col p-card rounded-card bg-slate-900"
       >
         {/* Header */}
         <div className="flex items-center justify-center mb-8">

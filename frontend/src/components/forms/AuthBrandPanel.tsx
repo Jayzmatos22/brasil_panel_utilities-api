@@ -31,7 +31,7 @@ export function AuthBrandPanel() {
           </svg>
 
           <div className="flex flex-col gap-3">
-            <h1 className="text-4xl font-bold text-white leading-tight">
+            <h1 className="text-display font-bold text-white">
               Dados econômicos do{' '}
               <span className="text-amber-400">Brasil</span>{' '}
               em um só lugar.

@@ -43,7 +43,7 @@ export default function LoginPage() {
       <AuthBrandPanel />
 
       {/* Painel direito — formulário */}
-      <div className="flex-1 flex items-center justify-center p-8">
+      <div className="flex-1 min-w-0 flex items-center justify-center px-gutter py-8">
         <div className="w-full max-w-md flex flex-col gap-8">
 
           {/* Logo no mobile */}

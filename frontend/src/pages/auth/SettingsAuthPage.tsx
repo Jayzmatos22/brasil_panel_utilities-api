@@ -189,7 +189,7 @@ export default function SettingsAuthPage() {
 
   return (
     <motion.div
-      className="relative flex flex-col gap-8 max-w-3xl mx-auto w-full pb-12"
+      className="@container/page relative flex flex-col gap-section max-w-3xl mx-auto w-full pb-12"
       variants={container}
       initial="hidden"
       animate="show"
@@ -205,7 +205,7 @@ export default function SettingsAuthPage() {
           </span>
           <div className="h-px flex-1 bg-linear-to-l from-slate-700 to-transparent" />
         </div>
-        <h1 className="text-3xl font-bold tracking-tight bg-linear-to-b from-white to-slate-400 bg-clip-text text-transparent">
+        <h1 className="text-display font-bold bg-linear-to-b from-white to-slate-400 bg-clip-text text-transparent">
           Configurações da Conta
         </h1>
         <p className="text-slate-500 text-sm mt-2">
@@ -216,13 +216,13 @@ export default function SettingsAuthPage() {
       {/* ── Menu de Navegação Rápida (Sticky) ── */}
       <motion.nav
         variants={item}
-        className="sticky top-4 z-20 grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-950/70 backdrop-blur-xl border border-slate-800/60 rounded-2xl p-3 shadow-[0_8px_30px_rgb(0,0,0,0.4)]"
+        className="sticky top-4 z-20 grid-auto-cards gap-3 bg-slate-950/70 backdrop-blur-xl border border-slate-800/60 rounded-panel p-3 shadow-panel-sm [--card-min:12rem]"
       >
         {quickNavItems.map((navItem) => (
           <button
             key={navItem.id}
             onClick={() => scrollToSection(navItem.id)}
-            className={`flex items-center gap-3 p-3 rounded-xl border border-transparent ${navItem.hoverBorder} ${navItem.hoverBg} transition-all duration-200 cursor-pointer group text-left`}
+            className={`flex items-center gap-3 p-3 rounded-card border border-transparent ${navItem.hoverBorder} ${navItem.hoverBg} transition-all duration-200 cursor-pointer group text-left coarse:min-h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60`}
           >
             <span
               className={`flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800/80 group-hover:bg-slate-700/50 ${navItem.iconColor} transition-colors shrink-0`}
@@ -275,7 +275,7 @@ export default function SettingsAuthPage() {
           description="Mantenha sua conta protegida com uma senha forte e única."
         >
           <form onSubmit={handleChangePassword} className="flex flex-col gap-5">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="grid-auto-cards gap-5 [--card-min:14rem]">
               <div className="md:col-span-2">
                 <FormField
                   id="settings-current-password"

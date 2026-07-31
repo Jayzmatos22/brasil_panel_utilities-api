@@ -130,7 +130,7 @@ export default function BankPage() {
         </div>
 
         {/* GRID HORIZONTAL */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid-auto-cards gap-8 [--card-min:18rem]">
 
           {/* COLUNA ESQUERDA — BANCO */}
           <div className="flex flex-col gap-4">
