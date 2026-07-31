@@ -50,7 +50,7 @@ const BalancaPage = lazy(() => import('./pages/dashboard/comercio/balancaPagamen
 const SettingsAuthPage = lazy(() => import('./pages/auth/SettingsAuthPage'));
 const AdminUsersPage   = lazy(() => import('./pages/dashboard/admin/AdminUsersPage'));
 
-import { AnimatePresence } from 'motion/react';
+import { AnimatePresence, MotionConfig } from 'motion/react';
 
 import './App.css';
 
@@ -118,7 +118,12 @@ function AppRoutes() {
 
 // ─── Root ─────────────────────────────────────────────────────────────
 export default function App() {
+  // reducedMotion="user" faz toda animação de `motion/react` respeitar a
+  // preferência do sistema. As animações em CSS puro ficam atrás de um
+  // @media em App.css — os dois mecanismos são independentes e ambos
+  // precisam existir.
   return (
+    <MotionConfig reducedMotion="user">
     <BrowserRouter>
       <Toaster
         position="bottom-right"
@@ -134,7 +139,8 @@ export default function App() {
           success: { duration: 4000 },
         }}
       />
-      <AppRoutes /> 
-    </BrowserRouter>
+      <AppRoutes />
+      </BrowserRouter>
+    </MotionConfig>
   );
 }
