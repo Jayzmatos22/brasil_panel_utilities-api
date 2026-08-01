@@ -21,9 +21,17 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      # validate, não create-drop: o schema do teste vem das migrations, iguais
+      # às de produção. Assim uma entidade alterada sem migration quebra no CI,
+      # e não no deploy.
+      ddl-auto: validate
     show-sql: false
     open-in-view: false
+
+  # Banco em memória sempre vazio: a V1 roda de verdade aqui (é o único ambiente
+  # onde isso acontece), o que faz do CI a prova de que o baseline é executável.
+  flyway:
+    baseline-on-migrate: false
 
   # O JavaMailSender só é criado quando spring.mail.host existe, e o EmailService
   # o exige por construtor. Nenhum e-mail é enviado durante o teste de contexto.

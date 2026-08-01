@@ -10,6 +10,21 @@ spring:
     async:
       request-timeout: 15000
 
+  # ── Flyway ─────────────────────────────────────────────────────────────────
+  # O schema é versionado em db/migration e o Hibernate nunca mais o altera
+  # (dev e prod usam ddl-auto: validate). Alterar entidade sem migration
+  # correspondente passa a quebrar o boot, que é o comportamento desejado:
+  # antes, o desencontro só aparecia em produção, no deploy.
+  #
+  # baseline-on-migrate existe porque dev e produção JÁ têm as tabelas, criadas
+  # pelo ddl-auto: update de antes. Nesses bancos o Flyway apenas registra a V1
+  # como aplicada, sem executá-la. Em banco vazio, a V1 roda normalmente.
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 1
+    baseline-description: "baseline do schema pre-Flyway"
+
 server:
   port: 8080
 

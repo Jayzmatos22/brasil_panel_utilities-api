@@ -112,20 +112,28 @@ do Spring Boot só cria esse bean quando `spring.mail.host` existe. Sem `MAIL_HO
 `MAIL_USERNAME` e `MAIL_PASSWORD` no ambiente, a aplicação **falha ao subir** — na
 injeção de dependência, antes de atender qualquer requisição.
 
-### #2 — `ddl-auto: validate` contra banco vazio
+### #2 — Schema: quem cria é o Flyway
 
-`application-prod.yml` usa `ddl-auto: validate`: o Hibernate **não cria nem altera**
-o schema, apenas confere que ele corresponde às entidades. Num banco novo (vazio),
-a validação falha e a aplicação não sobe.
+> Esta seção descrevia um primeiro boot com `SPRING_JPA_HIBERNATE_DDL_AUTO=update`
+> e DDL aplicado à mão a cada alteração de entidade. **Não faça mais isso** — o
+> schema passou a ser versionado.
 
-**Sequência do primeiro boot em banco novo:**
+`application-prod.yml` mantém `ddl-auto: validate`: o Hibernate nunca cria nem altera
+o schema. Quem cria é o Flyway, a partir dos scripts em
+`src/main/resources/db/migration/`.
 
-1. Definir `SPRING_JPA_HIBERNATE_DDL_AUTO=update` no Render (env var sobrescreve o yml)
-2. Fazer o deploy e confirmar que as tabelas foram criadas
-3. **Remover** a variável → volta a `validate` permanentemente
+**Banco novo (vazio):** nada a fazer. O Flyway roda a `V1__baseline.sql` no primeiro
+boot, cria as 15 tabelas e os 17 índices, e o `validate` do Hibernate passa em
+seguida. Sem env var temporária, sem passo manual.
 
-A partir daí, toda alteração de entidade exige o DDL aplicado manualmente no banco
-**antes** do deploy, senão a aplicação não sobe.
+**Banco que já existe** (o caso do Render hoje, cujas tabelas vieram do `update`
+antigo): `baseline-on-migrate: true` faz o Flyway apenas **registrar** a V1 como
+aplicada, sem executá-la. Nenhum DDL roda sobre os dados existentes.
+
+**Alteração de entidade daqui em diante:** escreva a migration correspondente
+(`V2__descricao.sql`, `V3__…`) no mesmo commit. O CI executa as migrations em H2
+limpo e valida contra as entidades, então o desencontro aparece no pull request —
+não no deploy.
 
 ---
 
@@ -151,7 +159,7 @@ Todas concluídas:
 1. **S12 + rewrite** — define a topologia; `VITE_API_URL` depende dela
 2. **Pendências da seção 5** — CI verde, CD confiável, health check
 3. **Provisionar** — banco no Neon, variáveis no Render
-4. **Primeiro boot** com `SPRING_JPA_HIBERNATE_DDL_AUTO=update`, depois remover
+4. **Primeiro boot** — o Flyway cria o schema sozinho; nada a fazer
 5. **Upgrade do plano** no Render, se/quando quiser eliminar a hibernação (é só um
    toggle no dashboard — não muda código)
 

@@ -494,7 +494,7 @@ spring:
     password: brasil_panel
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate     # o schema vem do Flyway, não do Hibernate
     show-sql: true
     open-in-view: false
     properties:
@@ -551,8 +551,11 @@ npm run dev
 - Rotas públicas: dados econômicos, `register`, `verify-email`, `resend-code`, `login`
   e `logout`. As demais exigem sessão; `/api/admin/**` exige `ROLE_ADMIN`
 - **Swagger só no perfil `dev`** — desabilitado em produção
-- `application-prod.yml` usa `ddl-auto: validate`: o Hibernate nunca altera o schema
-  de produção. Alterações de entidade exigem DDL aplicado antes do deploy
+- **O schema é versionado pelo Flyway** (`src/main/resources/db/migration/`). Os três
+  perfis usam `ddl-auto: validate` — o Hibernate nunca altera schema em lugar nenhum.
+  Alterar entidade exige a migration `V2__`, `V3__`… no mesmo commit; o CI roda as
+  migrations em banco limpo e valida contra as entidades, então o desencontro aparece
+  no pull request e não no deploy
 - `application-dev.yml` está no `.gitignore` — **nunca commitado**
 - `application-prod.yml` usa exclusivamente variáveis de ambiente (`${DATABASE_URL}`,
   `${ALPHA_KEYS}`, `${METALS_KEY}`, `${JWT_SECRET}`, `${COOKIE_SECURE}`)

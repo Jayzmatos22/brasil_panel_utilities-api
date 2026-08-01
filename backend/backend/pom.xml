@@ -78,6 +78,18 @@
 			<scope>runtime</scope>
 		</dependency>
 
+		<!-- Migrations: o schema passa a ser versionado, e não mais derivado do
+		     ddl-auto. A partir do Flyway 10 o suporte a cada banco vive num
+		     módulo separado, então o -database-postgresql não é opcional. -->
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-database-postgresql</artifactId>
+		</dependency>
+
 		<!-- JWT -->
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
@@ -229,5 +241,8 @@
 			</plugin>
 		</plugins>
 	</build>
+
+
+
 
 </project>
