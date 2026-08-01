@@ -40,6 +40,13 @@ spring:
     port: 2525
 
 app:
+  # Desligado por padrão nos testes: eles compartilham o mesmo IP e o contador é
+  # por instância da aplicação, então um teste de contrato acabaria estourando o
+  # teto por causa dos anteriores. O limitador tem testes próprios, que ligam a
+  # configuração explicitamente.
+  rate-limit:
+    enabled: false
+
   cors:
     allowed-origins: http://localhost:5173
   admin:

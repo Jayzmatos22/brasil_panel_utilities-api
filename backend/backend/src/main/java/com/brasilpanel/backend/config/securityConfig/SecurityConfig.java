@@ -1,6 +1,8 @@
 package com.brasilpanel.backend.config.securityConfig;
 
 import com.brasilpanel.backend.config.jwt.JwtFilter;
+import com.brasilpanel.backend.config.ratelimit.RateLimitFilter;
+import org.springframework.beans.factory.ObjectProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,6 +32,13 @@ public class SecurityConfig {
     private final JwtFilter jwtFilter;
     private final UserDetailsService userDetailsService;
     private final Environment env;
+
+    /**
+     * ObjectProvider porque o filtro é condicional: com app.rate-limit.enabled=false
+     * o bean não existe (é o caso dos testes, onde o teto atrapalharia). Exigi-lo por
+     * construtor quebraria todo slice @WebMvcTest.
+     */
+    private final ObjectProvider<RateLimitFilter> rateLimitFilter;
 
 
     @Bean
@@ -99,6 +108,11 @@ public class SecurityConfig {
                 })
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+
+        // Antes do JwtFilter: recusar excesso é mais barato que validar token, e o
+        // teto vale para tráfego anônimo, que é a maior parte.
+        rateLimitFilter.ifAvailable(filter -> http.addFilterBefore(filter, JwtFilter.class));
+
         return http.build();
     }
 
