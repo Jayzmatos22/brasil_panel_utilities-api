@@ -275,12 +275,14 @@
 						</goals>
 					</execution>
 
-					<!-- Catraca, não meta. O limite está no patamar medido hoje (37%)
-					     de propósito: um mínimo de 80% reprovaria o build imediatamente
-					     e a reação previsível seria desligar a verificação. Assim o
-					     número não pode cair, e cada teste novo permite subir o piso.
-					     A meta continua sendo 80% — o caminho até lá é o valor abaixo
-					     ir aumentando commit a commit. -->
+					<!-- Catraca, não meta. O limite acompanha o patamar medido hoje
+					     (48,5%) de propósito: um mínimo de 80% reprovaria o build de
+					     imediato e a reação previsível seria desligar a verificação.
+					     Assim o número não pode cair, e cada teste novo permite subir
+					     o piso. A meta continua sendo 80% — o caminho até lá é este
+					     valor ir aumentando commit a commit.
+
+					     Histórico: 0,35 (medição inicial) → 0,48 (testes dos seeders). -->
 					<execution>
 						<id>check</id>
 						<phase>verify</phase>
@@ -295,7 +297,7 @@
 										<limit>
 											<counter>INSTRUCTION</counter>
 											<value>COVEREDRATIO</value>
-											<minimum>0.35</minimum>
+											<minimum>0.48</minimum>
 										</limit>
 									</limits>
 								</rule>
