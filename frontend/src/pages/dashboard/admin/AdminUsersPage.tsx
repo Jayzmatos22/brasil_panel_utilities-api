@@ -152,7 +152,11 @@ export default function AdminUsersPage() {
                 {isLoading ? '—' : adminCount}
               </p>
             </div>
-            <div className="hidden sm:block rounded-xl border border-emerald-400/20 bg-emerald-950/20 backdrop-blur-md px-4 py-3.5 transition-all duration-200 hover:bg-emerald-950/30">
+            {/* Sem `hidden sm:block`: o grid e intrinseco (auto-fit, min 8rem), entao
+                em 368px este card desce para a segunda linha sozinho, sem apertar
+                nada. Esconde-lo custava a contagem de usuarios comuns justamente
+                no mobile — e ela e o dado central desta tela, nao decoracao. */}
+            <div className="rounded-xl border border-emerald-400/20 bg-emerald-950/20 backdrop-blur-md px-4 py-3.5 transition-all duration-200 hover:bg-emerald-950/30">
               <p className="text-xs font-medium text-emerald-400/80 uppercase tracking-wide">Usuários</p>
               <p className="mt-1 text-2xl font-bold text-emerald-400 tabular-nums drop-shadow-sm">
                 {isLoading ? '—' : totalCount - adminCount}
