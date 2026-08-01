@@ -239,6 +239,71 @@
 					</execution>
 				</executions>
 			</plugin>
+
+			<!-- Cobertura de testes.
+			     O agente instrumenta o bytecode em test, e o report roda em verify.
+
+			     Os excludes não são conveniência: são classes sem lógica própria a
+			     cobrir. Entidades, DTOs e records de config são estrutura — testá-las
+			     mediria o Lombok e o Jackson, não o nosso código. Deixá-las dentro
+			     inflaria o número e esconderia justamente o que importa: services,
+			     validators e controllers. -->
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<configuration>
+					<excludes>
+						<exclude>**/BackendApplication.class</exclude>
+						<exclude>**/model/**</exclude>
+						<exclude>**/dto/**</exclude>
+						<exclude>**/config/**Properties.class</exclude>
+						<exclude>**/exception/customized/**</exclude>
+					</excludes>
+				</configuration>
+				<executions>
+					<execution>
+						<id>prepare-agent</id>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>report</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>report</goal>
+						</goals>
+					</execution>
+
+					<!-- Catraca, não meta. O limite está no patamar medido hoje (37%)
+					     de propósito: um mínimo de 80% reprovaria o build imediatamente
+					     e a reação previsível seria desligar a verificação. Assim o
+					     número não pode cair, e cada teste novo permite subir o piso.
+					     A meta continua sendo 80% — o caminho até lá é o valor abaixo
+					     ir aumentando commit a commit. -->
+					<execution>
+						<id>check</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<rule>
+									<element>BUNDLE</element>
+									<limits>
+										<limit>
+											<counter>INSTRUCTION</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>0.35</minimum>
+										</limit>
+									</limits>
+								</rule>
+							</rules>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
 

@@ -35,8 +35,22 @@ jobs:
 
       # 2. TEST — roda no perfil `test`, com H2 em memória.
       # Não requer PostgreSQL nem acesso de rede.
-      - name: Executar Testes
-        run: mvn test
+      #
+      # `verify` e não `test`: é a fase em que o JaCoCo gera o relatório e aplica
+      # a catraca de cobertura. Com `mvn test` o plugin instrumentaria o bytecode
+      # e ninguém olharia o resultado.
+      - name: Executar Testes e Cobertura
+        run: mvn verify
+
+      # O relatório fica disponível mesmo quando o build reprova — que é
+      # justamente quando alguém precisa dele para saber o que descobrir.
+      - name: Publicar relatório de cobertura
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: backend/backend/target/site/jacoco/
+          retention-days: 7
 
       # 3. PACKAGE
       - name: Empacotar Aplicação (.jar)
