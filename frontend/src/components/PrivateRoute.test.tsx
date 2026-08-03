@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { AdminRoute } from './AdminRoute';
 import { PrivateRoute } from './PrivateRoute';
@@ -10,6 +10,23 @@ import { saveSession } from '../lib/auth/jwt';
  * real está no backend. Ainda assim, se quebrarem, o usuário fica preso fora do
  * painel mesmo com sessão válida.
  */
+/**
+ * Login de mentira: além de provar que houve o redirecionamento, publica o
+ * destino que o guard anexou, para que o teste verifique o contrato entre os
+ * dois (o guard grava `state.from`, o login lê).
+ */
+function TelaDeLogin() {
+  const { state } = useLocation();
+  const destino = (state as { from?: string } | null)?.from ?? '';
+
+  return (
+    <>
+      <p>tela de login</p>
+      <span data-testid="destino">{destino}</span>
+    </>
+  );
+}
+
 describe('guards de rota', () => {
   const UM_DIA_MS = 86_400_000;
 
@@ -24,7 +41,7 @@ describe('guards de rota', () => {
           <Route element={<Guard />}>
             <Route path="/protegida" element={<p>conteúdo protegido</p>} />
           </Route>
-          <Route path="/login-usuario" element={<p>tela de login</p>} />
+          <Route path="/login-usuario" element={<TelaDeLogin />} />
           <Route path="/dashboard/economia" element={<p>painel</p>} />
         </Routes>
       </MemoryRouter>,
@@ -52,6 +69,16 @@ describe('guards de rota', () => {
       renderizar(PrivateRoute);
 
       expect(screen.getByText('tela de login')).toBeInTheDocument();
+    });
+
+    it('guarda o destino pretendido para o login devolvê-lo', () => {
+      renderizar(PrivateRoute, '/protegida?aba=2#topo');
+
+      // Sem o from, quem abre um link direto para uma página do painel faz
+      // login e cai na home, tendo de refazer a navegação.
+      expect(screen.getByTestId('destino')).toHaveTextContent(
+        '/protegida?aba=2#topo',
+      );
     });
   });
 

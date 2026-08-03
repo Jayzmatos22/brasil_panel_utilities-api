@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { authService } from '../../api/services/Auth';
@@ -9,11 +9,18 @@ import { FormField } from '../../components/forms/FormField';
 import { SubmitButton } from '../../components/forms/SubmitButton';
 import { AuthBrandPanel } from '../../components/forms/AuthBrandPanel';
 import { saveSession } from '../../lib/auth/jwt';
+import { resolveRedirect } from '../../lib/auth/redirect';
 
 export default function LoginPage() {
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
+
+  // Destino pretendido antes de o guard barrar a entrada. Fora do onSuccess
+  // de propósito: lido no render, não dentro do callback, para não depender
+  // do que o state da navegação será dali a 900ms.
+  const { state } = useLocation();
+  const redirectTo = resolveRedirect(state);
 
   const { mutate, isPending } = useMutation({
     mutationFn: (data: LoginRequest) => authService.login(data),
@@ -21,7 +28,9 @@ export default function LoginPage() {
       // O JWT já veio em cookie httpOnly; aqui guardamos só o hint de exibição.
       saveSession(res.email, res.role, res.expiresInMs);
       toast.success('Login realizado com sucesso!');
-      setTimeout(() => navigate('/dashboard/economia', { replace: true }), 900);
+      // `replace` para que o botão Voltar não traga a pessoa de volta ao
+      // login já autenticada.
+      setTimeout(() => navigate(redirectTo, { replace: true }), 900);
     },
     onError: (err: Error) => {
       toast.error(err.message ?? 'Credenciais inválidas. Tente novamente.');
