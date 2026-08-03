@@ -79,6 +79,23 @@
   --text-nano: 0.5625rem;                                   /* era text-[9px]  */
   --text-nano--line-height: 1.4;
 
+  /* ── Cor institucional ────────────────────────────────────────────────────
+     Primeira camada de COR desta folha: até aqui `@theme` só nomeava espaço,
+     tipo, raio e sombra — cor era hex solto ou classe utilitária do Tailwind.
+
+     Introduzida pela landing institucional (/sobre), a única superfície do
+     projeto sem a identidade tricolor do dashboard: fundo quase-preto, um
+     único accent e nada mais. Os nomes são semânticos de propósito, para
+     poderem ser reaproveitados fora dela sem virar "as cores da página About".
+
+     Não redeclara `--color-*: initial`, então toda a paleta padrão do Tailwind
+     (slate, emerald, …) que as telas existentes usam segue intacta. */
+  --color-ink: #0a0b0d;       /* fundo da página */
+  --color-elevated: #14161a;  /* superfície elevada — card, destaque */
+  --color-fg: #f2f3f5;        /* texto primário  — 17.6:1 sobre --color-ink */
+  --color-fg-muted: #9ba1a6;  /* texto secundário — 7.4:1 sobre --color-ink */
+  --color-accent: #00d188;    /* verde-esmeralda: número, link, detalhe */
+
   /* ── Raio ─────────────────────────────────────────────────────────────────
      Nomeia a hierarquia que o código já segue de forma aproximada. */
   --radius-panel: 1rem;      /* era rounded-2xl — painel de página */
