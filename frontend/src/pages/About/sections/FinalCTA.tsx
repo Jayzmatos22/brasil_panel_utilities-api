@@ -8,7 +8,8 @@ import { Link } from 'react-router-dom';
 import { Reveal } from '../components/Reveal';
 import { Section } from '../components/Section';
 import { BUTTON_GHOST, BUTTON_PRIMARY, FOCUS_RING } from '../components/styles';
-import { FINAL_CTA, SITE_NAME } from '../data/content';
+import { isAuthenticated } from '../../../lib/auth/jwt';
+import { DASHBOARD_CTA, FINAL_CTA, SITE_NAME } from '../data/content';
 
 const HEADING_ID = 'final-title';
 
@@ -16,6 +17,15 @@ const NAV_LINK = `${FOCUS_RING} rounded-control text-sm text-fg-muted transition
 
 export function FinalCTA() {
   const LegalIcon = FINAL_CTA.legalIcon;
+
+  // Mesma razão do Hero: quem já tem sessão não deve ver "Criar conta" nem
+  // "Já tenho conta". Para essa pessoa sobra um único botão, o do painel.
+  const isLoggedIn = isAuthenticated();
+  const primaryCta = isLoggedIn ? DASHBOARD_CTA : FINAL_CTA.primaryCta;
+
+  const navLinks = FINAL_CTA.navLinks.filter(
+    (link) => link.visibility === undefined || link.visibility === (isLoggedIn ? 'auth' : 'guest'),
+  );
 
   return (
     <Section id="comecar" labelledBy={HEADING_ID}>
@@ -33,13 +43,15 @@ export function FinalCTA() {
           </p>
 
           <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Link to={FINAL_CTA.primaryCta.href} className={BUTTON_PRIMARY}>
-              {FINAL_CTA.primaryCta.label}
+            <Link to={primaryCta.href} className={BUTTON_PRIMARY}>
+              {primaryCta.label}
             </Link>
 
-            <Link to={FINAL_CTA.secondaryCta.href} className={BUTTON_GHOST}>
-              {FINAL_CTA.secondaryCta.label}
-            </Link>
+            {!isLoggedIn && (
+              <Link to={FINAL_CTA.secondaryCta.href} className={BUTTON_GHOST}>
+                {FINAL_CTA.secondaryCta.label}
+              </Link>
+            )}
           </div>
         </Reveal>
 
@@ -50,7 +62,7 @@ export function FinalCTA() {
             </h3>
 
             <ul className="mt-6 grid list-none grid-cols-2 gap-x-6 gap-y-4">
-              {FINAL_CTA.navLinks.map((link) => (
+              {navLinks.map((link) => (
                 <li key={link.href}>
                   {/* Âncora interna não troca de rota: <a> puro. Usar <Link>
                       faria o router tratar "#fontes" como caminho. */}

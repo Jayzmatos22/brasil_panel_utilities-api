@@ -3,6 +3,7 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { AdminRoute } from './AdminRoute';
 import { PrivateRoute } from './PrivateRoute';
+import { PublicOnly } from './PublicOnly';
 import { saveSession } from '../lib/auth/jwt';
 
 /**
@@ -79,6 +80,68 @@ describe('guards de rota', () => {
       expect(screen.getByTestId('destino')).toHaveTextContent(
         '/protegida?aba=2#topo',
       );
+    });
+  });
+
+  describe('PublicOnly', () => {
+    const renderizarPublico = () =>
+      render(
+        <MemoryRouter initialEntries={['/login-usuario']}>
+          <Routes>
+            <Route
+              path="/login-usuario"
+              element={
+                <PublicOnly>
+                  <p>formulario de login</p>
+                </PublicOnly>
+              }
+            />
+            <Route path="/dashboard/economia" element={<p>painel</p>} />
+          </Routes>
+        </MemoryRouter>,
+      );
+
+    it('libera a tela para quem não tem sessão', () => {
+      renderizarPublico();
+
+      expect(screen.getByText('formulario de login')).toBeInTheDocument();
+    });
+
+    it('manda ao painel quem já tem sessão, inclusive vinda de outra aba', () => {
+      // O hint de sessão fica em localStorage, compartilhado entre abas: logar
+      // em uma e abrir a landing em outra cai exatamente neste caso.
+      saveSession('usuario@exemplo.com', 'USER', UM_DIA_MS);
+
+      renderizarPublico();
+
+      expect(screen.getByText('painel')).toBeInTheDocument();
+      expect(screen.queryByText('formulario de login')).not.toBeInTheDocument();
+    });
+
+    it('não expulsa a tela quando a sessão nasce depois da montagem', () => {
+      const { rerender } = renderizarPublico();
+
+      // O LoginPage grava a sessão e só navega 900ms depois. Se o guard
+      // reavaliasse, redirecionaria para o painel nessa janela e engoliria o
+      // destino calculado pelo resolveRedirect.
+      saveSession('usuario@exemplo.com', 'USER', UM_DIA_MS);
+      rerender(
+        <MemoryRouter initialEntries={['/login-usuario']}>
+          <Routes>
+            <Route
+              path="/login-usuario"
+              element={
+                <PublicOnly>
+                  <p>formulario de login</p>
+                </PublicOnly>
+              }
+            />
+            <Route path="/dashboard/economia" element={<p>painel</p>} />
+          </Routes>
+        </MemoryRouter>,
+      );
+
+      expect(screen.getByText('formulario de login')).toBeInTheDocument();
     });
   });
 

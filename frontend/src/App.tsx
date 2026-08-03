@@ -124,8 +124,21 @@ function AppRoutes() {
             PublicOnly manda quem já tem sessão direto para o painel. */}
         <Route path="/" element={<PublicOnly>{aboutElement}</PublicOnly>} />
 
-        <Route path="/registro-usuario" element={<RegisterPage />} />
-        <Route path="/login-usuario"    element={<LoginPage />} />
+        {/* Sob PublicOnly: quem já tem sessão (inclusive aberta em outra aba)
+            não deve cair num formulário de cadastro ou login. O guard usa
+            retrato da montagem, então não atrapalha o próprio LoginPage
+            depois que ele grava a sessão. */}
+        <Route
+          path="/registro-usuario"
+          element={<PublicOnly><RegisterPage /></PublicOnly>}
+        />
+        <Route
+          path="/login-usuario"
+          element={<PublicOnly><LoginPage /></PublicOnly>}
+        />
+
+        {/* /verificar-email fica FORA do guard: o usuário chega nela já com
+            cadastro feito e precisa concluir a verificação. */}
         <Route path="/verificar-email"  element={<VerifyEmailPage />} />
 
         {/* ── Institucional ──

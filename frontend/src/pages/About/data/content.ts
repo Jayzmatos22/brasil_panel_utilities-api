@@ -89,6 +89,12 @@ export interface SectionIntro {
 export interface NavLink {
   label: string;
   href: string;
+  /**
+   * Quem enxerga o link. Ausente = todos.
+   * As âncoras da página valem sempre; "Entrar" e "Criar conta" só para quem
+   * não tem sessão, e o atalho do painel só para quem tem.
+   */
+  visibility?: 'guest' | 'auth';
 }
 
 export interface TopBarContent {
@@ -125,13 +131,23 @@ export const PAGE_TITLE = `${SITE_NAME} — Panorama econômico brasileiro`;
 
 // ─── 0. Barra superior ──────────────────────────────────────────────────────
 
+/**
+ * Destino de quem já tem sessão. Fonte única: a página é pública e pode ser
+ * aberta por usuário logado (via /sobre ou link da sidebar), e todo CTA que
+ * levaria a uma tela de autenticação precisa virar este atalho.
+ */
+export const DASHBOARD_CTA: CtaLink = {
+  label: 'Ir para o painel',
+  href: '/dashboard/economia',
+};
+
 export const TOP_BAR: TopBarContent = {
   homeHref: '/',
   homeLabel: `${SITE_NAME} — início`,
   navLabel: 'Acesso',
   loginCta: { label: 'Entrar', href: '/login-usuario' },
   registerCta: { label: 'Criar conta', href: '/registro-usuario' },
-  dashboardCta: { label: 'Ir para o painel', href: '/dashboard/economia' },
+  dashboardCta: DASHBOARD_CTA,
 };
 
 // ─── 1. Hero ────────────────────────────────────────────────────────────────
@@ -359,8 +375,9 @@ export const FINAL_CTA: FinalCtaContent = {
     { label: 'Objetivos', href: '#objetivos' },
     { label: 'Metodologia', href: '#metodologia' },
     { label: 'Fontes', href: '#fontes' },
-    { label: 'Entrar', href: '/login-usuario' },
-    { label: 'Criar conta', href: '/registro-usuario' },
+    { label: 'Entrar', href: '/login-usuario', visibility: 'guest' },
+    { label: 'Criar conta', href: '/registro-usuario', visibility: 'guest' },
+    { label: 'Painel', href: DASHBOARD_CTA.href, visibility: 'auth' },
   ],
   legalIcon: Landmark,
   legal: 'Dados de fontes públicas oficiais brasileiras.',

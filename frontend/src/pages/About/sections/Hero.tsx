@@ -13,7 +13,8 @@ import {
   CONTAINER,
   EYEBROW,
 } from '../components/styles';
-import { HERO, SITE_NAME } from '../data/content';
+import { isAuthenticated } from '../../../lib/auth/jwt';
+import { DASHBOARD_CTA, HERO, SITE_NAME } from '../data/content';
 
 // TODO(imagem): textura de fundo do hero — algo abstrato e escuro (linhas de
 // série temporal, malha, papel granulado). Paisagem, ~2400×1200, já
@@ -63,6 +64,11 @@ function HeroGraphic() {
 }
 
 export function Hero() {
+  // A página é alcançável por quem já tem sessão (/sobre não tem guarda).
+  // Oferecer "Criar conta" a essa pessoa manda ela para uma tela que o
+  // PublicOnly vai rejeitar — o atalho honesto é o painel.
+  const primaryCta = isAuthenticated() ? DASHBOARD_CTA : HERO.primaryCta;
+
   return (
     <section
       id="inicio"
@@ -107,8 +113,8 @@ export function Hero() {
           </p>
 
           <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Link to={HERO.primaryCta.href} className={BUTTON_PRIMARY}>
-              {HERO.primaryCta.label}
+            <Link to={primaryCta.href} className={BUTTON_PRIMARY}>
+              {primaryCta.label}
             </Link>
 
             {/* Âncora interna: <a> puro, não <Link> — não troca de rota. */}
