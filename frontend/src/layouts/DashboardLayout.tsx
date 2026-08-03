@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect, Suspense } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   TrendingUp, BarChart2, Settings, DollarSign, Map, ChevronDown, ChevronRight,
-  Activity, Wallet, Globe, Bitcoin, Coins, Users, Building2, LogOut, LoaderCircle,
+  Activity, Wallet, Globe, Bitcoin, Coins, Users, Building2, LogOut, LoaderCircle, Info,
   ShieldCheck, PanelLeftClose, PanelLeftOpen, Receipt, Ship, Banknote, Landmark
 } from 'lucide-react';
 import { BrandLogo } from '../components/brand/BrandLogo';
@@ -297,6 +297,16 @@ export default function DashboardLayout() {
                   )}
                 </div>
               ))}
+
+              {/* Institucional — item solto, separado dos grupos por uma
+                  linha: não é uma seção de dados, é sobre o próprio site.
+                  Aponta para /sobre e não para "/", porque a raiz devolve
+                  quem está logado ao painel (PublicOnly). */}
+              <div className="mt-2 pt-2 border-t border-slate-800">
+                <NavLink to="/sobre" end className={linkClass} onClick={closeSidebarOnOverlay}>
+                  <Info size={13} /> Sobre
+                </NavLink>
+              </div>
             </nav>
           </div>
         </aside>

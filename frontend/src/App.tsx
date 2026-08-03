@@ -1,4 +1,4 @@
-import { lazy } from 'react';
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 
@@ -7,6 +7,8 @@ import HeaderApp from './components/Header';
 import DashboardLayout from './layouts/DashboardLayout';
 import { PrivateRoute } from './components/PrivateRoute';
 import { AdminRoute }   from './components/AdminRoute';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { PublicOnly }    from './components/PublicOnly';
 
 // Auth (standalone — split-screen)
 import RegisterPage    from './pages/auth/RegisterPage';
@@ -49,6 +51,20 @@ const BalancaPage = lazy(() => import('./pages/dashboard/comercio/balancaPagamen
 // Conta e Admin
 const SettingsAuthPage = lazy(() => import('./pages/auth/SettingsAuthPage'));
 const AdminUsersPage   = lazy(() => import('./pages/dashboard/admin/AdminUsersPage'));
+
+// Institucional — pública, fora do DashboardLayout
+const AboutPage = lazy(() => import('./pages/About'));
+
+// Elemento único servido por "/" e "/sobre". O par ErrorBoundary+Suspense é
+// local porque o único boundary do app vive dentro do DashboardLayout, e
+// estas rotas são lazy sem passar por ele.
+const aboutElement = (
+  <ErrorBoundary>
+    <Suspense fallback={<div className="min-h-screen bg-ink" />}>
+      <AboutPage />
+    </Suspense>
+  </ErrorBoundary>
+);
 
 import { AnimatePresence, MotionConfig } from 'motion/react';
 
@@ -103,10 +119,23 @@ function AppRoutes() {
         </Route>
 
         {/* ── Auth — split-screen standalone ── */}
-        <Route path="/"                 element={<RegisterPage />} />
+        {/* A raiz é a landing institucional, não mais o cadastro: o visitante
+            frio precisa saber o que é o Brasil Panel antes de ver formulário.
+            PublicOnly manda quem já tem sessão direto para o painel. */}
+        <Route path="/" element={<PublicOnly>{aboutElement}</PublicOnly>} />
+
         <Route path="/registro-usuario" element={<RegisterPage />} />
         <Route path="/login-usuario"    element={<LoginPage />} />
         <Route path="/verificar-email"  element={<VerifyEmailPage />} />
+
+        {/* ── Institucional ──
+            /sobre NÃO passa pelo PublicOnly: é o destino do link "Sobre" da
+            sidebar e precisa continuar acessível a quem está logado. Só a
+            raiz manda quem já tem sessão para o painel.
+
+            Ambas precisam vir ANTES do catch-all abaixo, senão caem no
+            OnboardingLayout. */}
+        <Route path="/sobre" element={aboutElement} />
 
         {/* ── Onboarding (com header Brasil Panel) ── */}
         <Route path="/*" element={<OnboardingLayout />} />
