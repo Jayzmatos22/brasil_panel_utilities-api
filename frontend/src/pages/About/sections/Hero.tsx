@@ -142,7 +142,17 @@ export function Hero() {
         className="absolute inset-0 -z-10 bg-gradient-to-b from-ink/50 via-transparent to-ink"
       />
 
-      {/* Camada 3 — grafismo */}
+      {/* Camada 3 — borda de luz.
+          Vem DEPOIS dos véus no DOM de propósito: os três estão em -z-10, e
+          entre irmãos de mesmo z quem vem depois pinta por cima. Se viesse
+          antes, o véu apagaria justamente o realce que ela existe para dar.
+
+          O gradiente e a respiração moram em App.css (.hero-edge-glow), e não
+          em utilities, porque envolvem color-mix, mix-blend-mode e keyframes —
+          nada disso cabe em classe utilitária sem virar valor arbitrário. */}
+      <div aria-hidden="true" className="hero-edge-glow absolute inset-0 -z-10" />
+
+      {/* Camada 4 — grafismo */}
       <div aria-hidden="true" className="absolute inset-0 -z-10">
         <HeroGraphic />
       </div>

@@ -142,6 +142,38 @@
   transform: translateY(-50%) rotate(180deg);
 }
 
+/* ─── Borda de luz do hero da landing (/sobre) ──────────────────────────── */
+
+/* Faixa vertical de accent na fronteira onde o véu escuro encontra as cores
+   da arara. Sem ela a transição é só o véu se dissolvendo, e o corte entre
+   escuro e foto fica chapado.
+
+   O pico fica em 55% da largura porque é ali que o gradiente do véu
+   (from-ink via-ink/85 to-ink/30) afina o bastante para a ave começar a ler.
+
+   As pontas em 46% e 64% são deliberadamente próximas. A primeira versão
+   usava 30% e 78%, e com mix-blend-mode: screen sobre fundo quase preto
+   aquilo deixou de ser borda e virou uma lavagem verde atravessando metade
+   do hero — verificado no navegador. Faixa estreita lê como aresta de luz;
+   faixa larga lê como filtro por cima da foto. */
+
+/* O gradiente ESTÁTICO fica fora do gate de movimento, seguindo a regra do
+   topo deste arquivo: quem pede menos movimento perde a respiração, não a
+   borda. A animação de opacidade está lá embaixo, dentro do gate.
+
+   mix-blend-mode: screen clareia sem sujar a cor — o mesmo recurso que
+   .glow-layer já usa no hero de Admin. */
+.hero-edge-glow {
+  background-image: linear-gradient(
+    90deg,
+    transparent 46%,
+    color-mix(in oklab, var(--color-accent) 14%, transparent) 55%,
+    transparent 64%
+  );
+  mix-blend-mode: screen;
+  opacity: 0.4;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    ANIMAÇÕES — só para quem não pediu movimento reduzido
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -471,7 +503,7 @@
   @keyframes hero-image-in {
     from {
       opacity: 0;
-      transform: scale(1.06);
+      transform: scale(1.25);
     }
     to {
       opacity: 1;
@@ -481,5 +513,29 @@
 
   .hero-image-frame {
     animation: hero-image-in 1.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  /* Respiração da borda de luz. Só a opacidade se move — o gradiente em si
+     está definido lá em cima, fora do gate, então quem pede menos movimento
+     continua vendo a faixa, parada em 0.55.
+
+     8s e a faixa de 0.25 a 0.6 foram escolhidos para ficar no limite do
+     perceptível: rápido demais vira pisca-pisca ao lado de um texto que se
+     quer ler, e amplitude maior transforma o realce em foco da tela. */
+  @keyframes hero-edge-breathe {
+    0%,
+    100% {
+      opacity: 0.25;
+    }
+    50% {
+      opacity: 0.6;
+    }
+  }
+
+  .hero-edge-glow {
+    /* will-change avisa o compositor: a opacidade muda em loop e a camada
+       merece ficar promovida, em vez de ser repintada a cada quadro. */
+    will-change: opacity;
+    animation: hero-edge-breathe 8s ease-in-out infinite;
   }
 }
