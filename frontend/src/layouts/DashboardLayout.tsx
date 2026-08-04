@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect, Suspense } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   TrendingUp, BarChart2, Settings, DollarSign, Map, ChevronDown, ChevronRight,
-  Activity, Wallet, Globe, Bitcoin, Coins, Users, Building2, LogOut, LoaderCircle, Info,
+  Activity, Wallet, Globe, Bitcoin, Coins, Users, Building2, LogOut, LoaderCircle, Info, X,
   ShieldCheck, PanelLeftClose, PanelLeftOpen, Receipt, Ship, Banknote, Landmark
 } from 'lucide-react';
 import { BrandLogo } from '../components/brand/BrandLogo';
@@ -231,9 +231,17 @@ export default function DashboardLayout() {
         )}
 
         {/* Sidebar — overlay até 1023px, docked a partir de lg (1024px).
-            `top-14` mantém o drawer abaixo do header de h-14: antes o `top-0`
-            cobria o próprio botão que o fecha. Em lg o `lg:top-0` zera o
-            offset, já que aí ela volta ao fluxo. */}
+
+            `top-0`, e não `top-14`. O offset existia para não cobrir o botão
+            do header que fecha o drawer, mas essa proteção nunca funcionou: o
+            backdrop é z-45 e o header é z-40, então o backdrop já intercepta
+            o clique naquele ponto. Verificado com elementFromPoint sobre a
+            posição do botão — quem responde é o backdrop, não o botão.
+
+            O offset custava 56px de altura útil (de 702 disponíveis, a lista
+            de 775px ficava com 646) sem entregar o acesso que o justificava.
+            Com top-0 o drawer ocupa a tela inteira, como se espera de um
+            drawer modal, e a saída passa a morar dentro dele. */}
         <aside
           id="sidebar-nav"
           inert={!sidebarOpen}
@@ -242,11 +250,30 @@ export default function DashboardLayout() {
             'flex flex-col overflow-y-auto overflow-x-hidden aside-bg',
             'transition-all duration-300 ease-in-out',
             'border-r border-slate-800',
-            'fixed lg:relative top-14 lg:top-0 bottom-0 z-50',
+            'fixed lg:relative top-0 bottom-0 z-50',
             sidebarOpen ? 'w-[280px]' : 'w-0 border-r-0',
           ].join(' ')}
         >
           <div className={`w-[280px] transition-opacity duration-200 ${sidebarOpen ? 'opacity-100' : 'opacity-0'}`}>
+
+            {/* Fechar — só no modo overlay. Em altura cheia o drawer cobre o
+                botão do header, então ele carrega a própria saída. Antes o
+                único jeito de fechar era tocar no backdrop, o que não é
+                descoberto por quem navega por teclado nem anunciado por
+                leitor de tela. Em lg a sidebar é fixa e não fecha. */}
+            <div className="lg:hidden flex justify-end px-3 pt-3">
+              <button
+                onClick={() => setSidebarOpen(false)}
+                aria-label="Fechar menu lateral"
+                className="inline-flex items-center justify-center p-2 rounded-control
+                           text-slate-400 hover:text-yellow-400 transition-colors cursor-pointer
+                           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60
+                           coarse:min-h-11 coarse:min-w-11"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
             <nav className="flex-1 p-3 flex flex-col gap-0.5 pt-4">
               {/* Seção Admin */}
               {admin && (
