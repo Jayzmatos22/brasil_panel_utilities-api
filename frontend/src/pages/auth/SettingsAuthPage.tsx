@@ -194,9 +194,20 @@ export default function SettingsAuthPage() {
       initial="hidden"
       animate="show"
     >
-      {/* Efeito de brilho de fundo */}
-      <div className="pointer-events-none absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full bg-slate-900/50 blur-3xl" />
+      {/* O brilho decorativo que existia aqui foi removido, e nao ajustado.
+          Era um circulo de 600px com blur(64px) ancorado em -top-40 -left-40,
+          ou seja, comecando 160px FORA do container — que tem overflow-x-clip.
+          Clip corta em linha reta, entao o degrade suave virava um retangulo
+          mais claro de borda nitida atras do titulo: lia-se como se as secoes
+          estivessem sobre uma div de cor diferente do resto da pagina.
 
+          Medido no navegador: brilho em x=228, container em x=388. Os 160px
+          da esquerda eram fatiados, e e essa fatia que criava a borda.
+
+          Manter o efeito exigiria tirar o overflow-x-clip (que segura o
+          transbordo horizontal) ou reconstruir o brilho dentro dos limites do
+          container. Um slate-900 a 50% sobre slate-950 quase nao aparece
+          quando bem posicionado — o efeito nao paga o proprio custo. */}
       <motion.div variants={item} className="relative z-10">
         <div className="flex items-center gap-3 mb-2">
           <div className="h-px flex-1 bg-linear-to-r from-slate-700 to-transparent" />
