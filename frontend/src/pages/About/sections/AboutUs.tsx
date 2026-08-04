@@ -4,20 +4,49 @@
 // no desktop ele ocupa a coluna da direita e gruda com sticky enquanto os
 // parágrafos rolam. Nada de `order-*`: a ordem visual e a ordem de leitura
 // coincidem nos dois casos.
+import { useRef } from 'react';
+import { motion, useReducedMotion, useScroll, useTransform } from 'motion/react';
 import { Reveal } from '../components/Reveal';
 import { Section } from '../components/Section';
 import { SectionHeading } from '../components/SectionHeading';
 import { SURFACE } from '../components/styles';
 import { ABOUT_US } from '../data/content';
+import { findAboutImage } from '../data/images';
 
-// TODO(imagem): apoio visual da seção "Quem somos" — mesa de trabalho com o
-// painel na tela, ou detalhe gráfico de série histórica. Proporção 4:3,
-// ~1600×1200. Substituir o placeholder 1×1 por este arquivo.
-import aboutUsImage from '../../../assets/about/about-us.webp';
+const aboutUsImage = findAboutImage('sobre01');
+
+/**
+ * Deslocamento do parallax, em % da altura da própria imagem.
+ *
+ * Anda de par com o sobredimensionamento no JSX: a imagem é 20% mais alta que
+ * o quadro e sobra 10% para cada lado, então qualquer valor abaixo de 10%
+ * mantém o quadro sempre preenchido. 6% deixa folga.
+ */
+const PARALLAX = 6;
 
 const HEADING_ID = 'quem-somos-title';
 
 export function AboutUs() {
+  const quadroRef = useRef<HTMLDivElement>(null);
+
+  // offset 'start end' → 'end start': o progresso vai de 0 a 1 durante toda a
+  // travessia do quadro pelo viewport, e não só enquanto ele está centrado.
+  const { scrollYProgress } = useScroll({
+    target: quadroRef,
+    offset: ['start end', 'end start'],
+  });
+
+  // useTransform mapeia scroll para posição — não é uma animação, então o
+  // MotionConfig reducedMotion="user" da raiz NÃO o desliga sozinho. O gate
+  // precisa ser explícito, senão quem pede menos movimento continua vendo a
+  // imagem deslizar.
+  const prefersReduced = useReducedMotion();
+  const y = useTransform(
+    scrollYProgress,
+    [0, 1],
+    prefersReduced ? ['0%', '0%'] : [`-${PARALLAX}%`, `${PARALLAX}%`],
+  );
+
   return (
     <Section id="quem-somos" labelledBy={HEADING_ID}>
       <Reveal>
@@ -45,13 +74,28 @@ export function AboutUs() {
         <Reveal className="lg:col-span-5" delayMs={120}>
           <div className="lg:sticky lg:top-16">
             <figure className={`${SURFACE} overflow-hidden`}>
-              <img
-                src={aboutUsImage}
-                alt={ABOUT_US.imageAlt}
-                loading="lazy"
-                decoding="async"
-                className="aspect-[4/3] w-full object-cover opacity-80"
-              />
+              {/* Retrato (3:4), e não 4:3: a bandeira é uma foto vertical
+                  (1200×1800). Num quadro paisagem o object-cover descartaria
+                  o mastro e boa parte do céu, que é o que dá o enquadramento.
+
+                  A imagem é 20% mais alta que o quadro e recuada 10% para
+                  cada lado — é essa sobra que o parallax consome sem nunca
+                  revelar borda vazia. */}
+              {aboutUsImage !== undefined && (
+                <div
+                  ref={quadroRef}
+                  className="relative aspect-[3/4] w-full overflow-hidden"
+                >
+                  <motion.img
+                    style={{ y }}
+                    src={aboutUsImage}
+                    alt={ABOUT_US.imageAlt}
+                    loading="lazy"
+                    decoding="async"
+                    className="absolute -inset-y-[10%] h-[120%] w-full object-cover opacity-80"
+                  />
+                </div>
+              )}
 
               <figcaption className="border-t border-white/5 p-card">
                 <blockquote className="text-lg font-medium leading-snug tracking-tight text-fg">

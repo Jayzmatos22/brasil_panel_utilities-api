@@ -1,11 +1,15 @@
 // Hero — a única seção com <h1> e a única com imagem de fundo.
 //
-// Três camadas empilhadas, da base para o topo:
+// Camadas empilhadas, da base para o topo:
 //   1. imagem (object-cover, sem lazy: é o LCP da página)
-//   2. véu escuro + gradiente para o fundo da página
-//   3. SVG inline com malha e uma linha de série temporal
+//   2. véu em dois eixos
+//   3. SVG inline com malha e a linha de série temporal
 // O SVG é inline, e não um arquivo, porque precisa herdar a cor do tema e
 // custa menos que uma requisição para ~1 KB de path.
+//
+// As animações moram em App.css, atrás do gate de prefers-reduced-motion, no
+// mesmo padrão que o projeto já usa. O estado final é o padrão do CSS: quem
+// pede menos movimento vê a linha desenhada e a imagem visível, sem transição.
 import { Link } from 'react-router-dom';
 import {
   BUTTON_GHOST,
@@ -15,27 +19,17 @@ import {
 } from '../components/styles';
 import { isAuthenticated } from '../../../lib/auth/jwt';
 import { DASHBOARD_CTA, HERO, SITE_NAME } from '../data/content';
+import { findAboutImage } from '../data/images';
 
-// Imagens da landing — mesmo padrão Vite já usado em BancosPage, IbgePage e
-// Helpers.ts: o glob eager resolve as URLs em tempo de build. Trocar a arte é
-// soltar um arquivo em assets/app/ com o prefixo esperado; nenhum import muda.
-//
-// Diferente do import estático anterior, o glob NÃO garante resultado: se o
-// arquivo sumir, o find devolve undefined em vez de quebrar o build. Por isso
-// a <img> é renderizada condicionalmente — sem arte o hero perde a textura,
-// mas não exibe ícone de imagem quebrada.
-const ABOUT_IMAGES = import.meta.glob(
-  '../../../assets/app/sobre*.{jpeg,jpg,png,webp,avif}',
-  { eager: true, import: 'default' },
-) as Record<string, string>;
+const heroBg = findAboutImage('sobre02');
 
-/** Resolve pelo prefixo do arquivo: 'sobre01' → sobre01-panel-img.jpg. */
-const findAboutImage = (prefix: string): string | undefined =>
-  Object.entries(ABOUT_IMAGES).find(([path]) =>
-    (path.toLowerCase().split('/').pop() ?? '').startsWith(prefix.toLowerCase()),
-  )?.[1];
+/** Vértices da série temporal — a linha e os pontos leem a mesma fonte. */
+const SERIE: readonly (readonly [number, number])[] = [
+  [0, 470], [120, 440], [240, 460], [360, 390], [480, 410], [600, 330],
+  [720, 350], [840, 260], [960, 285], [1080, 190], [1200, 215],
+];
 
-const heroBg = findAboutImage('sobre01');
+const CAMINHO = SERIE.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x} ${y}`).join(' ');
 
 /** Malha + linha de série temporal. Decorativo: fora da árvore de a11y. */
 function HeroGraphic() {
@@ -65,9 +59,12 @@ function HeroGraphic() {
 
       <rect width="1200" height="600" fill="url(#hero-grid)" />
 
-      {/* Série temporal: sobe da esquerda para a direita, com recuos. */}
+      {/* pathLength="1" normaliza o comprimento, então o dasharray do
+          App.css não precisa saber a medida real do traçado. */}
       <path
-        d="M0 470 L120 440 L240 460 L360 390 L480 410 L600 330 L720 350 L840 260 L960 285 L1080 190 L1200 215"
+        className="hero-line"
+        d={CAMINHO}
+        pathLength="1"
         fill="none"
         stroke="var(--color-accent)"
         strokeWidth="2"
@@ -75,6 +72,21 @@ function HeroGraphic() {
         strokeLinejoin="round"
         opacity="0.22"
       />
+
+      {/* Pontos nos vértices. O atraso escalonado acompanha o traçado da
+          linha, de modo que cada ponto acende quando ela chega nele. */}
+      {SERIE.map(([x, y], i) => (
+        <circle
+          key={x}
+          className="hero-vertex"
+          cx={x}
+          cy={y}
+          r="3.5"
+          fill="var(--color-accent)"
+          opacity="0.3"
+          style={{ animationDelay: `${200 + i * 150}ms` }}
+        />
+      ))}
     </svg>
   );
 }
@@ -91,26 +103,36 @@ export function Hero() {
       aria-labelledby="hero-title"
       className="relative isolate overflow-hidden"
     >
-      {/* Camada 1 — imagem. `object-top` porque a arte é retrato (2:3) num
-          hero panorâmico: ancorar no topo mantém a bandeira em quadro em vez
-          de cortar no mastro. */}
+      {/* Camada 1 — imagem.
+          O espelhamento (-scale-x-100) não é capricho: a arara está composta
+          na metade ESQUERDA da foto, exatamente onde fica o texto. object-right
+          não resolveria, porque mostraria só a folhagem desfocada da direita.
+          Espelhar joga a ave para o lado livre sem recortar nada dela.
+
+          saturate-[.55] contém o azul e o amarelo da plumagem, que competiriam
+          com o accent esmeralda — a página tem um accent só, por decisão de
+          design. A foto continua reconhecível, só para de disputar atenção.
+
+          A escala de entrada vive no wrapper, e não na <img>, para não brigar
+          com o transform do espelhamento. */}
       {heroBg !== undefined && (
-        <img
-          src={heroBg}
-          alt={HERO.backgroundAlt}
-          // Sem loading="lazy": está acima da dobra e é o LCP.
-          fetchPriority="high"
-          className="absolute inset-0 -z-20 h-full w-full object-cover object-top opacity-60"
-        />
+        <div className="hero-image-frame absolute inset-0 -z-20 overflow-hidden">
+          <img
+            src={heroBg}
+            alt={HERO.backgroundAlt}
+            // Sem loading="lazy": está acima da dobra e é o LCP.
+            fetchPriority="high"
+            className="h-full w-full object-cover -scale-x-100 saturate-[.55] opacity-70"
+          />
+        </div>
       )}
 
       {/* Camada 2 — véu em dois eixos, e não um só.
-          O texto ocupa a metade esquerda; a bandeira, o centro-direita. Um véu
-          uniforme forte o bastante para o texto apagaria a foto inteira (era o
-          caso antes: com from-ink/80 via-ink/90 a imagem sumia). O gradiente
-          horizontal concentra o escurecimento onde há texto e libera a direita
-          para a arte aparecer; o vertical apenas costura o hero com o fundo da
-          próxima seção. */}
+          O texto ocupa a metade esquerda; a arara, depois de espelhada, a
+          direita. Um véu uniforme forte o bastante para proteger o texto
+          apagaria a foto inteira. O gradiente horizontal concentra o
+          escurecimento onde há texto e libera a direita para a arte; o
+          vertical apenas costura o hero com o fundo da próxima seção. */}
       <div
         aria-hidden="true"
         className="absolute inset-0 -z-10 bg-gradient-to-r from-ink via-ink/85 to-ink/30"

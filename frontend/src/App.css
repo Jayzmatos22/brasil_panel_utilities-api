@@ -411,4 +411,75 @@
   .lightning-right {
     animation: strike-right 1s ease-in-out infinite;
   }
+
+  /* ── Hero da landing institucional (/sobre) ──────────────────────────────
+     Estas três classes só existem DENTRO do gate, e isso é proposital: o
+     estado final é o padrão do CSS. Quem pede menos movimento vê a linha já
+     desenhada, os pontos acesos e a imagem no lugar — sem nada piscando.
+
+     Se `.hero-line` vivesse fora do gate, o stroke-dashoffset inicial de 1
+     deixaria a linha INVISÍVEL para essas pessoas, já que só a animação a
+     traria de volta. O gate é o que garante que o efeito seja aditivo. */
+
+  /* Linha de série temporal que se desenha. O pathLength="1" do SVG
+     normaliza o traçado, então 1 = comprimento total, qualquer que seja o
+     caminho real. */
+  @keyframes hero-line-draw {
+    from {
+      stroke-dashoffset: 1;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  .hero-line {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    /* `forwards` segura o estado final: sem ele a linha sumiria ao terminar. */
+    animation: hero-line-draw 1.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
+  }
+
+  /* Pontos dos vértices. `both` aplica o estado inicial durante o delay
+     escalonado, para o ponto não aparecer antes de a linha chegar nele. */
+  @keyframes hero-vertex-pulse {
+    0% {
+      opacity: 0;
+      transform: scale(0.4);
+    }
+    35% {
+      opacity: 0.85;
+      transform: scale(1);
+    }
+    100% {
+      opacity: 0.3;
+      transform: scale(1);
+    }
+  }
+
+  .hero-vertex {
+    /* transform-box/origin fazem o scale girar em torno do próprio ponto;
+       sem isso o SVG escala a partir da origem do viewBox e o ponto voa. */
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: hero-vertex-pulse 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  /* Entrada da foto. Mora no wrapper, e não na <img>, porque a imagem já usa
+     transform para o espelhamento (-scale-x-100) — animar transform nos dois
+     no mesmo elemento faria um sobrescrever o outro. */
+  @keyframes hero-image-in {
+    from {
+      opacity: 0;
+      transform: scale(1.06);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .hero-image-frame {
+    animation: hero-image-in 1.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
 }

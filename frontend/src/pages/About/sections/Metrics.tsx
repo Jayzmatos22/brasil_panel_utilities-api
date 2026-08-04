@@ -35,6 +35,7 @@ export function Metrics() {
           <Reveal key={metric.id} delayMs={index * STAGGER_MS}>
             <MetricItem
               value={metric.value}
+              suffix={metric.suffix}
               label={metric.label}
               description={metric.description}
             />

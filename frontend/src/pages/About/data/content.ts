@@ -40,8 +40,13 @@ export interface HeroContent {
 
 export interface Metric {
   id: string;
-  /** Texto já formatado: o número é editorial, não vem de API. */
-  value: string;
+  /**
+   * Numérico, e não string formatada: o count-up precisa interpolar até ele.
+   * O valor é editorial — não vem de API.
+   */
+  value: number;
+  /** Sufixo colado ao número: '+', 'h'. Fica fora da contagem. */
+  suffix?: string;
   label: string;
   description: string;
 }
@@ -165,7 +170,7 @@ export const HERO: HeroContent = {
   primaryCta: { label: 'Criar conta', href: '/registro-usuario' },
   secondaryCta: { label: 'Ver metodologia', href: '#metodologia' },
   backgroundAlt:
-    'Bandeira do Brasil hasteada em mastro, tremulando contra o céu',
+    'Arara-canindé de peito amarelo e asas azuis, empoleirada, com a mata desfocada ao fundo',
 };
 
 // ─── 2. Métricas ────────────────────────────────────────────────────────────
@@ -180,28 +185,30 @@ export const METRICS_INTRO: SectionIntro = {
 export const METRICS: readonly Metric[] = [
   {
     id: 'series',
-    value: '40+',
+    value: 40,
+    suffix: '+',
     label: 'Séries acompanhadas',
     description:
       'Selic, IPCA, CDI, PIB, câmbio, Ibovespa, metais, balança de pagamentos e mais.',
   },
   {
     id: 'fontes',
-    value: '6',
+    value: 6,
     label: 'Fontes oficiais',
     description:
       'Nenhum número é estimado internamente. Todo dado tem um órgão responsável por trás.',
   },
   {
     id: 'atualizacao',
-    value: '24h',
+    value: 24,
+    suffix: 'h',
     label: 'Ciclo de atualização',
     description:
       'Cada série é revalidada no ritmo de publicação do órgão de origem — nem antes, nem depois.',
   },
   {
     id: 'historico',
-    value: '1994',
+    value: 1994,
     label: 'Série histórica desde',
     description:
       'Cobertura contínua desde o Plano Real, para que a comparação de longo prazo faça sentido.',
@@ -223,8 +230,7 @@ export const ABOUT_US: AboutUsContent = {
     author: SITE_NAME,
     role: 'Princípio editorial',
   },
-  imageAlt:
-    'Tela exibindo gráficos de séries históricas de indicadores econômicos brasileiros',
+  imageAlt: 'Bandeira do Brasil hasteada em mastro, tremulando contra o céu',
 };
 
 // ─── 4. Objetivos ───────────────────────────────────────────────────────────
