@@ -205,7 +205,13 @@ export default function SettingsAuthPage() {
           </span>
           <div className="h-px flex-1 bg-linear-to-l from-slate-700 to-transparent" />
         </div>
-        <h1 className="text-display font-bold bg-linear-to-b from-white to-slate-400 bg-clip-text text-transparent">
+        {/* pb-[0.15em] nao e respiro estetico: com `bg-clip-text` o texto so
+            aparece onde o gradiente pinta, e o gradiente nunca ultrapassa a
+            border box. O token text-display usa line-height 1.1, entao em
+            48px a caixa fica ~5px menor que os glifos e os descendentes de
+            "Configuracoes" — o "g" e a cedilha — ficavam fora da area
+            pintada e sumiam. Em `em`, e nao px, porque a fonte e fluida. */}
+        <h1 className="text-display font-bold bg-linear-to-b from-white to-slate-400 bg-clip-text text-transparent pb-[0.15em]">
           Configurações da Conta
         </h1>
         <p className="text-slate-500 text-sm mt-2">
@@ -275,19 +281,27 @@ export default function SettingsAuthPage() {
           description="Mantenha sua conta protegida com uma senha forte e única."
         >
           <form onSubmit={handleChangePassword} className="flex flex-col gap-5">
+            {/* "Senha atual" fica FORA da grade, e nao dentro com col-span.
+                O col-span-2 era heranca de uma grade fixa de duas colunas;
+                em `grid-auto-cards` o numero de trilhas e resolvido pelo
+                espaco, entao ele ocupava 2 de 3 no desktop (desalinhado) e,
+                nas larguras em que `md:` ja vale mas so cabe uma trilha,
+                criava uma segunda trilha implicita — a linha transbordava e
+                era cortada pelo overflow-hidden do card. Fora da grade, o
+                campo e full-width em qualquer largura, sem depender de
+                breakpoint de viewport, que aqui mente por causa da sidebar. */}
+            <FormField
+              id="settings-current-password"
+              label="Senha atual"
+              type="password"
+              placeholder="••••••••"
+              autoComplete="current-password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              disabled={pendingPassword}
+            />
+
             <div className="grid-auto-cards gap-5 [--card-min:14rem]">
-              <div className="md:col-span-2">
-                <FormField
-                  id="settings-current-password"
-                  label="Senha atual"
-                  type="password"
-                  placeholder="••••••••"
-                  autoComplete="current-password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  disabled={pendingPassword}
-                />
-              </div>
               <FormField
                 id="settings-new-password"
                 label="Nova senha"
