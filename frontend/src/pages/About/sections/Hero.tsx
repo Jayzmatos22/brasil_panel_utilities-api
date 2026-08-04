@@ -16,10 +16,26 @@ import {
 import { isAuthenticated } from '../../../lib/auth/jwt';
 import { DASHBOARD_CTA, HERO, SITE_NAME } from '../data/content';
 
-// TODO(imagem): textura de fundo do hero — algo abstrato e escuro (linhas de
-// série temporal, malha, papel granulado). Paisagem, ~2400×1200, já
-// escurecida na origem. Substituir o placeholder 1×1 por este arquivo.
-import heroBg from '../../../assets/about/hero-bg.webp';
+// Imagens da landing — mesmo padrão Vite já usado em BancosPage, IbgePage e
+// Helpers.ts: o glob eager resolve as URLs em tempo de build. Trocar a arte é
+// soltar um arquivo em assets/app/ com o prefixo esperado; nenhum import muda.
+//
+// Diferente do import estático anterior, o glob NÃO garante resultado: se o
+// arquivo sumir, o find devolve undefined em vez de quebrar o build. Por isso
+// a <img> é renderizada condicionalmente — sem arte o hero perde a textura,
+// mas não exibe ícone de imagem quebrada.
+const ABOUT_IMAGES = import.meta.glob(
+  '../../../assets/app/sobre*.{jpeg,jpg,png,webp,avif}',
+  { eager: true, import: 'default' },
+) as Record<string, string>;
+
+/** Resolve pelo prefixo do arquivo: 'sobre01' → sobre01-panel-img.jpg. */
+const findAboutImage = (prefix: string): string | undefined =>
+  Object.entries(ABOUT_IMAGES).find(([path]) =>
+    (path.toLowerCase().split('/').pop() ?? '').startsWith(prefix.toLowerCase()),
+  )?.[1];
+
+const heroBg = findAboutImage('sobre01');
 
 /** Malha + linha de série temporal. Decorativo: fora da árvore de a11y. */
 function HeroGraphic() {
@@ -75,19 +91,33 @@ export function Hero() {
       aria-labelledby="hero-title"
       className="relative isolate overflow-hidden"
     >
-      {/* Camada 1 — imagem */}
-      <img
-        src={heroBg}
-        alt={HERO.backgroundAlt}
-        // Sem loading="lazy": está acima da dobra e é o LCP.
-        fetchPriority="high"
-        className="absolute inset-0 -z-20 h-full w-full object-cover opacity-30"
-      />
+      {/* Camada 1 — imagem. `object-top` porque a arte é retrato (2:3) num
+          hero panorâmico: ancorar no topo mantém a bandeira em quadro em vez
+          de cortar no mastro. */}
+      {heroBg !== undefined && (
+        <img
+          src={heroBg}
+          alt={HERO.backgroundAlt}
+          // Sem loading="lazy": está acima da dobra e é o LCP.
+          fetchPriority="high"
+          className="absolute inset-0 -z-20 h-full w-full object-cover object-top opacity-60"
+        />
+      )}
 
-      {/* Camada 2 — véu: garante o contraste AA do texto sobre qualquer foto */}
+      {/* Camada 2 — véu em dois eixos, e não um só.
+          O texto ocupa a metade esquerda; a bandeira, o centro-direita. Um véu
+          uniforme forte o bastante para o texto apagaria a foto inteira (era o
+          caso antes: com from-ink/80 via-ink/90 a imagem sumia). O gradiente
+          horizontal concentra o escurecimento onde há texto e libera a direita
+          para a arte aparecer; o vertical apenas costura o hero com o fundo da
+          próxima seção. */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 -z-10 bg-gradient-to-b from-ink/80 via-ink/90 to-ink"
+        className="absolute inset-0 -z-10 bg-gradient-to-r from-ink via-ink/85 to-ink/30"
+      />
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 -z-10 bg-gradient-to-b from-ink/50 via-transparent to-ink"
       />
 
       {/* Camada 3 — grafismo */}

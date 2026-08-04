@@ -165,7 +165,7 @@ export const HERO: HeroContent = {
   primaryCta: { label: 'Criar conta', href: '/registro-usuario' },
   secondaryCta: { label: 'Ver metodologia', href: '#metodologia' },
   backgroundAlt:
-    'Textura abstrata de linhas de série temporal sobre fundo escuro',
+    'Bandeira do Brasil hasteada em mastro, tremulando contra o céu',
 };
 
 // ─── 2. Métricas ────────────────────────────────────────────────────────────
