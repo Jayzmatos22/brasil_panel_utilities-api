@@ -172,7 +172,7 @@
    guardasse a própria cópia, um ajuste em uma delas abriria uma emenda visível
    na outra — exatamente o defeito que esse par existe para eliminar. */
 :root {
-  --hero-rim: #d09b1f;
+  --hero-rim: #044c02e1;
 }
 
 .hero-edge-glow {
@@ -202,7 +202,7 @@
     color-mix(in srgb, var(--hero-rim) 28%, transparent) 8%,
     color-mix(in srgb, var(--hero-rim) 20%, transparent) 11%,
     color-mix(in srgb, var(--hero-rim) 5%, transparent) 15%,
-    transparent 18%
+    transparent 20%
   );
 }
 
@@ -221,7 +221,7 @@
     color-mix(in srgb, var(--hero-rim) 22%, transparent) 0%,
     color-mix(in srgb, var(--hero-rim) 12%, transparent) 32%,
     color-mix(in srgb, var(--hero-rim) 4%, transparent) 64%,
-    transparent 100%
+    transparent 90%
   );
 }
 
