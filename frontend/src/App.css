@@ -176,24 +176,32 @@
      Para trocar pelo amarelo do peito, basta esta linha: #f0b429. */
   --rim: #1f6fd0;
 
-  /* A parada `transparent 0%` é o detalhe que faz a faixa funcionar.
-     Sem ela o azul ficava no auge exatamente na última linha do hero, e a
-     seção seguinte — preta — começava ali: o resultado era uma régua reta
-     atravessando a tela, o mesmo defeito que a faixa deveria resolver.
+  /* Sem mix-blend-mode. O screen foi o que segurou as versões anteriores:
+     sobre fundo quase preto ele clareia, mas lava a cor — o azul saía
+     acinzentado em vez de forte. Com alfa real sobre o preto, a mistura é
+     literal: cada parada é o mesmo azul com menos opacidade, e o preto
+     embaixo aparece na proporção que falta.
 
-     Com a rampa curta de 0% a 5% o azul volta a transparente antes de
-     encontrar a borda, e a cor passa a se dissolver no preto nas DUAS
-     pontas. A emenda deixa de existir, e o pico fica logo acima dela. */
+     Seis paradas, e não três, porque duas cores distantes em poucas paradas
+     produzem banding visível numa faixa dessa altura. O escalonamento é
+     aproximadamente geométrico (88 → 62 → 38 → 20 → 8) para a queda parecer
+     linear ao olho, que percebe luminosidade em escala não linear.
+
+     A rampa curta de 0% a 3% devolve o azul ao transparente nos últimos
+     pixels. Sem ela o auge da cor cairia exatamente na última linha do hero,
+     onde começa a seção seguinte, e o resultado é uma régua reta cruzando a
+     tela — já aconteceu e foi revertido. Três por cento equivalem a ~24px:
+     some como emenda, mas não come a força da cor logo acima. */
   background-image: linear-gradient(
     to top,
     transparent 0%,
-    color-mix(in oklab, var(--rim) 40%, transparent) 5%,
-    color-mix(in oklab, var(--rim) 27%, transparent) 15%,
-    color-mix(in oklab, var(--rim) 9%, transparent) 30%,
-    transparent 50%
+    color-mix(in srgb, var(--rim) 88%, transparent) 3%,
+    color-mix(in srgb, var(--rim) 62%, transparent) 14%,
+    color-mix(in srgb, var(--rim) 38%, transparent) 26%,
+    color-mix(in srgb, var(--rim) 20%, transparent) 38%,
+    color-mix(in srgb, var(--rim) 8%, transparent) 50%,
+    transparent 62%
   );
-  mix-blend-mode: screen;
-  opacity: 0.75;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -537,27 +545,8 @@
     animation: hero-image-in 1.4s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
-  /* Respiração da borda de luz. Só a opacidade se move — o gradiente em si
-     está definido lá em cima, fora do gate, então quem pede menos movimento
-     continua vendo a faixa, parada em 0.55.
-
-     8s e a faixa de 0.25 a 0.6 foram escolhidos para ficar no limite do
-     perceptível: rápido demais vira pisca-pisca ao lado de um texto que se
-     quer ler, e amplitude maior transforma o realce em foco da tela. */
-  @keyframes hero-edge-breathe {
-    0%,
-    100% {
-      opacity: 0.62;
-    }
-    50% {
-      opacity: 0.92;
-    }
-  }
-
-  .hero-edge-glow {
-    /* will-change avisa o compositor: a opacidade muda em loop e a camada
-       merece ficar promovida, em vez de ser repintada a cada quadro. */
-    will-change: opacity;
-    animation: hero-edge-breathe 8s ease-in-out infinite;
-  }
+  /* A base azul do hero (.hero-edge-glow) não aparece aqui de propósito: ela
+     é estática. Pulsar uma área grande logo acima da dobra disputa atenção
+     com o texto, e o efeito pretendido é de profundidade, não de vida. Sem
+     nada animando, a regra inteira mora fora deste gate. */
 }
