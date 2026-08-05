@@ -144,20 +144,24 @@
 
 /* ─── Borda de luz do hero da landing (/sobre) ──────────────────────────── */
 
-/* Faixa vertical de accent na fronteira onde o véu escuro encontra as cores
-   da arara. Sem ela a transição é só o véu se dissolvendo, e o corte entre
-   escuro e foto fica chapado.
+/* Base azul do hero: a foto se apoia numa faixa de azul forte que sobe e se
+   dissolve no preto, em vez de simplesmente terminar contra a seção seguinte.
 
-   O pico fica em 100%, na própria aresta direita, e não no meio da seção.
-   Medido: a foto ocupa a largura inteira (0→1267) e o véu horizontal termina
-   em ink/30, então ela ainda está clara quando encontra o limite da seção e
-   é cortada a seco. É esse corte que precisa de tratamento — um realce no
-   meio decora a foto, mas deixa a aresta tão dura quanto antes.
+   O eixo é VERTICAL (to top) e ancorado embaixo. Três tentativas anteriores
+   erraram o alvo e ficam registradas para não voltarem:
 
-   Duas versões anteriores erraram o alvo e ficam registradas para não serem
-   repetidas: pontas em 30%/78% viraram uma lavagem verde sobre metade do
-   hero (screen sobre fundo quase preto espalha muito), e o ajuste para
-   46%/64% resolveu a lavagem mas seguia realçando o lugar errado. */
+     30%/78% horizontal → virou lavagem verde sobre metade do hero, porque
+       mix-blend-mode: screen sobre fundo quase preto espalha muito;
+     46%/64% horizontal → resolveu a lavagem, mas realçava o meio da imagem;
+     pico em 100% à direita → tratava a aresta lateral, que não era a que
+       incomodava.
+
+   O que incomodava é a base do card: ali a foto encontra a próxima seção sem
+   transição nenhuma, e é essa emenda que a faixa cobre.
+
+   Nota sobre a pilha: o véu vertical do Hero termina em `to-ink`, então a
+   base já é praticamente preta. É justamente por isso que o screen funciona
+   aqui — azul sobre preto devolve azul limpo, sem sujar a foto acima. */
 
 /* O gradiente ESTÁTICO fica fora do gate de movimento, seguindo a regra do
    topo deste arquivo: quem pede menos movimento perde a respiração, não a
@@ -166,20 +170,30 @@
    mix-blend-mode: screen clareia sem sujar a cor — o mesmo recurso que
    .glow-layer já usa no hero de Admin. */
 .hero-edge-glow {
-  /* Azul da asa da arara — tirado da própria foto, e não do accent, porque a
-     borda deve pertencer à imagem que ela emoldura. O accent esmeralda ali
-     leria como interface invadindo a fotografia.
-
+  /* Azul da asa da arara, saturado. A cor sai da própria foto, e não do
+     accent: a base emoldura a fotografia, então pertence a ela — o esmeralda
+     ali leria como interface invadindo a imagem.
      Para trocar pelo amarelo do peito, basta esta linha: #f0b429. */
-  --rim: #2b7fd4;
+  --rim: #1f6fd0;
 
+  /* A parada `transparent 0%` é o detalhe que faz a faixa funcionar.
+     Sem ela o azul ficava no auge exatamente na última linha do hero, e a
+     seção seguinte — preta — começava ali: o resultado era uma régua reta
+     atravessando a tela, o mesmo defeito que a faixa deveria resolver.
+
+     Com a rampa curta de 0% a 5% o azul volta a transparente antes de
+     encontrar a borda, e a cor passa a se dissolver no preto nas DUAS
+     pontas. A emenda deixa de existir, e o pico fica logo acima dela. */
   background-image: linear-gradient(
-    90deg,
-    transparent 68%,
-    color-mix(in oklab, var(--rim) 22%, transparent) 100%
+    to top,
+    transparent 0%,
+    color-mix(in oklab, var(--rim) 40%, transparent) 5%,
+    color-mix(in oklab, var(--rim) 27%, transparent) 15%,
+    color-mix(in oklab, var(--rim) 9%, transparent) 30%,
+    transparent 50%
   );
   mix-blend-mode: screen;
-  opacity: 0.55;
+  opacity: 0.75;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -533,10 +547,10 @@
   @keyframes hero-edge-breathe {
     0%,
     100% {
-      opacity: 0.25;
+      opacity: 0.62;
     }
     50% {
-      opacity: 0.6;
+      opacity: 0.92;
     }
   }
 
