@@ -225,6 +225,73 @@
   );
 }
 
+/* ─── Cards de fonte da landing (/sobre) ────────────────────────────────── */
+
+/* Superfície preta para as doze fontes; o que as diferencia é a cor projetada
+   ATRÁS. A regra do accent único da página continua valendo onde importa —
+   texto e bordas —, e a cor entra só como luz.
+
+   A cor chega por --fonte-cor, definida inline no componente: são doze valores
+   vindos de dados, e o Tailwind só gera utilitárias para valores conhecidos em
+   tempo de build.
+
+   As transições ficam fora do gate de movimento por decisão do topo deste
+   arquivo: são curtas e disparadas pelo próprio usuário. */
+.fonte-card {
+  background-color: #0b0d10;
+  box-shadow:
+    0 18px 45px -22px var(--fonte-cor),
+    inset 0 1px 0 0 rgb(255 255 255 / 0.04);
+  transition:
+    box-shadow 200ms ease,
+    transform 200ms ease,
+    border-color 200ms ease;
+}
+
+/* Halo interno no topo. Sem ele a cor só existiria fora do card, e a fonte
+   ficaria indistinguível das vizinhas para quem não passa o mouse. */
+.fonte-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    120% 80% at 50% 0%,
+    color-mix(in srgb, var(--fonte-cor) 20%, transparent),
+    transparent 70%
+  );
+  opacity: 0.75;
+  transition: opacity 200ms ease;
+}
+
+.fonte-card:hover,
+.fonte-card:focus-visible {
+  transform: translateY(-4px);
+  border-color: color-mix(in srgb, var(--fonte-cor) 35%, transparent);
+  box-shadow:
+    0 26px 60px -18px var(--fonte-cor),
+    inset 0 1px 0 0 rgb(255 255 255 / 0.08);
+}
+
+.fonte-card:hover::before,
+.fonte-card:focus-visible::before {
+  opacity: 1;
+}
+
+/* Máscara das pontas da esteira: os cards surgem e somem esmaecendo, em vez
+   de aparecerem cortados na borda da seção. Estática — vale inclusive quando
+   não há movimento, porque a faixa continua rolável na horizontal. */
+.esteira {
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    black 6%,
+    black 94%,
+    transparent
+  );
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    ANIMAÇÕES — só para quem não pediu movimento reduzido
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -566,8 +633,37 @@
     animation: hero-image-in 1.4s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
-  /* A base azul do hero (.hero-edge-glow) não aparece aqui de propósito: ela
-     é estática. Pulsar uma área grande logo acima da dobra disputa atenção
-     com o texto, e o efeito pretendido é de profundidade, não de vida. Sem
-     nada animando, a regra inteira mora fora deste gate. */
+  /* A base do hero (.hero-edge-glow) não aparece aqui de propósito: ela é
+     estática. Pulsar uma área grande logo acima da dobra disputa atenção com
+     o texto, e o efeito pretendido é de profundidade, não de vida. Sem nada
+     animando, a regra inteira mora fora deste gate. */
+
+  /* ── Esteira das fontes (/sobre) ──
+     O trilho contém a lista DUAS vezes, então deslocar -50% deixa a segunda
+     cópia exatamente onde a primeira começou: o laço fecha sem salto. É por
+     isso que o componente duplica os cards em vez de reordenar em JS.
+
+     70s para doze cards é lento de propósito. A esteira carrega links, e
+     alvo em movimento rápido é alvo que escapa do ponteiro. */
+  @keyframes esteira-desliza {
+    from {
+      transform: translate3d(0, 0, 0);
+    }
+    to {
+      transform: translate3d(-50%, 0, 0);
+    }
+  }
+
+  .esteira-trilho {
+    animation: esteira-desliza 70s linear infinite;
+    will-change: transform;
+  }
+
+  /* Pausa no hover E no foco. O focus-within não é detalhe: sem ele, quem
+     navega por teclado tabula para um card que continua fugindo, e o card
+     focado sai da área visível sozinho. */
+  .esteira:hover .esteira-trilho,
+  .esteira:focus-within .esteira-trilho {
+    animation-play-state: paused;
+  }
 }

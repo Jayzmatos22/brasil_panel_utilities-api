@@ -81,8 +81,16 @@ export interface Source {
   id: string;
   acronym: string;
   name: string;
+  /** O que o painel consome desta fonte, em uma linha. */
+  provides: string;
   description: string;
   href: string;
+  /**
+   * Cor da fonte, usada exclusivamente no brilho ATRÁS do card — a superfície
+   * em si permanece preta. Diferencia as fontes no relance sem quebrar a
+   * regra de accent único da página, já que a cor nunca toca texto nem borda.
+   */
+  color: string;
 }
 
 export interface SectionIntro {
@@ -193,10 +201,10 @@ export const METRICS: readonly Metric[] = [
   },
   {
     id: 'fontes',
-    value: 6,
-    label: 'Fontes oficiais',
+    value: 12,
+    label: 'Integrações ativas',
     description:
-      'Nenhum número é estimado internamente. Todo dado tem um órgão responsável por trás.',
+      'Nenhum número é estimado internamente. Todo dado tem uma API responsável por trás.',
   },
   {
     id: 'atualizacao',
@@ -305,51 +313,143 @@ export const SOURCES_INTRO: SectionIntro = {
   eyebrow: 'Fontes',
   title: 'De onde vem cada número',
   description:
-    'Instituições públicas e entidades de referência do mercado. Os links abrem o portal oficial para conferência direta.',
+    'As doze integrações que o painel consome, órgão por órgão e API por API. Os links abrem a documentação de cada uma para conferência direta.',
 };
 
+/**
+ * As doze integrações que o backend realmente consome, uma por pacote em
+ * `service/api` mais as duas usadas pelos seeders (BrasilAPI e IBGE
+ * Localidades).
+ *
+ * A lista anterior citava Tesouro Nacional, FGV e ANBIMA — nenhuma delas
+ * existe no código. Era copy escrita antes da conferência, e prometia
+ * procedência que o painel não tem. Esta versão saiu de uma varredura das URLs
+ * externas em `service/api/**`, então cada card corresponde a uma chamada que
+ * de fato acontece.
+ *
+ * A ordem alterna matizes de propósito: as cores só aparecem como brilho atrás
+ * do card, e vizinhas parecidas na esteira anulariam a distinção.
+ */
 export const SOURCES: readonly Source[] = [
-  {
-    id: 'ibge',
-    acronym: 'IBGE',
-    name: 'Instituto Brasileiro de Geografia e Estatística',
-    description: 'IPCA, INPC, PIB, desemprego e população.',
-    href: 'https://www.ibge.gov.br',
-  },
   {
     id: 'bcb',
     acronym: 'BCB',
-    name: 'Banco Central do Brasil',
-    description: 'Selic, CDI, câmbio PTAX e balança de pagamentos.',
-    href: 'https://www.bcb.gov.br',
+    name: 'Banco Central do Brasil — SGS',
+    provides: 'Selic, IPCA, CDI e câmbio',
+    description:
+      'Sistema Gerenciador de Séries Temporais. É a origem dos indicadores que abrem o painel.',
+    href: 'https://api.bcb.gov.br',
+    color: '#2563eb',
+  },
+  {
+    id: 'sidra',
+    acronym: 'SIDRA',
+    name: 'IBGE — Banco de Tabelas Estatísticas',
+    provides: 'PIB por unidade da federação',
+    description:
+      'Tabela 5938, variável 37: PIB a preços correntes. Uma requisição por ano de referência.',
+    href: 'https://apisidra.ibge.gov.br',
+    color: '#16a34a',
   },
   {
     id: 'ipea',
     acronym: 'IPEA',
-    name: 'Instituto de Pesquisa Econômica Aplicada',
-    description: 'Séries macroeconômicas consolidadas via Ipeadata.',
-    href: 'https://www.ipea.gov.br',
+    name: 'Ipeadata — API OData',
+    provides: 'Séries macroeconômicas',
+    description:
+      'Catálogo histórico do Instituto de Pesquisa Econômica Aplicada, consultado por metadados.',
+    href: 'http://ipeadata.gov.br',
+    color: '#dc2626',
   },
   {
-    id: 'tesouro',
-    acronym: 'Tesouro Nacional',
-    name: 'Secretaria do Tesouro Nacional',
-    description: 'Dívida pública, resultado primário e Tesouro Direto.',
-    href: 'https://www.tesourotransparente.gov.br',
+    id: 'worldbank',
+    acronym: 'World Bank',
+    name: 'Banco Mundial — Indicators API',
+    provides: 'PIB do Brasil em moeda local',
+    description:
+      'Indicador NY.GDP.MKTP.CN, usado como série longa de comparação internacional.',
+    href: 'https://api.worldbank.org',
+    color: '#0891b2',
   },
   {
-    id: 'fgv',
-    acronym: 'FGV',
-    name: 'Fundação Getulio Vargas',
-    description: 'IGP-M, IGP-DI e índices de confiança.',
-    href: 'https://portalibre.fgv.br',
+    id: 'alphavantage',
+    acronym: 'Alpha Vantage',
+    name: 'Alpha Vantage — Time Series',
+    provides: 'Cotações de ações',
+    description:
+      'Séries de mercado acionário, com limite de requisições por minuto no plano gratuito.',
+    href: 'https://www.alphavantage.co',
+    color: '#7c3aed',
   },
   {
-    id: 'anbima',
-    acronym: 'ANBIMA',
-    name: 'Associação Brasileira das Entidades dos Mercados Financeiro e de Capitais',
-    description: 'Índices de renda fixa e curvas de juros de referência.',
-    href: 'https://www.anbima.com.br',
+    id: 'coingecko',
+    acronym: 'CoinGecko',
+    name: 'CoinGecko — Public API',
+    provides: 'Top 100 criptomoedas',
+    description:
+      'Preços e capitalização de mercado. Não exige chave, e serve de alternativa à CoinMarketCap.',
+    href: 'https://api.coingecko.com',
+    color: '#84cc16',
+  },
+  {
+    id: 'coinmarketcap',
+    acronym: 'CoinMarketCap',
+    name: 'CoinMarketCap — Pro API',
+    provides: 'Listagem de criptomoedas',
+    description:
+      'Única fonte paga do painel. O consumo é contabilizado e travado em 80% da cota mensal.',
+    href: 'https://coinmarketcap.com/api',
+    color: '#6366f1',
+  },
+  {
+    id: 'frankfurter',
+    acronym: 'Frankfurter',
+    name: 'Frankfurter — Exchange Rates',
+    provides: 'Câmbio de referência',
+    description:
+      'Taxas publicadas pelo Banco Central Europeu. Define quais moedas o seletor pode oferecer.',
+    href: 'https://frankfurter.dev',
+    color: '#f59e0b',
+  },
+  {
+    id: 'metalsdev',
+    acronym: 'Metals.dev',
+    name: 'Metals.dev — Spot & LBMA',
+    provides: 'Ouro, prata e demais metais',
+    description:
+      'Preços à vista e o fixing oficial da London Bullion Market Association.',
+    href: 'https://metals.dev',
+    color: '#a8a29e',
+  },
+  {
+    id: 'brasilapi',
+    acronym: 'BrasilAPI',
+    name: 'BrasilAPI — Bancos',
+    provides: 'Instituições financeiras',
+    description:
+      'Registro de bancos com código COMPE e ISPB, carregado uma vez na inicialização.',
+    href: 'https://brasilapi.com.br',
+    color: '#ec4899',
+  },
+  {
+    id: 'ibge-localidades',
+    acronym: 'IBGE',
+    name: 'IBGE — Localidades',
+    provides: 'Estados e municípios',
+    description:
+      'Malha político-administrativa oficial, base para os recortes territoriais do painel.',
+    href: 'https://servicodados.ibge.gov.br',
+    color: '#65a30d',
+  },
+  {
+    id: 'viacep',
+    acronym: 'ViaCEP',
+    name: 'ViaCEP — Consulta de endereços',
+    provides: 'Endereço por CEP',
+    description:
+      'Usada apenas no cadastro, para preencher endereço sem digitação manual.',
+    href: 'https://viacep.com.br',
+    color: '#14b8a6',
   },
 ];
 
