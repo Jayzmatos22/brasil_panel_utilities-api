@@ -20,7 +20,24 @@ const GRID_STYLE = { '--card-min': '13rem' } as CSSProperties;
 
 export function Metrics() {
   return (
-    <Section id="metricas" labelledBy={HEADING_ID} hasDivider={false}>
+    <Section
+      id="metricas"
+      labelledBy={HEADING_ID}
+      hasDivider={false}
+      className="relative isolate"
+    >
+      {/* Continuação da base amarela do hero. A cor entra nesta seção no mesmo
+          valor em que sai da anterior, então a transição atravessa o limite
+          entre as duas em vez de o amarelo encontrar o preto de uma vez.
+
+          `isolate` na seção prende o -z-10 aqui dentro: sem o contexto de
+          empilhamento próprio, a camada afundaria atrás do fundo da página e
+          sumiria. O gradiente em si mora em App.css (.hero-edge-carry), ao
+          lado do par dele — os dois valores precisam ser lidos juntos. */}
+      <div
+        aria-hidden="true"
+        className="hero-edge-carry pointer-events-none absolute inset-x-0 top-0 -z-10 h-48"
+      />
       <Reveal>
         <SectionHeading
           id={HEADING_ID}

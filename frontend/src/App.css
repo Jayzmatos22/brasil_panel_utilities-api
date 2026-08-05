@@ -163,11 +163,19 @@
 
    O que incomodava é a base do card, onde a foto encontra a próxima seção sem
    transição nenhuma. É essa emenda que a faixa cobre. */
+/* Amarelo do peito da arara. A cor sai da própria foto, e não do accent: a
+   base emoldura a fotografia, então pertence a ela — o esmeralda ali leria
+   como interface invadindo a imagem.
+
+   Mora em :root, e não dentro da regra, porque DUAS classes precisam do mesmo
+   valor: a base no hero e a continuação na seção seguinte. Se cada uma
+   guardasse a própria cópia, um ajuste em uma delas abriria uma emenda visível
+   na outra — exatamente o defeito que esse par existe para eliminar. */
+:root {
+  --hero-rim: #d09b1f;
+}
+
 .hero-edge-glow {
-  /* Amarelo do peito da arara. A cor sai da própria foto, e não do accent: a
-     base emoldura a fotografia, então pertence a ela — o esmeralda ali leria
-     como interface invadindo a imagem. */
-  --rim: #d09b1f;
 
   /* Sem mix-blend-mode. O `screen` foi o que estragou as versões anteriores:
      sobre fundo quase preto ele clareia, mas lava a saturação, e a cor saía
@@ -189,13 +197,31 @@
      a faixa ler como apoio da foto em vez de fundo colorido. */
   background-image: linear-gradient(
     to top,
-    transparent 0%,
-    color-mix(in srgb, var(--rim) 10%, transparent) 1%,
-    color-mix(in srgb, var(--rim) 22%, transparent) 4%,
-    color-mix(in srgb, var(--rim) 28%, transparent) 8%,
-    color-mix(in srgb, var(--rim) 20%, transparent) 11%,
-    color-mix(in srgb, var(--rim) 5%, transparent) 15%,
+    color-mix(in srgb, var(--hero-rim) 22%, transparent) 0%,
+    color-mix(in srgb, var(--hero-rim) 26%, transparent) 4%,
+    color-mix(in srgb, var(--hero-rim) 28%, transparent) 8%,
+    color-mix(in srgb, var(--hero-rim) 20%, transparent) 11%,
+    color-mix(in srgb, var(--hero-rim) 5%, transparent) 15%,
     transparent 18%
+  );
+}
+
+/* Continuação da base na seção seguinte.
+   A borda inferior do hero deixou de voltar ao transparente: agora termina em
+   22%, e esta regra começa no MESMO 22% e segue desvanecendo para baixo. É a
+   igualdade entre os dois valores que apaga a emenda — a cor atravessa o
+   limite das seções sem degrau, em vez de o amarelo bater no preto de uma vez.
+
+   Os dois valores são solidários: mexer em um sem mexer no outro reabre a
+   emenda. Por isso a cor vive em --hero-rim, e por isso os 22% aparecem
+   comentados dos dois lados. */
+.hero-edge-carry {
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--hero-rim) 22%, transparent) 0%,
+    color-mix(in srgb, var(--hero-rim) 12%, transparent) 32%,
+    color-mix(in srgb, var(--hero-rim) 4%, transparent) 64%,
+    transparent 100%
   );
 }
 
