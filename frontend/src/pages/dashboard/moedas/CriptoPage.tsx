@@ -12,6 +12,7 @@ import { useCryptoMarket, useCryptoByName } from '../../../hooks/UseCrypto';
 import { useCmcMarket, useCmcByTerm } from '../../../hooks/UseCmcCrypto';
 import type { CryptoSource, CryptoRow } from '../../../types/CriptoType';
 import { BarChartEcharts } from '../../../components/charts/BarChartEcharts';
+import { formatSignedPercent } from '../../../components/charts/chartTheme';
 import { AnimatedNumber } from '../../../components/AnimatedNumber';
 import { container, item } from '../../../lib/motion/presets';
 
@@ -118,8 +119,12 @@ export default function CriptoPage() {
       ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact' }).format(v)
       : '—';
 
-  const pct = (v: number) => 
-    typeof v === 'number' ? `${v >= 0 ? '+' : ''}${v.toFixed(2)}%` : '-';
+  // Delega ao formatador da camada de gráficos. O `toFixed(2)` que existia
+  // aqui tinha dois problemas: produzia ponto decimal ("+2.00%") numa interface
+  // em pt-BR, e as duas casas alongavam o rótulo o bastante para os ticks do
+  // eixo colidirem em 368px. Uma casa decimal basta para variação diária.
+  const pct = (v: number) =>
+    typeof v === 'number' ? formatSignedPercent(v) : '-';
 
   const { gainers, losers, topCap } = useMemo(() => {
     if (!rows.length) return { gainers: [], losers: [], topCap: [] };

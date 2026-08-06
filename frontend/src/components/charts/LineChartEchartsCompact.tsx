@@ -2,19 +2,21 @@ import { memo, useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
 import type { EChartsOption } from 'echarts';
 import { useEchartsAutoResize } from '../../hooks/UseEchartsAutoResize';
+import {
+  areaGradient,
+  axisLabel,
+  axisLine,
+  formatCompact,
+  formatNumber,
+  grid,
+  splitLine,
+  tooltip,
+} from './chartTheme';
 
 export interface LinePoint {
   date: string;
   value: number;
 }
-
-const hexToRgb = (hex: string) => {
-  const h = hex.replace('#', '');
-  const r = parseInt(h.slice(0, 2), 16);
-  const g = parseInt(h.slice(2, 4), 16);
-  const b = parseInt(h.slice(4, 6), 16);
-  return `${r},${g},${b}`;
-};
 
 export interface LineChartEchartsCompactProps {
   points: LinePoint[];
@@ -30,45 +32,29 @@ export const LineChartEchartsCompact = memo(function LineChartEchartsCompact({
   valueFormatter,
 }: LineChartEchartsCompactProps) {
   const option = useMemo<EChartsOption>(() => {
-    const rgb = hexToRgb(color);
-    const fmt = valueFormatter ?? ((v: number) =>
-      v.toLocaleString('pt-BR', { maximumFractionDigits: 2 }));
+    const fmt = valueFormatter ?? formatNumber;
 
     return {
       backgroundColor: 'transparent',
-      // Idem LineChartEcharts: os 48px fixos viravam 20% de um card de grid a
-      // 240px. containLabel reserva só o necessário.
-      grid: { left: 4, right: 8, top: 12, bottom: 4, containLabel: true },
-      tooltip: {
-        trigger: 'axis',
-        backgroundColor: '#0f172a',
-        borderColor: '#334155',
-        textStyle: { color: '#e2e8f0', fontSize: 11 },
-        valueFormatter: (v: unknown) =>
-          typeof v === 'number' ? fmt(v) : String(v),
-      },
+      grid: grid('compact'),
+      tooltip: tooltip(fmt, 'compact'),
       xAxis: {
         type: 'category',
         data: points.map((p) => p.date),
         boundaryGap: false,
-        axisLine: { lineStyle: { color: '#334155' } },
-        axisLabel: { color: '#64748b', fontSize: 9, hideOverlap: true },
+        axisLine,
+        axisLabel: axisLabel('compact'),
         axisTick: { show: false },
       },
       yAxis: {
         type: 'value',
         scale: true,
-        splitLine: { lineStyle: { color: '#1e293b', type: 'dashed' } },
-        axisLabel: {
-          color: '#64748b',
-          fontSize: 9,
-          formatter: (v: number) => {
-            if (Math.abs(v) >= 1e9) return `${(v / 1e9).toFixed(1)}B`;
-            if (Math.abs(v) >= 1e6) return `${(v / 1e6).toFixed(1)}M`;
-            if (Math.abs(v) >= 1e3) return `${(v / 1e3).toFixed(1)}k`;
-            return String(v);
-          },
-        },
+        splitLine,
+        // Compacto pt-BR ("1,2 mi") no lugar da escada manual que devolvia
+        // "1.2M" — sufixo inglês numa interface em português, e divergente do
+        // resto do painel. Num eixo de 9px o formato curto não é luxo: é o que
+        // permite caber sem colidir.
+        axisLabel: axisLabel('compact', formatCompact),
       },
       series: [
         {
@@ -77,15 +63,7 @@ export const LineChartEchartsCompact = memo(function LineChartEchartsCompact({
           showSymbol: false,
           data: points.map((p) => p.value),
           lineStyle: { color, width: 1.75 },
-          areaStyle: {
-            color: {
-              type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
-              colorStops: [
-                { offset: 0, color: `rgba(${rgb},0.22)` },
-                { offset: 1, color: `rgba(${rgb},0)` },
-              ],
-            },
-          },
+          areaStyle: { color: areaGradient(color, 0.22) },
         },
       ],
     } as EChartsOption;

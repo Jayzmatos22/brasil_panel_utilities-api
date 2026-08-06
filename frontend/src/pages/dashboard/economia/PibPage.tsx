@@ -1047,7 +1047,17 @@ export default function PibPage() {
                 items={pibEstados.map((e) => ({ label: e.uf, value: e.value }))}
                 color="#009C3B"
                 valueFormatter={compactBrl}
+                scale="log"
               />
+              {/* O aviso não é opcional: em escala log o comprimento da barra
+                  deixa de ser proporcional ao valor, e barra se lê por
+                  comprimento. Sem a legenda o gráfico induziria a achar São
+                  Paulo três vezes maior que a Bahia, e não ~30 vezes. */}
+              <p className="mt-2 text-micro text-slate-500">
+                Escala logarítmica — São Paulo responde por mais de 200× o PIB
+                do menor estado, e em escala linear as demais barras ficariam
+                abaixo de 2px. Os valores ao lado de cada barra são os reais.
+              </p>
             </div>
           ) : (
             <StatePanel
