@@ -43,26 +43,38 @@ export function RankedBarList({
   const max = Math.max(...shown.map((i) => i.value), 0);
 
   return (
-    <ol className="flex list-none flex-col gap-1.5">
+    <ol className="flex list-none flex-col gap-3">
       {shown.map((entry) => {
         const proporcao = max > 0 ? (entry.value / max) * 100 : 0;
 
         return (
-          <li
-            key={entry.label}
-            className="flex items-center gap-3 text-xs text-slate-300"
-          >
-            <span className="w-8 shrink-0 font-medium text-slate-400">
-              {entry.label}
-            </span>
+          <li key={entry.label} className="flex flex-col gap-1.5">
+            {/* Nome e valor dividem a primeira linha; a barra ocupa a segunda.
+                Em coluna única os três não cabem lado a lado: a fonte é o
+                campo D1N do SIDRA, que traz o nome por extenso ("Rio Grande
+                do Sul", 17 caracteres), e não a sigla. Numa linha só, ou o
+                nome atropela a barra ou a barra fica sem largura para
+                diferenciar nada — que era justamente o defeito a corrigir. */}
+            <div className="flex items-baseline justify-between gap-3 text-xs">
+              {/* min-w-0 permite o truncate agir: sem ele o flex adota a
+                  largura do texto como mínimo e empurra o valor para fora. O
+                  truncate é rede de segurança para nome atípico, não o
+                  comportamento esperado — nome de estado cabe. */}
+              <span className="min-w-0 truncate text-slate-300">
+                {entry.label}
+              </span>
 
-            {/* min-w-0 é o que permite esta coluna encolher: sem ele o flex usa
-                a largura do conteúdo como mínimo e empurra o valor para fora da
-                tela — exatamente o corte que acontecia no gráfico. */}
-            <span className="relative h-5 min-w-0 flex-1 overflow-hidden rounded-sm bg-slate-800/40">
+              {/* tabular-nums alinha os dígitos entre as linhas;
+                  whitespace-nowrap impede a quebra de "R$ 3,44 tri". */}
+              <span className="shrink-0 whitespace-nowrap font-medium tabular-nums text-slate-200">
+                {fmt(entry.value)}
+              </span>
+            </div>
+
+            <span className="relative block h-1.5 w-full overflow-hidden rounded-full bg-slate-800/40">
               <span
                 aria-hidden="true"
-                className="absolute inset-y-0 left-0 rounded-sm"
+                className="absolute inset-y-0 left-0 rounded-full"
                 style={{
                   width: `${proporcao}%`,
                   backgroundColor: color,
@@ -71,12 +83,6 @@ export function RankedBarList({
                   opacity: 0.35 + (proporcao / 100) * 0.65,
                 }}
               />
-            </span>
-
-            {/* tabular-nums alinha os dígitos entre as linhas; whitespace-nowrap
-                impede a quebra de "R$ 3,44 tri" no meio. */}
-            <span className="shrink-0 whitespace-nowrap text-right font-medium tabular-nums text-slate-200">
-              {fmt(entry.value)}
             </span>
           </li>
         );
