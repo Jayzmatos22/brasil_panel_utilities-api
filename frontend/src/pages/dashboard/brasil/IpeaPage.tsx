@@ -3,7 +3,6 @@
 import { memo, useMemo, useState, type ChangeEvent } from "react";
 import { motion } from "motion/react";
 import {
-  ChevronDown,
   LoaderCircle,
   Search,
   TrendingUp,
@@ -40,6 +39,7 @@ import {
   LineChartEcharts,
   type LinePoint,
 } from "../../../components/charts/LineChartEcharts";
+import { ScrollHint } from "../../../components/ScrollHint";
 
 // ─── Tipos ─────────────────────────────────────────────────────────────────
 
@@ -245,14 +245,16 @@ const SerieCard = memo(function SerieCard({ serie, accent }: SerieCardProps) {
         <div className="border-t border-white/5 bg-slate-950/30">
           <div className="px-4 pt-3 pb-1 flex items-center justify-between text-[10px] uppercase tracking-wider text-slate-500">
             <span>Série histórica completa</span>
-            {needsWideChart && (
-              <span className="flex items-center gap-1 text-slate-600">
-                <ChevronDown size={10} className="rotate-90" /> Arraste para ver
-                mais
-              </span>
-            )}
           </div>
-          <div className={needsWideChart ? "overflow-x-auto pb-3" : "pb-3"}>
+          {/* O aviso saiu daqui e passou a viver dentro do ScrollHint, que o
+              exibe medindo o transbordo real em vez de deduzi-lo de
+              `needsWideChart`. Essa flag decide a LARGURA do gráfico; se ela
+              vale mas a tela é larga o bastante, não há o que arrastar — e o
+              aviso antigo aparecia mesmo assim. */}
+          <ScrollHint
+            className="pb-3"
+            label="Arraste para o lado para ver a série inteira"
+          >
             <div
               style={
                 needsWideChart
@@ -266,7 +268,7 @@ const SerieCard = memo(function SerieCard({ serie, accent }: SerieCardProps) {
                 style={{ height: `${chartHeight}px` }}
               />
             </div>
-          </div>
+          </ScrollHint>
 
           {/* Stats extras — sempre visíveis abaixo do gráfico */}
           <div className="px-4 pb-4 pt-2 grid-auto-cards gap-2 text-xs border-t border-white/5 [--card-min:7rem]">

@@ -13,6 +13,7 @@ import { useCmcMarket, useCmcByTerm } from '../../../hooks/UseCmcCrypto';
 import type { CryptoSource, CryptoRow } from '../../../types/CriptoType';
 import { BarChartEcharts } from '../../../components/charts/BarChartEcharts';
 import { formatSignedPercent } from '../../../components/charts/chartTheme';
+import { ScrollHint } from '../../../components/ScrollHint';
 import { AnimatedNumber } from '../../../components/AnimatedNumber';
 import { container, item } from '../../../lib/motion/presets';
 
@@ -282,7 +283,7 @@ export default function CriptoPage() {
           // mínima real + as duas colunas menos essenciais escondidas em
           // container estreito — mesma estratégia de AdminUsersPage e
           // BancosPage, que já faziam isso.
-          <div className="overflow-x-auto overscroll-x-contain">
+          <ScrollHint label="Arraste para o lado para ver todas as colunas">
             <table className="w-full min-w-3xl text-sm ">
               <thead>
                 <tr className="border-b-2 border-white/20 rounded-lg bg-slate-950">
@@ -355,7 +356,7 @@ export default function CriptoPage() {
                 })}
               </tbody>
             </table>
-          </div>
+          </ScrollHint>
         )}
       </motion.div>
 
