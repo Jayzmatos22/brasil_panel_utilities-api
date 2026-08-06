@@ -42,20 +42,6 @@ interface BarChartProps {
    * criptomoedas) roubariam a largura do desenho num container de 300px.
    */
   labelWidth?: number;
-  /**
-   * Escala do eixo de valor.
-   *
-   * `log` existe para séries com outlier de ordem de grandeza — o caso do PIB
-   * por estado, onde São Paulo (R$ 3,44 tri) é ~230× o menor estado. Em escala
-   * linear as vinte e poucas barras menores renderizam abaixo de 2px e a
-   * comparação entre elas some.
-   *
-   * Não é o padrão de propósito: em escala log o comprimento da barra deixa de
-   * ser proporcional ao valor, e quem lê barra lê comprimento. Só vale quando
-   * a alternativa é não conseguir ler nada — e exige avisar o leitor, o que
-   * fica a cargo de quem usa.
-   */
-  scale?: 'linear' | 'log';
 }
 
 export function BarChartEcharts({
@@ -63,31 +49,38 @@ export function BarChartEcharts({
   color = '#eab308',
   valueFormatter,
   labelWidth = 92,
-  scale = 'linear',
 }: BarChartProps) {
   const option = useMemo<EChartsCoreOption>(() => {
     const fmt = valueFormatter ?? formatNumber;
     // Maior valor no topo: a categoria do eixo Y é desenhada de baixo p/ cima.
     const ordered = [...items].sort((a, b) => a.value - b.value);
 
+    // ~6,5px por caractere a 11px, mais uma folga de 14px para o afastamento
+    // da barra. O teto de 96px impede que um valor atípico coma a área do
+    // desenho em telas estreitas.
+    const maiorRotulo = ordered.reduce(
+      (max, i) => Math.max(max, fmt(i.value).length),
+      0,
+    );
+    const espacoDoRotulo = Math.min(96, Math.round(maiorRotulo * 6.5) + 14);
+
     return {
       backgroundColor: 'transparent',
-      // grid() já traz containLabel. As margens fixas de 48px à esquerda e
-      // 72px à direita que existiam aqui somavam 120px SOBRE o espaço que o
-      // containLabel já reserva — em 368px isso consumia mais de um terço da
-      // área útil, e era metade do motivo de o gráfico ficar ilegível.
-      grid: grid(),
+      // grid() traz containLabel, que reserva espaço para os rótulos de EIXO.
+      // O rótulo da SÉRIE — o valor à direita de cada barra — fica de fora
+      // dessa conta, e é por isso que precisa de margem explícita: sem ela o
+      // "R$ 3,44 tri" da maior barra era cortado na borda direita.
+      //
+      // A margem sai do texto mais longo em vez de um número fixo. O código
+      // original usava 72px chapado, que sobrava para "12%" e faltava para
+      // valores em trilhões.
+      grid: { ...grid(), right: espacoDoRotulo },
       tooltip: {
         ...tooltip(fmt),
         axisPointer: { type: 'shadow' },
       },
       xAxis: {
-        // O eixo log do ECharts não aceita zero nem negativo. Séries que
-        // pedem log (PIB por estado) são estritamente positivas; se alguma
-        // deixar de ser, cair para linear é melhor que renderizar vazio.
-        type: scale === 'log' && ordered.every((i) => i.value > 0)
-          ? 'log'
-          : 'value',
+        type: 'value',
         axisLine,
         // O eixo de valor é o que quebrava: sem hideOverlap, "+2,00%" repetido
         // a cada tick vira uma tira ilegível quando a largura cai.
@@ -122,7 +115,7 @@ export function BarChartEcharts({
         },
       ],
     };
-  }, [items, color, valueFormatter, labelWidth, scale]);
+  }, [items, color, valueFormatter, labelWidth]);
 
   // Altura proporcional ao nº de barras para os rótulos não ficarem espremidos.
   const height = Math.max(240, items.length * 22 + 32);

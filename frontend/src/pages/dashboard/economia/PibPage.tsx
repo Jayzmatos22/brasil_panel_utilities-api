@@ -21,6 +21,8 @@ import { useMonthlyPib } from "../../../hooks/UseIpea";
 import { usePibPorEstado } from "../../../hooks/UseSidra";
 import { LineChartEcharts } from "../../../components/charts/LineChartEcharts";
 import { BarChartEcharts } from "../../../components/charts/BarChartEcharts";
+import { RankedBarList } from "../../../components/charts/RankedBarList";
+import { useResponsiveValue } from "../../../hooks/UseResponsiveValue";
 import { AnimatedNumber } from "../../../components/AnimatedNumber";
 import { container, item } from "../../../lib/motion/presets";
 import type { SectionCardProps } from "../../../types/utilities/Economy";
@@ -163,6 +165,11 @@ const fullBrl = (v: number) =>
 export default function PibPage() {
   const [year, setYear] = useState<number>(2024);
   const [compareYear, setCompareYear] = useState<number>(2010);
+
+  // 640px (sm) é onde o gráfico de barras por estado deixa de ser legível.
+  // Governa qual componente é montado, então precisa existir em JS — é o caso
+  // que o próprio useResponsiveValue documenta como legítimo.
+  const isTelaEstreita = useResponsiveValue(() => window.innerWidth < 640);
 
   const {
     data: ipeaPibData,
@@ -1043,21 +1050,34 @@ export default function PibPage() {
             />
           ) : pibEstados && pibEstados.length > 0 ? (
             <div className="rounded-lg border border-slate-800/70 bg-slate-950/60 p-3">
-              <BarChartEcharts
-                items={pibEstados.map((e) => ({ label: e.uf, value: e.value }))}
-                color="#009C3B"
-                valueFormatter={compactBrl}
-                scale="log"
-              />
-              {/* O aviso não é opcional: em escala log o comprimento da barra
-                  deixa de ser proporcional ao valor, e barra se lê por
-                  comprimento. Sem a legenda o gráfico induziria a achar São
-                  Paulo três vezes maior que a Bahia, e não ~30 vezes. */}
-              <p className="mt-2 text-micro text-slate-500">
-                Escala logarítmica — São Paulo responde por mais de 200× o PIB
-                do menor estado, e em escala linear as demais barras ficariam
-                abaixo de 2px. Os valores ao lado de cada barra são os reais.
-              </p>
+              {/* Abaixo de 640px o gráfico de barras deixa de funcionar: São
+                  Paulo é ~230× o menor estado, e nessa largura as barras dos
+                  vinte e poucos menores caem abaixo de 2px — todas visualmente
+                  iguais a zero. A lista inverte os papéis, com o número
+                  carregando a informação e a barra como apoio.
+
+                  A escolha vive em JS, e não em CSS, porque renderizar os dois
+                  e esconder um significaria montar uma instância ECharts que
+                  ninguém vê — com canvas, observer de resize e tudo. */}
+              {isTelaEstreita ? (
+                <RankedBarList
+                  items={pibEstados.map((e) => ({
+                    label: e.uf,
+                    value: e.value,
+                  }))}
+                  color="#009C3B"
+                  valueFormatter={compactBrl}
+                />
+              ) : (
+                <BarChartEcharts
+                  items={pibEstados.map((e) => ({
+                    label: e.uf,
+                    value: e.value,
+                  }))}
+                  color="#009C3B"
+                  valueFormatter={compactBrl}
+                />
+              )}
             </div>
           ) : (
             <StatePanel
