@@ -223,8 +223,12 @@ export default function CriptoPage() {
               value={search}
               onChange={(e: ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
               placeholder="Ex: bitcoin, ethereum..."
-              className="w-full h-9 coarse:min-h-11 pl-9 pr-3 rounded-md bg-slate-900/80 text-black border border-slate-700
-                         placeholder-slate-500 outline-none focus:ring-2 bg-white focus:ring-yellow-500 transition-all text-sm"
+              /* `bg-slate-900/80` estava aqui junto com `bg-white`: duas utilities de
+                 background na mesma classe. O branco vencia, então o slate era código
+                 morto — removido sem mudança visual. O campo continua claro de
+                 propósito? É o único input claro do painel; ver nota na revisão. */
+              className="w-full h-9 coarse:min-h-11 pl-9 pr-3 rounded-md bg-white text-black border border-slate-700
+                         placeholder-slate-500 outline-none focus:ring-2 focus:ring-yellow-500 transition-all text-sm"
             />
           </div>
           
@@ -243,7 +247,7 @@ export default function CriptoPage() {
               animate={{ opacity: 1, scale: 1 }}
               className="flex justify-between items-center bg-cyan-950 rounded-md px-3 py-2 border border-slate-500 mt-1"
             >
-              <span className="text-white font-medium text-xs uppercase">{searchResult.label}</span>
+              <span className="text-white font-medium text-xs uppercase tracking-wider">{searchResult.label}</span>
               <span className="text-green-400 font-mono font-bold text-sm">
                 {typeof searchResult.price === 'number' ? (
                   <AnimatedNumber value={searchResult.price} format={brl} />
@@ -308,7 +312,7 @@ export default function CriptoPage() {
                         <div className="flex items-center gap-2">
                           <img src={coin.imageUrl} alt={coin.name} className="w-5 h-5 rounded-full" />
                           <span className="text-white font-medium">{coin.name}</span>
-                          <span className="text-slate-500 uppercase">{coin.symbol}</span>
+                          <span className="text-slate-500 uppercase tracking-wider">{coin.symbol}</span>
                         </div>
                       </td>
                       <td className="py-2 px-3 text-right font-mono text-white">{brl(coin.currentPrice)}</td>

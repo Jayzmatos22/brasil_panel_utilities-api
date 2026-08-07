@@ -334,7 +334,7 @@ const PeriodExplorerWithSelector = memo(function PeriodExplorerWithSelector({
     <motion.div
       id={id}
       variants={itemVariants}
-      className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/2
+      className="relative  overflow-hidden rounded-2xl border border-white/10 bg-white/2
                  backdrop-blur-md p-6 shadow-[0_8px_40px_-15px_rgba(0,0,0,0.5)] scroll-mt-24"
     >
       <div
@@ -365,7 +365,7 @@ const PeriodExplorerWithSelector = memo(function PeriodExplorerWithSelector({
           <select
             value={selectedKey}
             onChange={(e) => setSelectedKey(e.target.value)}
-            className="rounded-control border border-white/10 bg-slate-900/70 px-3 py-1.5 text-xs font-medium text-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-500/50 hover:border-white/20 transition-colors coarse:min-h-11"
+            className="rounded-control border border-white/10 bg-surface-2 px-3 py-1.5 text-xs font-medium text-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-500/50 hover:border-white/20 transition-colors coarse:min-h-11"
             aria-label="Selecionar série"
           >
             {BALANCA_SPECS.map((s) => (

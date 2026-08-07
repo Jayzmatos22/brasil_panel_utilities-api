@@ -148,7 +148,7 @@ export const PeriodExplorer = memo(function PeriodExplorer({
 
         <div className="flex flex-wrap items-center gap-2">
           {/* Toggle de modo */}
-          <div className="inline-flex rounded-lg border border-white/10 bg-slate-900/70 p-0.5">
+          <div className="inline-flex rounded-lg border border-white/10 bg-surface-2 p-0.5">
             <button
               type="button"
               onClick={() => setMode("single")}
@@ -182,7 +182,7 @@ export const PeriodExplorer = memo(function PeriodExplorer({
               <select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(e.target.value)}
-                className="rounded-control border border-white/10 bg-slate-900/70 px-3 py-1.5 text-xs font-medium text-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-500/50 hover:border-white/20 transition-colors coarse:min-h-11"
+                className="rounded-control border border-white/10 bg-surface-2 px-3 py-1.5 text-xs font-medium text-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-500/50 hover:border-white/20 transition-colors coarse:min-h-11"
                 aria-label="Selecionar ano"
               >
                 {yearOptions.map((y) => (
@@ -199,7 +199,7 @@ export const PeriodExplorer = memo(function PeriodExplorer({
                 <select
                   value={startYear}
                   onChange={(e) => setStartYear(e.target.value)}
-                  className="rounded-control border border-white/10 bg-slate-900/70 px-3 py-1.5 text-xs font-medium text-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-500/50 hover:border-white/20 transition-colors coarse:min-h-11"
+                  className="rounded-control border border-white/10 bg-surface-2 px-3 py-1.5 text-xs font-medium text-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-500/50 hover:border-white/20 transition-colors coarse:min-h-11"
                   aria-label="Ano inicial"
                 >
                   {yearOptions.map((y) => (
@@ -214,7 +214,7 @@ export const PeriodExplorer = memo(function PeriodExplorer({
                 <select
                   value={endYear}
                   onChange={(e) => setEndYear(e.target.value)}
-                  className="rounded-control border border-white/10 bg-slate-900/70 px-3 py-1.5 text-xs font-medium text-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-500/50 hover:border-white/20 transition-colors coarse:min-h-11"
+                  className="rounded-control border border-white/10 bg-surface-2 px-3 py-1.5 text-xs font-medium text-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-500/50 hover:border-white/20 transition-colors coarse:min-h-11"
                   aria-label="Ano final"
                 >
                   {yearOptions.map((y) => (

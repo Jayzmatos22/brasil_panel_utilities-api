@@ -134,23 +134,38 @@
     0 8px 30px -12px rgb(0 0 0 / 0.6);
 
   /* ── Camadas por overlay translúcido ──────────────────────────────────────
-     O achado central da extração. O Linear repete rgba(255,255,255,0.05) em
-     83 elementos e nunca usa cor sólida para superfície; aqui os cards usam
-     bg-slate-950/60 e bg-slate-900/70 — matizes DIFERENTES competindo entre
-     si, que é o que produz a sensação de empilhamento.
-
      Overlay branco sobre um fundo único faz as camadas comporem em vez de
-     brigarem: duas camadas sobrepostas viram um tom, não dois materiais.
+     brigarem: duas sobrepostas viram um tom, não dois materiais. É o que o
+     Linear faz (rgba(255,255,255,0.05) repetido em 83 elementos, nunca cor
+     sólida como superfície).
 
-     Ficam disponíveis para adoção incremental, componente a componente. */
+     Os VALORES não vêm do Linear — vêm de uma varredura deste projeto, que já
+     usa a mesma técnica em 52 lugares: bg-white/2 (23×), bg-white/5 (15×),
+     bg-white/3 (8×), bg-white/10 (6×). Os tokens são apelidos para o que já é
+     convenção aqui, para que migrar seja troca de nome e não mudança de cor.
+     A passada anterior cunhou 0.02/0.04/0.06, que não batiam com nada em uso —
+     e é por isso que nenhum componente os adotou. */
   --color-surface-1: rgb(255 255 255 / 0.02);
-  --color-surface-2: rgb(255 255 255 / 0.04);
-  --color-surface-3: rgb(255 255 255 / 0.06);
+  --color-surface-2: rgb(255 255 255 / 0.03);
+  --color-surface-3: rgb(255 255 255 / 0.05);
 
-  /* Borda hairline. O Linear usa 0.8px rgba(255,255,255,0.05) em 50 elementos
-     — branco translúcido, que acompanha a superfície de baixo, em vez de um
-     slate sólido que fixa um tom só. */
-  --color-hairline: rgb(255 255 255 / 0.06);
+  /* Superfície REBAIXADA. O modelo do Linear não tem equivalente: lá tudo que
+     avança clareia, e nada recua. Este painel recua de propósito — o poço de
+     gráfico em IpeaPage.tsx:245 usa bg-slate-950/30 dentro de um card para
+     parecer encaixado, e overlay branco só clareia.
+
+     Sem este token cerca de um terço das superfícies não teria para onde
+     migrar. Preto translúcido escurece seja qual for o fundo, do mesmo jeito
+     que o overlay branco clareia. */
+  --color-inset: rgb(0 0 0 / 0.2);
+
+  /* Borda hairline. Branco translúcido acompanha a superfície de baixo, em vez
+     de um slate sólido que fixa um tom só.
+
+     Valores vindos do próprio projeto, não da referência: border-white/10 já
+     aparece 71× e border-white/5 33× — juntas batem border-slate-* (115 a 61).
+     A convenção já venceu; os tokens só lhe dão nome. */
+  --color-hairline: rgb(255 255 255 / 0.05);
   --color-hairline-strong: rgb(255 255 255 / 0.1);
 
   /* ── Tracking ─────────────────────────────────────────────────────────────
@@ -163,8 +178,13 @@
      Redefini-los afrouxaria todos os títulos atuais de uma vez.
 
      Descartado o −0.06em da Vercel: é calibrado para o Geist, e nesta stack
-     apertaria demais — sobretudo nos números, que são o conteúdo do painel. */
-  --tracking-display: -0.022em;
+     apertaria demais — sobretudo nos números, que são o conteúdo do painel.
+
+     Não existe `--tracking-display` aqui de propósito. O tracking de display
+     já mora em `--text-display--letter-spacing` (acima), que é quem os
+     componentes consomem via `text-display`. Manter os dois criava duas fontes
+     de verdade com valores divergentes (−0.02 contra −0.022) e nenhuma delas
+     vencendo — a segunda nunca chegou a ser usada. */
   --tracking-body: -0.011em;
 }
 

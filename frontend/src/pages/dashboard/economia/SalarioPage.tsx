@@ -72,7 +72,7 @@ const money = (unit: "BRL" | "USD") => (v: number) =>
 const StatCard = memo(
   ({ title, value, icon, trendClass, floatDelay }: StatCardProps) => (
     <div
-      className={`relative bg-slate-900/60 backdrop-blur-sm border border-white/5 rounded-xl p-4 flex flex-col gap-2 overflow-hidden animate-float hover:-translate-y-1 transition-all duration-300 ${floatDelay ?? ""}`}
+      className={`relative bg-surface-2 backdrop-blur-sm border border-white/5 rounded-xl p-4 flex flex-col gap-2 overflow-hidden animate-float hover:-translate-y-1 transition-all duration-300 ${floatDelay ?? ""}`}
     >
       {/* Brazil-themed color rail at the top of each card */}
       <div className={`absolute top-0 left-0 right-0 h-[2px] ${trendClass}`} />
@@ -242,7 +242,7 @@ export default function SalarioPage() {
          ══════════════════════════════════════════════════════════════════ */}
       <motion.section
         variants={item}
-        className="relative bg-slate-900/50 border border-white/10 backdrop-blur-md rounded-panel p-card shadow-xl shadow-black/20"
+        className="relative bg-surface-3 border border-white/10 backdrop-blur-md rounded-panel p-card shadow-xl shadow-black/20"
       >
         <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
           <h2 className="text-white font-semibold text-sm uppercase tracking-wider flex items-center gap-2">
@@ -322,7 +322,7 @@ export default function SalarioPage() {
               />
             </div>
 
-            <div className="mt-4 rounded-xl overflow-hidden bg-slate-950/40 p-2 border border-white/5">
+            <div className="mt-4 rounded-xl overflow-hidden bg-inset p-2 border border-white/5">
               <LineChartEcharts points={points} color="#10b981" />
             </div>
           </>

@@ -237,7 +237,7 @@ export default function IbgePage() {
         {/* Ranking Chart */}
         <motion.div
           variants={item}
-          className="lg:col-span-2 relative bg-slate-900/50 border border-white/10 backdrop-blur-md rounded-2xl p-6 shadow-xl shadow-black/20 flex flex-col gap-4"
+          className="lg:col-span-2 relative bg-surface-3 border border-white/10 backdrop-blur-md rounded-2xl p-6 shadow-xl shadow-black/20 flex flex-col gap-4"
         >
           <div className="flex items-center gap-2.5">
             <BarChart3
@@ -258,7 +258,7 @@ export default function IbgePage() {
           ) : rankingError ? (
             <VisualErrorState message="Erro ao carregar o ranking." />
           ) : ranking && ranking.length > 0 ? (
-            <div className="mt-2 rounded-xl overflow-hidden bg-slate-950/40 p-2 border border-white/5 min-h-75">
+            <div className="mt-2 rounded-xl overflow-hidden bg-inset p-2 border border-white/5 min-h-75">
               <BarChartEcharts
                 items={ranking.map((e) => ({
                   label: e.sigla,
@@ -345,7 +345,7 @@ export default function IbgePage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
             transition={{ duration: 0.3 }}
-            className="relative bg-slate-900/50 border border-white/10 backdrop-blur-md rounded-2xl p-6 shadow-xl shadow-black/20"
+            className="relative bg-surface-3 border border-white/10 backdrop-blur-md rounded-2xl p-6 shadow-xl shadow-black/20"
           >
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-white font-semibold text-sm uppercase tracking-wider flex items-center gap-2">

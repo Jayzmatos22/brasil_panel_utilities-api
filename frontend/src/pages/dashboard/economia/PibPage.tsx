@@ -65,7 +65,7 @@ function SectionCard({
     <motion.section
       whileHover={{ y: -2 }}
       transition={{ type: "spring", stiffness: 220, damping: 22 }}
-      className={`group relative overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-950/60 backdrop-blur-sm shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_20px_40px_-24px_rgba(0,0,0,0.6)] ${className}`}
+      className={`group relative overflow-hidden rounded-2xl border border-slate-800/80 bg-surface-3 backdrop-blur-sm shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_20px_40px_-24px_rgba(0,0,0,0.6)] ${className}`}
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-emerald-400/30 to-transparent" />
       <header className="flex items-start justify-between gap-4 px-6 pt-5 pb-3">
@@ -627,7 +627,7 @@ export default function PibPage() {
                     value={year}
                     onChange={handleYearChange}
                     placeholder="ex: 2024"
-                    className="w-full h-11 px-3 pr-9 rounded-lg bg-slate-950/70 text-white placeholder:text-slate-600 border border-emerald-900/50 outline-none focus:ring-2 focus:ring-emerald-400/40 focus:border-emerald-400/50 transition-all text-base font-mono tabular-nums"
+                    className="w-full h-11 px-3 pr-9 rounded-lg bg-inset text-white placeholder:text-slate-600 border border-emerald-900/50 outline-none focus:ring-2 focus:ring-emerald-400/40 focus:border-emerald-400/50 transition-all text-base font-mono tabular-nums"
                   />
                   <CalendarSearch
                     size={14}
@@ -668,7 +668,7 @@ export default function PibPage() {
                   value={compareYear}
                   onChange={handleCompareYearChange}
                   placeholder="ex: 2010"
-                  className="w-full h-11 px-3 pr-9 rounded-lg bg-slate-950/70 text-white placeholder:text-slate-600 border border-[#FFDF00]/20 outline-none focus:ring-2 focus:ring-[#FFDF00]/40 focus:border-[#FFDF00]/50 transition-all text-base font-mono tabular-nums"
+                  className="w-full h-11 px-3 pr-9 rounded-lg bg-inset text-white placeholder:text-slate-600 border border-[#FFDF00]/20 outline-none focus:ring-2 focus:ring-[#FFDF00]/40 focus:border-[#FFDF00]/50 transition-all text-base font-mono tabular-nums"
                 />
                 <CalendarSearch
                   size={14}
@@ -874,7 +874,7 @@ export default function PibPage() {
                   </div>
                 )}
 
-                <div className="relative rounded-xl border border-[#FFDF00]/10 bg-slate-950/50 overflow-hidden">
+                <div className="relative rounded-xl border border-[#FFDF00]/10 bg-inset overflow-hidden">
                   <div
                     className="absolute inset-0 opacity-[0.03] pointer-events-none"
                     style={{
@@ -974,7 +974,7 @@ export default function PibPage() {
           icon={<LineChartIcon size={16} />}
           badge={
             stats && (
-              <span className="hidden sm:inline-flex rounded-md border border-slate-800 bg-slate-900/80 px-2 py-1 text-[10px] font-mono uppercase tracking-wider text-slate-300">
+              <span className="hidden sm:inline-flex rounded-md border border-slate-800 bg-surface-2 px-2 py-1 text-[10px] font-mono uppercase tracking-wider text-slate-300">
                 {stats.points.length} pontos
               </span>
             )
@@ -995,7 +995,7 @@ export default function PibPage() {
                 {statBlocks.map((block, idx) => (
                   <div
                     key={idx}
-                    className={`rounded-lg border px-4 py-3 ${block.isVar ? block.bgClass : "bg-slate-900/60 border-slate-800"}`}
+                    className={`rounded-lg border px-4 py-3 ${block.isVar ? block.bgClass : "bg-surface-2 border-slate-800"}`}
                   >
                     <p className="text-[10px] uppercase tracking-[0.14em] text-slate-500 flex items-center gap-1.5">
                       {block.icon} {block.label}
@@ -1008,7 +1008,7 @@ export default function PibPage() {
                   </div>
                 ))}
               </div>
-              <div className="rounded-lg border border-slate-800/70 bg-slate-950/60 p-3">
+              <div className="rounded-lg border border-slate-800/70 bg-inset p-3">
                 <LineChartEcharts points={stats.points} color="#009C3B" />
               </div>
             </>
@@ -1033,7 +1033,7 @@ export default function PibPage() {
           badge={
             pibEstados &&
             pibEstados.length > 0 && (
-              <span className="rounded-md border border-slate-800 bg-slate-900/80 px-2 py-1 text-[10px] font-mono uppercase tracking-wider text-slate-300">
+              <span className="rounded-md border border-slate-800 bg-surface-2 px-2 py-1 text-[10px] font-mono uppercase tracking-wider text-slate-300">
                 Ref · {pibEstados[0].year}
               </span>
             )
@@ -1049,7 +1049,7 @@ export default function PibPage() {
               title="Erro ao carregar o PIB por estado"
             />
           ) : pibEstados && pibEstados.length > 0 ? (
-            <div className="rounded-lg border border-slate-800/70 bg-slate-950/60 p-3">
+            <div className="rounded-lg border border-slate-800/70 bg-inset p-3">
               {/* Abaixo de 640px o gráfico de barras deixa de funcionar: São
                   Paulo é ~230× o menor estado, e nessa largura as barras dos
                   vinte e poucos menores caem abaixo de 2px — todas visualmente

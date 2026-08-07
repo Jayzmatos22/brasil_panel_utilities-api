@@ -126,7 +126,7 @@ export const AggregatedTotalPanel = memo(function AggregatedTotalPanel({
           {/* Barra de participação — 1 fatia por série, cor vem do mapa */}
           <div className="flex flex-col gap-2">
             <p className="text-[10px] uppercase tracking-wider text-slate-500">Participação no total</p>
-            <div className="flex h-3 w-full overflow-hidden rounded-full border border-white/10 bg-slate-900/60">
+            <div className="flex h-3 w-full overflow-hidden rounded-full border border-white/10 bg-inset">
               {aggregate.shares.map((sh) => (
                 <div
                   key={sh.key}

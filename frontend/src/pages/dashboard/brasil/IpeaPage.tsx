@@ -242,7 +242,7 @@ const SerieCard = memo(function SerieCard({ serie, accent }: SerieCardProps) {
 
       {/* Gráfico sempre visível — scroll horizontal se muitos pontos */}
       {points.length >= 2 ? (
-        <div className="border-t border-white/5 bg-slate-950/30">
+        <div className="border-t border-white/5 bg-inset">
           <div className="px-4 pt-3 pb-1 flex items-center justify-between text-[10px] uppercase tracking-wider text-slate-500">
             <span>Série histórica completa</span>
           </div>
@@ -440,7 +440,7 @@ const CategoryHeader = memo(function CategoryHeader({
               onFilterChange(e.target.value)
             }
             placeholder="Buscar série..."
-            className="w-full h-10 coarse:min-h-11 pl-9 pr-9 rounded-lg bg-slate-900/70 border border-white/10
+            className="w-full h-10 coarse:min-h-11 pl-9 pr-9 rounded-lg bg-inset border border-white/10
                        text-slate-200 text-sm placeholder:text-slate-600
                        focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50
                        hover:border-white/20 transition-colors"

@@ -100,7 +100,7 @@ export default function CambioPage() {
       </motion.header>
 
       {/* ── CONVERSOR PANEL ────────────────────────────────────────────── */}
-      <motion.section id="sec-conversor" variants={item} className="bg-slate-900/50 border border-white/10 backdrop-blur-md rounded-panel p-card shadow-xl scroll-mt-24">
+      <motion.section id="sec-conversor" variants={item} className="bg-surface-3 border border-white/10 backdrop-blur-md rounded-panel p-card shadow-xl scroll-mt-24">
           <div className="flex flex-col gap-6">
             <div>
               <h2 className="text-white font-semibold text-sm uppercase tracking-wider mb-1 flex items-center gap-2">
@@ -145,7 +145,7 @@ export default function CambioPage() {
       </motion.section>
 
       {/* ── ULTIMOS 30 DIAS ────────────────────────────────────────────── */}
-      <motion.section id="sec-30-dias" variants={item} className="bg-slate-900/50 border border-white/10 rounded-2xl p-6 shadow-xl scroll-mt-24">
+      <motion.section id="sec-30-dias" variants={item} className="bg-surface-3 border border-white/10 rounded-2xl p-6 shadow-xl scroll-mt-24">
         <h2 className="text-white font-semibold text-sm uppercase tracking-wider mb-6 flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse" />Últimos 30 dias — {from}/{to}</h2>
         {loadingLast30 ? (
           <div className="flex items-center gap-2 text-slate-400 text-sm py-4"><LoaderCircle size={16} className="animate-spin text-emerald-400" /> Carregando...</div>
@@ -169,7 +169,7 @@ export default function CambioPage() {
       </motion.section>
 
       {/* ── HISTORICO POR PERIODO ───────────────────────────────────────── */}
-      <motion.section id="sec-historico" variants={item} className="bg-slate-900/50 border border-white/10 rounded-2xl p-6 shadow-xl scroll-mt-24">
+      <motion.section id="sec-historico" variants={item} className="bg-surface-3 border border-white/10 rounded-2xl p-6 shadow-xl scroll-mt-24">
         <h2 className="text-white font-semibold text-sm uppercase tracking-wider mb-6 flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-yellow-400 animate-pulse" />Histórico por Período</h2>
         <div className="flex items-end gap-4 flex-wrap mb-8">
           <div className="flex flex-col gap-1.5">
@@ -187,23 +187,23 @@ export default function CambioPage() {
         ) : stats ? (
           <div className="flex flex-col gap-6">
             <div className="grid-auto-cards gap-4 [--card-min:11rem]">
-              <div className="bg-slate-900/60 border border-white/5 rounded-xl p-4 flex flex-col gap-2">
+              <div className="bg-surface-2 border border-white/5 rounded-xl p-4 flex flex-col gap-2">
                 <span className="text-slate-400 text-xs font-medium uppercase tracking-wider">Variação</span>
                 <span className={`flex items-center gap-1.5 font-mono font-semibold text-lg ${stats.change > 0 ? "text-emerald-400" : stats.change < 0 ? "text-red-400" : "text-slate-300"}`}>
                   {stats.change > 0 ? <TrendingUp size={16} /> : stats.change < 0 ? <TrendingDown size={16} /> : <Minus size={16} />}
                   {stats.change > 0 ? "+" : ""}{fmt(stats.change)} ({stats.pct.toFixed(2)}%)
                 </span>
               </div>
-              <div className="bg-slate-900/60 border border-white/5 rounded-xl p-4 flex flex-col gap-2">
+              <div className="bg-surface-2 border border-white/5 rounded-xl p-4 flex flex-col gap-2">
                 <span className="text-slate-400 text-xs font-medium uppercase tracking-wider">Mínima</span>
                 <span className="font-mono text-blue-300 font-semibold text-lg">{fmt(stats.min)}</span>
               </div>
-              <div className="bg-slate-900/60 border border-white/5 rounded-xl p-4 flex flex-col gap-2">
+              <div className="bg-surface-2 border border-white/5 rounded-xl p-4 flex flex-col gap-2">
                 <span className="text-slate-400 text-xs font-medium uppercase tracking-wider">Máxima</span>
                 <span className="font-mono text-yellow-300 font-semibold text-lg">{fmt(stats.max)}</span>
               </div>
             </div>
-            <div className="mt-2 rounded-xl overflow-hidden bg-slate-950/40 p-2 border border-white/5 min-h-75">
+            <div className="mt-2 rounded-xl overflow-hidden bg-inset p-2 border border-white/5 min-h-75">
               <LineChartEcharts points={stats.points} color="#06b6d4" />
             </div>
           </div>
