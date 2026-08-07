@@ -42,9 +42,17 @@
      p-3 e p-4 de chips e linhas densas permanecem na escala numérica: são
      outro nível semântico, não ruído. */
   --spacing-gutter: clamp(1rem, 0.75rem + 1.2vw, 1.5rem);   /* 16→24  padding do <main> */
-  --spacing-card: clamp(1rem, 0.8rem + 1cqi, 2rem);         /* 16→32  padding de card */
+  /* Card e seção subiram na passada de refino inspirada em Linear/Vercel.
+     O padrão recorrente nos dois é folga interna generosa e respiro largo
+     entre blocos; o painel estava denso e "empilhado".
+
+     Os números NÃO vêm de lá. A referência usa 128px entre seções (Linear) e
+     escala até 256px (Vercel) — valores de landing page. Este painel mostra
+     dez indicadores por tela, e 128px obrigaria a rolar por cada um. Adotei o
+     princípio e calibrei para UI densa de dados. */
+  --spacing-card: clamp(1.25rem, 0.95rem + 1.2cqi, 2.25rem); /* 20→36  padding de card */
   --spacing-banner: clamp(1.25rem, 1rem + 2cqi, 2.5rem);    /* 20→40  padding de hero */
-  --spacing-section: clamp(1.5rem, 1.2rem + 1.5vw, 2rem);   /* 24→32  gap entre seções */
+  --spacing-section: clamp(2.5rem, 2rem + 2vw, 4rem);       /* 40→64  gap entre seções */
 
   /* Altura mínima dos banners de página. Hoje min-h-65 (260px) fixo consome
      mais de 60% da tela em 375px. */
@@ -68,6 +76,9 @@
 
   --text-title: clamp(1.25rem, 1.1rem + 0.8cqi, 1.5rem);    /* 20→24  título de seção */
   --text-title--line-height: 1.2;
+  /* O tracking do Linear escala com o tamanho: −0.022em no display, −0.012em
+     no intertítulo, −0.011em no corpo. O título de seção não tinha nenhum. */
+  --text-title--letter-spacing: -0.012em;
 
   /* Nomeia os três tamanhos arbitrários abaixo de text-xs que o projeto já
      usa (~55 ocorrências de text-[10px] / text-[11px] / text-[9px]).
@@ -106,8 +117,55 @@
      Colapsa as ~35 sombras arbitrárias em duas famílias. Aplicadas apenas
      onde já houver edição de layout; as demais superfícies ficam intactas
      para não alterar a identidade visual. */
-  --shadow-panel: 0 8px 40px -15px rgb(0 0 0 / 0.5);
-  --shadow-panel-sm: 0 8px 30px -12px rgb(0 0 0 / 0.6);
+  /* O `inset 0 1px 0` é o "lip" de luz no topo da superfície, copiado do
+     Linear (rgba(255,255,255,0.04) 0 1px 0 0 inset). Simula a quina do card
+     pegando luz e é o que dá volume SEM sombra pesada.
+
+     A sombra projetada continua. A referência quase não usa — o Linear tem
+     duas camadas (fundo + superfície), este painel tem quatro (página →
+     painel → card → linha). Trocar sombra por borda achataria a hierarquia,
+     que é justamente o que não se quer. Agora a profundidade vem de três
+     sinais somados: luminosidade, borda e luz superior. */
+  --shadow-panel:
+    inset 0 1px 0 0 rgb(255 255 255 / 0.05),
+    0 8px 40px -15px rgb(0 0 0 / 0.5);
+  --shadow-panel-sm:
+    inset 0 1px 0 0 rgb(255 255 255 / 0.04),
+    0 8px 30px -12px rgb(0 0 0 / 0.6);
+
+  /* ── Camadas por overlay translúcido ──────────────────────────────────────
+     O achado central da extração. O Linear repete rgba(255,255,255,0.05) em
+     83 elementos e nunca usa cor sólida para superfície; aqui os cards usam
+     bg-slate-950/60 e bg-slate-900/70 — matizes DIFERENTES competindo entre
+     si, que é o que produz a sensação de empilhamento.
+
+     Overlay branco sobre um fundo único faz as camadas comporem em vez de
+     brigarem: duas camadas sobrepostas viram um tom, não dois materiais.
+
+     Ficam disponíveis para adoção incremental, componente a componente. */
+  --color-surface-1: rgb(255 255 255 / 0.02);
+  --color-surface-2: rgb(255 255 255 / 0.04);
+  --color-surface-3: rgb(255 255 255 / 0.06);
+
+  /* Borda hairline. O Linear usa 0.8px rgba(255,255,255,0.05) em 50 elementos
+     — branco translúcido, que acompanha a superfície de baixo, em vez de um
+     slate sólido que fixa um tom só. */
+  --color-hairline: rgb(255 255 255 / 0.06);
+  --color-hairline-strong: rgb(255 255 255 / 0.1);
+
+  /* ── Tracking ─────────────────────────────────────────────────────────────
+     Medido no Linear: −0.022em em display (64px e 48px), −0.012em em
+     intertítulo (20px), −0.011em em corpo (15px). O tracking negativo escala
+     com o tamanho, e é o que dá o aspecto "assentado" dos títulos grandes.
+
+     Nomes propositalmente fora de `tight`/`tighter`: esses já existem como
+     padrão do Tailwind (−0.025em / −0.05em) e são usados pelo projeto.
+     Redefini-los afrouxaria todos os títulos atuais de uma vez.
+
+     Descartado o −0.06em da Vercel: é calibrado para o Geist, e nesta stack
+     apertaria demais — sobretudo nos números, que são o conteúdo do painel. */
+  --tracking-display: -0.022em;
+  --tracking-body: -0.011em;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

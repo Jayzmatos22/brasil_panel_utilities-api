@@ -52,6 +52,19 @@
   );
 }
 
+/* Tracking de corpo. O Linear aplica −0.011em já no texto de 15px, e é parte
+   grande do porquê de o texto dele parecer mais assentado que o padrão.
+
+   Em `body` para valer por herança, sem tocar em componente. Fica em App.css e
+   não no @theme porque é uma regra aplicada, não um token — o token está no
+   index.css e é este que a regra consome.
+
+   Efeito real: −0.15px em texto de 14px. Não desalinha coluna numérica, que
+   depende de tabular-nums e não de tracking. */
+body {
+  letter-spacing: var(--tracking-body);
+}
+
 ::placeholder {
   font-family:
     "Lucida Sans", "Lucida Sans Regular", "Lucida Grande",
