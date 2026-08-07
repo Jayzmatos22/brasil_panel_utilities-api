@@ -161,8 +161,8 @@ export default function DashboardLayout() {
       {/* ── Header ───────────────────────────────────────────────────────── */}
       {/* px-gutter (era px-5) alinha o padding do header ao do <main>, de modo
           que a logo passa a ficar na mesma coluna do conteúdo. */}
-      <header className="h-14 shrink-0 bg-slate-900 border-b border-slate-800
-                         flex items-center justify-between gap-2 px-gutter z-40">
+      <header className="h-14 shrink-0 header-dashboard border-b border-slate-800
+                         flex items-center justify-between gap-2 px-gutter z-40 lg:z-60 backdrop-blur-sm sticky top-0">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0 overflow-hidden">
           {/* `p-2 -m-2` amplia a área de clique de 18px para 34px com
               deslocamento de layout ZERO — a margem negativa cancela o
