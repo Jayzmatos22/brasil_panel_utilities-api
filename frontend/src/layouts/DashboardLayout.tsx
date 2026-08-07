@@ -156,7 +156,7 @@ export default function DashboardLayout() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-950">
+    <div className="min-h-screen flex flex-col bg-dashboard">
 
       {/* ── Header ───────────────────────────────────────────────────────── */}
       {/* px-gutter (era px-5) alinha o padding do header ao do <main>, de modo

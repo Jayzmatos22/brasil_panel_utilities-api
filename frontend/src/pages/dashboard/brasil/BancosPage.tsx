@@ -50,7 +50,13 @@ export default function BancosPage() {
 
   return (
     <motion.div
-      className="@container/page flex flex-col gap-section bg-[#020617] min-h-screen py-6" // Assuming slate-950 page background
+      /* Sem fundo próprio: quem pinta o fundo é o DashboardLayout, e esta era
+         a única página que repetia a cor por conta. O #020617 chapado cobriria
+         o gradiente do layout com um retângulo opaco — e o comentário que
+         acompanhava a linha ("assuming slate-950 page background") já admitia
+         que era palpite. O min-h-screen saiu junto: estava aninhado dentro de
+         outro min-h-screen e só empurrava a página além do viewport. */
+      className="@container/page flex flex-col gap-section py-6"
       variants={container}
       initial="hidden"
       animate="show"

@@ -26,6 +26,32 @@
   background-color: rgba(2, 22, 13, 0.951);
 }
 
+/* Fundo do dashboard inteiro. Vive no DashboardLayout, então uma regra aqui
+   alcança as dez páginas — nenhuma delas declara fundo próprio.
+
+   Substitui `bg-slate-950` (#020617). O ganho não é o gradiente em si: é o
+   topo ficar mais ESCURO que antes. Os cards do painel usam slate translúcido
+   (bg-slate-950/60, bg-slate-900/70), então sobre um fundo de luminosidade
+   parecida eles praticamente somem. Descer o fundo para #05070d devolve o
+   contraste sem tocar em nenhum card.
+
+   Não rola com o conteúdo, e isso sai de graça: a rolagem acontece dentro do
+   <main class="overflow-y-auto">, então este elemento permanece do tamanho do
+   viewport. O gradiente se comporta como fundo fixo sem precisar de
+   background-attachment, que teria custo de repintura no mobile.
+
+   background-color antes da imagem é o fallback: se o gradiente falhar, a cor
+   sólida do topo assume em vez de expor o branco do documento. */
+.bg-dashboard {
+  background-color: #05070d;
+  background-image: linear-gradient(
+    to bottom,
+    #05070d 0%,
+    #080b14 45%,
+    #0b0f1a 100%
+  );
+}
+
 ::placeholder {
   font-family:
     "Lucida Sans", "Lucida Sans Regular", "Lucida Grande",
