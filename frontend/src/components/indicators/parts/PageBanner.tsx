@@ -58,7 +58,11 @@ export const PageBanner = memo(function PageBanner({
   return (
     <motion.section
       variants={itemVariants}
-      className="@container/banner relative overflow-hidden rounded-panel bg-slate-950/40" // Fundo semi-transparente para o container
+      /* Sem fundo próprio, de propósito. O container tinha bg-slate-950/40, que
+         punha uma lâmina azulada entre a imagem e a página e criava justamente a
+         borda que se queria dissolver. Sem ela, o que aparece atrás da imagem é o
+         gradiente real do dashboard — e aí não há dois materiais, só um. */
+      className="@container/banner relative overflow-hidden rounded-panel"
     >
       {/* 1. Camada de Profundidade (A imagem que "sai" do fundo) */}
       {image && (
@@ -72,17 +76,28 @@ export const PageBanner = memo(function PageBanner({
             aria-hidden
             className="h-full w-full object-cover grayscale-20 brightness-[0.7]"
             style={{
-              // Máscara mais agressiva: 
-              // Linear nas bordas para sumir com o corte do card + Radial no centro
+              /* A máscara é o único mecanismo de fusão daqui. Ela torna o pixel
+                 transparente de verdade, então o que aparece na transição é o
+                 fundo REAL da página, seja qual for a cor dele.
+
+                 É diferente de sobrepor um gradiente colorido: aquele precisa
+                 acertar a cor do fundo, e antes errava — desvanecia para
+                 slate-950 (#020617) enquanto o dashboard é #05070d→#0b0f1a. Dez
+                 pontos de azul a mais, o que lia como moldura em vez de fusão.
+
+                 As paradas foram para 40%/60%: antes eram 15%/85%, ou seja, a
+                 imagem ficava opaca em 70% da largura e só então caía — a queda
+                 curta é que virava aresta. Agora ela desvanece durante quase toda
+                 a superfície e chega nas bordas já em zero. */
               WebkitMaskImage: `
-                linear-gradient(to right, transparent, black 15%, black 85%, transparent),
-                linear-gradient(to bottom, transparent, black 15%, black 85%, transparent),
-                radial-gradient(circle at 50% 50%, black 30%, transparent 90%)
+                linear-gradient(to right, transparent, black 28%, black 72%, transparent),
+                linear-gradient(to bottom, transparent, black 22%, black 78%, transparent),
+                radial-gradient(ellipse at 50% 45%, black 35%, transparent 88%)
               `,
               maskImage: `
-                linear-gradient(to right, transparent, black 15%, black 85%, transparent),
-                linear-gradient(to bottom, transparent, black 15%, black 85%, transparent),
-                radial-gradient(circle at 50% 50%, black 30%, transparent 90%)
+                linear-gradient(to right, transparent, black 28%, black 72%, transparent),
+                linear-gradient(to bottom, transparent, black 22%, black 78%, transparent),
+                radial-gradient(ellipse at 50% 45%, black 35%, transparent 88%)
               `,
               maskComposite: "intersect",
               WebkitMaskComposite: "source-in",
@@ -91,11 +106,17 @@ export const PageBanner = memo(function PageBanner({
         </div>
       )}
 
-      {/* 2. Overlay de "Vignette" para garantir que as bordas sejam EXATAMENTE a cor do fundo */}
-      <div className="absolute inset-0 z-0 pointer-events-none ring-1 ring-inset ring-white/0 rounded-2xl shadow-[inset_0_0_100px_rgba(2,6,23,1)]" />
+      {/* 2. Legibilidade do texto — PRETO, não slate.
+             Antes eram duas camadas: uma vinheta `inset 0 0 100px rgba(2,6,23,1)`
+             com alfa 1, e um gradiente `from-slate-950`. As duas eram opacas e
+             azuladas, e pintavam por cima da máscara — a máscara dissolvia a
+             imagem e elas redesenhavam a borda logo em seguida.
 
-      {/* 3. Gradientes de Legibilidade */}
-      <div className="absolute inset-0 z-10 bg-linear-to-t from-slate-950 via-transparent to-slate-950/50" />
+             Preto puro resolve porque só reduz luminância, sem deslocar matiz:
+             escurece o suficiente para o texto ter contraste e continua correto
+             sobre qualquer ponto do gradiente do dashboard, que varia de #05070d
+             no topo a #0b0f1a embaixo. Um slate fixo só acertaria uma altura. */}
+      <div className="absolute inset-0 z-10 bg-linear-to-t from-black/80 via-black/10 to-black/40" />
 
       {/* Conteúdo (Z-index alto para ficar acima de tudo) */}
       {/* min-h-65 (260px) fixo + p-8 faziam o banner ocupar mais de 60% da tela
