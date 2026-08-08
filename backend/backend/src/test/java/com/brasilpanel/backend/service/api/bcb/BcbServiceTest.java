@@ -51,9 +51,19 @@ class BcbServiceTest {
         bcbService = new BcbService(builder.build(), mock(BcbValidator.class), financialDataService);
     }
 
+    /**
+     * Hoje nunca está vencido em nenhuma periodicidade, então prende o fixture ao
+     * caminho "banco em dia" sem depender do dia em que a suíte roda. Uma data fixa
+     * aqui envelhece: com a checagem de idade em vigor, ela vence e o serviço passa
+     * a ir à API, que não é o que estes casos querem exercitar.
+     */
     private FinancialDataPoint ponto(String valor) {
+        return ponto(valor, LocalDate.now());
+    }
+
+    private FinancialDataPoint ponto(String valor, LocalDate data) {
         return FinancialDataPoint.builder()
-                .referenceDate(LocalDate.of(2026, 7, 20))
+                .referenceDate(data)
                 .value(new BigDecimal(valor))
                 .build();
     }
@@ -68,9 +78,13 @@ class BcbServiceTest {
     }
 
     private void bancoCompleto(List<FinancialDataPoint> historico) {
-        when(financialDataService.getLastPoint("432", FONTE)).thenReturn(Optional.of(ponto("15.00")));
-        when(financialDataService.getLastPoint("1178", FONTE)).thenReturn(Optional.of(ponto("1.10")));
-        when(financialDataService.getLastPoint("4189", FONTE)).thenReturn(Optional.of(ponto("7.80")));
+        bancoCompletoEm(LocalDate.now(), historico);
+    }
+
+    private void bancoCompletoEm(LocalDate data, List<FinancialDataPoint> historico) {
+        when(financialDataService.getLastPoint("432", FONTE)).thenReturn(Optional.of(ponto("15.00", data)));
+        when(financialDataService.getLastPoint("1178", FONTE)).thenReturn(Optional.of(ponto("1.10", data)));
+        when(financialDataService.getLastPoint("4189", FONTE)).thenReturn(Optional.of(ponto("7.80", data)));
         when(financialDataService.getRecentPoints("4390", FONTE, 12)).thenReturn(historico);
     }
 
@@ -86,6 +100,35 @@ class BcbServiceTest {
         assertThat(selic.accumulatedYear()).isEqualTo(7.80);
         // Nenhuma requisição foi registrada: se houvesse chamada, verify() falharia.
         server.verify();
+    }
+
+    @Test
+    @DisplayName("com o banco vencido e a API fora, serve o banco em vez de derrubar a resposta")
+    void servesStaleDatabaseWhenApiIsDown() {
+        // Antes da checagem de idade este caminho não existia: o banco vencido caía no
+        // refresh e a falha da API virava 502, descartando dado perfeitamente utilizável.
+        bancoCompletoEm(LocalDate.of(2020, 1, 2), dozePontosDe("1.00"));
+        server.expect(manyTimes(), anything()).andRespond(withServerError());
+
+        SelicDataDTO selic = bcbService.getSelic();
+
+        assertThat(selic.currentRate())
+                .as("dado velho identificado no log é melhor que erro para o painel")
+                .isEqualTo(15.00);
+    }
+
+    @Test
+    @DisplayName("sem nada no banco e com a API fora, a falha sobe")
+    void failsWhenApiIsDownAndDatabaseIsEmpty() {
+        when(financialDataService.getLastPoint(anyString(), anyString())).thenReturn(Optional.empty());
+        when(financialDataService.getRecentPoints(anyString(), anyString(), anyInt()))
+                .thenReturn(List.of());
+        server.expect(manyTimes(), anything()).andRespond(withServerError());
+
+        assertThatThrownBy(() -> bcbService.getSelic())
+                .as("sem dado local não há o que degradar — mascarar isso entregaria "
+                        + "resposta vazia como se fosse legítima")
+                .isInstanceOf(BcbApiException.class);
     }
 
     @Test
