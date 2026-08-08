@@ -4,6 +4,8 @@ import com.brasilpanel.backend.dto.api.bcb.*;
 import com.brasilpanel.backend.exception.customized.BcbApiException;
 import com.brasilpanel.backend.model.FinancialDataPoint;
 import com.brasilpanel.backend.service.financial.FinancialDataService;
+import com.brasilpanel.backend.service.financial.SeriesFreshness;
+import com.brasilpanel.backend.service.financial.SeriesPeriodicity;
 import com.brasilpanel.backend.validators.api.BcbValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,12 +14,14 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 
 
@@ -36,6 +40,39 @@ public class BcbService implements BcbImplementations{
 
 
 
+    /**
+     * Regra única de leitura DB-first do BCB.
+     *
+     * <p>Antes cada getter perguntava só {@code isPresent()}, ou seja, "existe algum
+     * ponto?", nunca "de quando ele é". Um ponto de meses atrás passava nesse teste
+     * igual a um de ontem, então a leitura nunca revalidava: se o scheduler parasse,
+     * o painel seguia servindo valor velho como se fosse atual, sem erro e sem log.
+     *
+     * <p>Do outro lado faltava o caminho inverso: com o banco vencido e a API fora, a
+     * exceção subia e derrubava a resposta mesmo havendo dado utilizável. Dado velho
+     * identificado no log é melhor que 502. Sem nada no banco não há o que degradar,
+     * e aí a falha sobe.
+     */
+    private <T> T dbFirst(String rotulo, Optional<T> doBanco, LocalDate ultimaData,
+                          SeriesPeriodicity periodicidade, Supplier<T> refresh) {
+        if (doBanco.isPresent() && !SeriesFreshness.isStale(ultimaData, periodicidade)) {
+            return doBanco.get();
+        }
+        if (doBanco.isPresent()) {
+            log.info("{} desatualizado no banco (última: {}). Buscando API...", rotulo, ultimaData);
+        }
+        try {
+            return refresh.get();
+        } catch (BcbApiException e) {
+            if (doBanco.isEmpty()) {
+                throw e;
+            }
+            log.warn("API do BCB indisponível para {} ({}). Servindo dados do banco (última: {}).",
+                    rotulo, e.getMessage(), ultimaData);
+            return doBanco.get();
+        }
+    }
+
     @Cacheable("selic")
     public SelicDataDTO getSelic() {
         // DB-first: reconstrói o DTO a partir dos pontos salvos (séries 432/1178/4189).
@@ -43,20 +80,24 @@ public class BcbService implements BcbImplementations{
         Optional<FinancialDataPoint> current = financialDataService.getLastPoint("432", SOURCE);
         Optional<FinancialDataPoint> month   = financialDataService.getLastPoint("1178", SOURCE);
         Optional<FinancialDataPoint> year    = financialDataService.getLastPoint("4189", SOURCE);
+
+        Optional<SelicDataDTO> doBanco = Optional.empty();
         if (current.isPresent() && month.isPresent() && year.isPresent()) {
             // Acumulado 12m: compõe os 12 últimos pontos MENSAIS (série 4390, Selic acum. no mês % a.m.).
             // A 432 é a meta em % a.a.; compô-la como mensal inflava o resultado (~400%).
             List<FinancialDataPoint> history = financialDataService.getRecentPoints("4390", SOURCE, 12);
             if (history.size() == 12) {
-                return new SelicDataDTO(
+                doBanco = Optional.of(new SelicDataDTO(
                         current.get().getValue().doubleValue(),
                         month.get().getValue().doubleValue(),
                         year.get().getValue().doubleValue(),
                         compoundPercent(history)
-                );
+                ));
             }
         }
-        return refreshSelic();
+        return dbFirst("Selic", doBanco,
+                current.map(FinancialDataPoint::getReferenceDate).orElse(null),
+                SeriesPeriodicity.DIARIA_UTIL, this::refreshSelic);
     }
 
     /**
@@ -111,16 +152,20 @@ public class BcbService implements BcbImplementations{
         // Acumulado e composição 12m recomputados a partir dos últimos 12 pontos mensais (série 433).
         Optional<FinancialDataPoint> currentMonthDb = financialDataService.getLastPoint("433", SOURCE);
         Optional<FinancialDataPoint> accumulatedYearDb = financialDataService.getLastPoint("13522", SOURCE);
+
+        Optional<IpcaDataDTO> doBanco = Optional.empty();
         if (currentMonthDb.isPresent() && accumulatedYearDb.isPresent()) {
             List<FinancialDataPoint> history = financialDataService.getRecentPoints("433", SOURCE, 12);
-            return new IpcaDataDTO(
+            doBanco = Optional.of(new IpcaDataDTO(
                     currentMonthDb.get().getValue().doubleValue(),
                     accumulatedYearDb.get().getValue().doubleValue(),
                     sumPercent(history),
                     compoundPercent(history)
-            );
+            ));
         }
-        return refreshIpca();
+        return dbFirst("IPCA", doBanco,
+                currentMonthDb.map(FinancialDataPoint::getReferenceDate).orElse(null),
+                SeriesPeriodicity.MENSAL, this::refreshIpca);
     }
 
     /**
@@ -173,11 +218,11 @@ public class BcbService implements BcbImplementations{
     public DollarPtaxDTO getDollarPtax() {
         // DB-first: serve o último ponto salvo; só chama a API se o banco estiver vazio
         Optional<FinancialDataPoint> last = financialDataService.getLastPoint("1", SOURCE);
-        if (last.isPresent()) {
-            FinancialDataPoint p = last.get();
-            return new DollarPtaxDTO(p.getReferenceDate().format(BCB_DATE), p.getValue().doubleValue());
-        }
-        return refreshDollarPtax();
+        Optional<DollarPtaxDTO> doBanco = last.map(p ->
+                new DollarPtaxDTO(p.getReferenceDate().format(BCB_DATE), p.getValue().doubleValue()));
+        return dbFirst("Dólar PTAX", doBanco,
+                last.map(FinancialDataPoint::getReferenceDate).orElse(null),
+                SeriesPeriodicity.DIARIA_UTIL, this::refreshDollarPtax);
     }
 
     /**
@@ -215,15 +260,14 @@ public class BcbService implements BcbImplementations{
     public CdiDataDTO getCdiRate() {
         // DB-first: serve o último ponto salvo; só chama a API se o banco estiver vazio
         Optional<FinancialDataPoint> last = financialDataService.getLastPoint("12", SOURCE);
-        if (last.isPresent()) {
-            FinancialDataPoint p = last.get();
-            return new CdiDataDTO(
-                    p.getReferenceDate().format(BCB_DATE),
-                    p.getValue().doubleValue(),
-                    p.getSecondaryValue() != null ? p.getSecondaryValue().doubleValue() : null
-            );
-        }
-        return refreshCdiRate();
+        Optional<CdiDataDTO> doBanco = last.map(p -> new CdiDataDTO(
+                p.getReferenceDate().format(BCB_DATE),
+                p.getValue().doubleValue(),
+                p.getSecondaryValue() != null ? p.getSecondaryValue().doubleValue() : null
+        ));
+        return dbFirst("CDI", doBanco,
+                last.map(FinancialDataPoint::getReferenceDate).orElse(null),
+                SeriesPeriodicity.DIARIA_UTIL, this::refreshCdiRate);
     }
 
     /**
@@ -269,12 +313,18 @@ public class BcbService implements BcbImplementations{
     public List<SelicHistoryDTO> getSelicHistory () {
         // DB-first: serve os 12 pontos mais recentes da meta SELIC (série 4390) em ordem cronológica
         List<FinancialDataPoint> points = financialDataService.getRecentPoints("4390", SOURCE, 12);
-        if (!points.isEmpty()) {
-            return points.stream()
-                    .map(p -> new SelicHistoryDTO(p.getReferenceDate().format(BCB_DATE), p.getValue().doubleValue()))
-                    .toList();
-        }
-        return refreshSelicHistory();
+        Optional<List<SelicHistoryDTO>> doBanco = points.isEmpty() ? Optional.empty()
+                : Optional.of(points.stream()
+                        .map(p -> new SelicHistoryDTO(
+                                p.getReferenceDate().format(BCB_DATE), p.getValue().doubleValue()))
+                        .toList());
+        return dbFirst("Histórico Selic", doBanco, ultimaData(points),
+                SeriesPeriodicity.MENSAL, this::refreshSelicHistory);
+    }
+
+    /** Pontos vêm em ordem cronológica crescente — o último é o mais recente. */
+    private LocalDate ultimaData(List<FinancialDataPoint> points) {
+        return points.isEmpty() ? null : points.get(points.size() - 1).getReferenceDate();
     }
 
     /**
@@ -294,16 +344,6 @@ public class BcbService implements BcbImplementations{
     }
 
 
-    @Override
-    public FinancialDataDTO getFinancialData () {
-        try {
-            return null;
-        } catch (BcbApiException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new BcbApiException("Erro ao comunicar com a API do Banco Central: Dados financeiros");
-        }
-    }
 
 
 
@@ -311,12 +351,13 @@ public class BcbService implements BcbImplementations{
     public List<MinimumWageDTO> getMinimumWageAll() {
         // DB-first: serve os pontos salvos (ordem cronológica); só chama a API se o banco estiver vazio
         List<FinancialDataPoint> points = financialDataService.getAllPoints("1619", SOURCE);
-        if (!points.isEmpty()) {
-            return points.stream()
-                    .map(p -> new MinimumWageDTO(p.getReferenceDate().format(BCB_DATE), p.getValue().doubleValue()))
-                    .toList();
-        }
-        return refreshMinimumWage();
+        Optional<List<MinimumWageDTO>> doBanco = points.isEmpty() ? Optional.empty()
+                : Optional.of(points.stream()
+                        .map(p -> new MinimumWageDTO(
+                                p.getReferenceDate().format(BCB_DATE), p.getValue().doubleValue()))
+                        .toList());
+        return dbFirst("Salário mínimo", doBanco, ultimaData(points),
+                SeriesPeriodicity.MENSAL, this::refreshMinimumWage);
     }
 
     /**

@@ -11,7 +11,6 @@ public interface BcbImplementations {
     DollarPtaxDTO getDollarPtax();
     CdiDataDTO getCdiRate();
     List<SelicHistoryDTO> getSelicHistory();
-    FinancialDataDTO getFinancialData();
     List<MinimumWageDTO> getMinimumWage(int intervaloMeses);
     List<MinimumWageDTO> getMinimumWageAll();
 }
