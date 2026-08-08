@@ -85,7 +85,29 @@
    Os halos usam slate (#1e293b, #0f172a, #020617) com alfa baixo. É o mesmo azul
    que saiu das superfícies na migração, mas aqui o papel é outro: lá competia
    com o fundo como material de card, aqui é atmosfera atrás de tudo. */
-.bg-smoke-abyss {
+/* Os halos ficam presos ao viewport, e nao a altura do elemento.
+
+   Antes moravam direto neste seletor, e o resultado dependia do tamanho da
+   pagina: o container cresce ate a altura do conteudo (4846px na /economia,
+   7081px na /sobre) e as paradas em percentual esticam junto. O `at 10% 90%`
+   caia perto dos 6300px na landing — na pratica a maior parte da rolagem via
+   fundo liso, e a atmosfera so existia em tres faixas muito distantes.
+
+   Feito com ::before fixo em vez de `background-attachment: fixed` porque o iOS
+   Safari costuma degradar aquela propriedade para `scroll` e ainda cobra
+   repintura a cada quadro. Um elemento `position: fixed` e estavel em todos os
+   navegadores e sai do fluxo de rolagem de uma vez.
+
+   z-index -1 poe a camada atras do conteudo. Por isso a COR tambem mora no
+   pseudo-elemento: se ficasse no seletor, o fundo do proprio container pintaria
+   por cima e esconderia os halos. Header (z-60) e sidebar (z-50) sao positivos e
+   nao sao afetados. */
+.bg-smoke-abyss::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
   background-color: #020202;
   background-image:
     radial-gradient(at 50% 40%, rgba(30, 41, 59, 0.3) 0px, transparent 40%),
