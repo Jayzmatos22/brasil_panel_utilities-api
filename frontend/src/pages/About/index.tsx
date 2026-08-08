@@ -30,8 +30,12 @@ export default function AboutPage() {
     };
   }, []);
 
+  // O fundo é o mesmo das dez páginas do dashboard. Era bg-ink (#0a0b0d), que já
+  // vinha do token semântico e não do slate — a troca é de material, não
+  // correção: a landing passa a ter a mesma atmosfera de halos radiais do
+  // painel, para quem chega pelo /sobre e entra não sentir dois produtos.
   return (
-    <div className="min-h-screen bg-ink text-fg antialiased">
+    <div className="min-h-screen bg-smoke-abyss text-fg antialiased">
       {/* Pular navegação: primeiro alvo de Tab, visível só quando focado. */}
       <a
         href="#conteudo"
