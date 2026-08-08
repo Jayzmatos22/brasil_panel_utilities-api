@@ -12,8 +12,12 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -32,8 +36,14 @@ public class IpeaService {
     private final FinancialDataService financialDataService;
     private static final String SOURCE = "IPEA";
     private static final ZoneOffset BRT = ZoneOffset.of("-03:00");
-    private static final String BASE_URL =
-            "http://ipeadata.gov.br/api/odata4/Metadados('{codigo}')/Valores";
+    private static final String HOST = "ipeadata.gov.br";
+    private static final String PATH = "/api/odata4/Metadados('%s')/Valores";
+
+    /**
+     * Último IP do IPEA que respondeu. Evita pagar o connect timeout do endereço
+     * defeituoso em cada série — o refresh percorre dezenas delas em sequência.
+     */
+    private volatile String lastHealthyAddress;
 
     // Emprego
     private static final String DESOCUPACAO = "PNADC12_NDESOCM12";
@@ -257,39 +267,59 @@ public class IpeaService {
     private List<IpeaItemDTO> loadSerie(String codigo) {
         List<FinancialDataPoint> points = financialDataService.getAllPoints(codigo, SOURCE);
 
-        if (!points.isEmpty()) {
-            FinancialDataPoint last = points.get(points.size() - 1);
-            LocalDate lastDate = last.getReferenceDate();
-            LocalDate today = LocalDate.now();
-
-            // Lógica diferenciada: Ibovespa é diário, outros são mensais/anuais
-            boolean isDaily = codigo.equals(IBOVESPA_FECHAMENTO);
-            boolean desatualizado;
-
-            if (isDaily) {
-                // Se for diário, queremos dados de ontem ou hoje (dependendo do horário)
-                // Consideramos desatualizado se a última data for anterior a ontem
-                desatualizado = lastDate.isBefore(today.minusDays(1));
-            } else {
-                // Lógica original para mensais
-                LocalDate expectedCutoff = today.withDayOfMonth(1).minusMonths(1);
-                desatualizado = lastDate.isBefore(expectedCutoff);
-            }
-
-            if (!desatualizado) {
-                return points.stream()
-                        .sorted(Comparator.comparing(FinancialDataPoint::getReferenceDate).reversed())
-                        .map(p -> new IpeaItemDTO(
-                                p.getReferenceDate().atStartOfDay().atOffset(BRT),
-                                p.getValue().doubleValue()))
-                        .toList();
-            }
-            log.info("Série {} desatualizada (Última: {}). Buscando API...", codigo, lastDate);
+        if (!points.isEmpty() && !isDesatualizado(codigo, points)) {
+            log.info("Série {} servida do banco ({} pontos, última: {}).",
+                    codigo, points.size(), ultimaData(points));
+            return toItems(points);
         }
 
-        List<IpeaItemDTO> fresh = fetchSerie(codigo);
-        persist(codigo, fresh);
-        return fresh;
+        if (!points.isEmpty()) {
+            log.info("Série {} desatualizada (Última: {}). Buscando API...", codigo, ultimaData(points));
+        }
+
+        try {
+            List<IpeaItemDTO> fresh = fetchSerie(codigo);
+            persist(codigo, fresh);
+            log.info("Série {} servida da API ({} pontos).", codigo, fresh.size());
+            return fresh;
+        } catch (IpeaException e) {
+            // Dado velho é melhor que erro 502: a API do IPEA cai com frequência e o
+            // painel só precisa dos pontos mais recentes que já temos. Sem nada no
+            // banco não há o que degradar, então a falha sobe.
+            if (points.isEmpty()) {
+                throw e;
+            }
+            log.warn("API do IPEA indisponível para a série {} ({}). "
+                            + "Servindo dados do banco ({} pontos, última: {}).",
+                    codigo, e.getMessage(), points.size(), ultimaData(points));
+            return toItems(points);
+        }
+    }
+
+    /** Ibovespa é diário; as demais séries são mensais ou anuais. */
+    private boolean isDesatualizado(String codigo, List<FinancialDataPoint> points) {
+        LocalDate lastDate = ultimaData(points);
+        LocalDate today = LocalDate.now();
+
+        if (codigo.equals(IBOVESPA_FECHAMENTO)) {
+            // Diário: aceitamos ontem, já que o fechamento de hoje pode não ter saído.
+            return lastDate.isBefore(today.minusDays(1));
+        }
+        return lastDate.isBefore(today.withDayOfMonth(1).minusMonths(1));
+    }
+
+    /** Pontos vêm do banco em ordem cronológica crescente — o último é o mais recente. */
+    private LocalDate ultimaData(List<FinancialDataPoint> points) {
+        return points.get(points.size() - 1).getReferenceDate();
+    }
+
+    private List<IpeaItemDTO> toItems(List<FinancialDataPoint> points) {
+        return points.stream()
+                .sorted(Comparator.comparing(FinancialDataPoint::getReferenceDate).reversed())
+                .map(p -> new IpeaItemDTO(
+                        p.getReferenceDate().atStartOfDay().atOffset(BRT),
+                        p.getValue().doubleValue()))
+                .toList();
     }
 
     private void persist(String codigo, List<IpeaItemDTO> dados) {
@@ -562,27 +592,75 @@ public class IpeaService {
     // Requisição feita à API baseada no código.
     // As requisições abaixo reutilizam essa função, só o código de série muda.
     private List<IpeaItemDTO> fetchSerie(String codigo) {
-        try {
+        IpeaResponseDTO response = getComFallbackDeEndereco(codigo);
 
-            String url = BASE_URL.replace("{codigo}", codigo);
-            IpeaResponseDTO response = restClient.get()
-                    .uri(url)
-                    .retrieve()
-                    .body(IpeaResponseDTO.class);
-
-            if (response == null || response.value() == null) {
-                throw new IpeaException("Série não encontrada: " + codigo, 404);
-            }
-
-            return response.value().stream()
-                    .sorted(Comparator.comparing(IpeaItemDTO::data).reversed())
-                    .toList();
-
-        } catch (IpeaException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new IpeaException("Erro ao buscar série: " + codigo, 502);
+        if (response == null || response.value() == null) {
+            throw new IpeaException("Série não encontrada: " + codigo, 404);
         }
+
+        return response.value().stream()
+                .filter(item -> item.data() != null)
+                .sorted(Comparator.comparing(IpeaItemDTO::data).reversed())
+                .toList();
+    }
+
+    /**
+     * O DNS de ipeadata.gov.br devolve dois endereços e um deles não completa o
+     * handshake TCP — a conexão fica pendurada até estourar o connect timeout. O
+     * HttpClient do JDK tenta apenas o primeiro endereço resolvido, e é justamente o
+     * defeituoso que costuma vir primeiro, então percorremos a lista na mão.
+     * Como a API só atende em HTTP puro (não há TLS), conectar pelo IP dispensa o
+     * cabeçalho Host — que o JDK bloqueia por ser restrito.
+     */
+    private IpeaResponseDTO getComFallbackDeEndereco(String codigo) {
+        String path = PATH.formatted(codigo);
+        Exception ultimaFalha = null;
+
+        for (String endereco : enderecosCandidatos(codigo)) {
+            try {
+                IpeaResponseDTO response = restClient.get()
+                        .uri("http://" + endereco + path)
+                        .retrieve()
+                        .body(IpeaResponseDTO.class);
+                lastHealthyAddress = endereco;
+                return response;
+            } catch (Exception e) {
+                ultimaFalha = e;
+                log.warn("Endereço {} falhou para a série {}: {}", endereco, codigo, e.toString());
+            }
+        }
+
+        throw new IpeaException("Erro ao buscar série: " + codigo, 502, ultimaFalha);
+    }
+
+    /** Endereços a tentar, começando pelo último que funcionou. */
+    private List<String> enderecosCandidatos(String codigo) {
+        List<String> candidatos = new ArrayList<>();
+
+        String healthy = lastHealthyAddress;
+        if (healthy != null) {
+            candidatos.add(healthy);
+        }
+
+        try {
+            for (InetAddress address : InetAddress.getAllByName(HOST)) {
+                String ip = address instanceof Inet6Address
+                        ? "[" + address.getHostAddress() + "]"
+                        : address.getHostAddress();
+                if (!candidatos.contains(ip)) {
+                    candidatos.add(ip);
+                }
+            }
+        } catch (UnknownHostException e) {
+            log.warn("Falha ao resolver {} para a série {}: {}", HOST, codigo, e.getMessage());
+        }
+
+        // Sem resolução e sem histórico, resta deixar o RestClient tentar pelo nome.
+        if (candidatos.isEmpty()) {
+            candidatos.add(HOST);
+        }
+
+        return candidatos;
     }
 
 }
