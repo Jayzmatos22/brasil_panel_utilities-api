@@ -156,7 +156,15 @@ export default function DashboardLayout() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-dashboard">
+    // O fundo vive aqui e não nas páginas: nenhuma das dez declara fundo
+    // próprio, todas herdam deste container. Um ponto para trocar, um para
+    // reverter.
+    //
+    // Chegou a existir um condicional por rota, que mantinha .bg-dashboard fora
+    // de economia e admin enquanto o .bg-smoke-abyss era avaliado. Com a
+    // aprovação para todas, o condicional saiu inteiro em vez de virar uma
+    // expressão sempre verdadeira — o que sobra é a classe direta.
+    <div className="min-h-screen flex flex-col bg-smoke-abyss">
 
       {/* ── Header ───────────────────────────────────────────────────────── */}
       {/* px-gutter (era px-5) alinha o padding do header ao do <main>, de modo

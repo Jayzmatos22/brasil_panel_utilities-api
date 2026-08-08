@@ -33,6 +33,8 @@
   backdrop-filter: blur(4px);
 }
 
+
+
 .bg-app {
   background-color: #090c0c;
   background-image: radial-gradient(#8e00fa6d 1px, transparent 1px);
@@ -67,6 +69,28 @@
     #080b14 45%,
     #0b0f1a 100%
   );
+}
+
+/* Fundo das dez páginas do dashboard. Aplicado no container do DashboardLayout;
+   nenhuma página declara fundo próprio.
+
+   Substitui .bg-dashboard, que segue logo acima e continua em uso fora do
+   dashboard. Difere dele em duas coisas. A base cai de #05070d para #020202,
+   quase preto neutro, o que aumenta o contraste dos cards: as superfícies agora
+   são overlay branco (bg-surface-1/2/3), e overlay branco rende mais quanto mais
+   escuro o que está embaixo. E a luz deixa de ser um gradiente linear de cima
+   para baixo e vira três halos radiais deslocados, que dão profundidade sem
+   direção óbvia — o linear denuncia o topo e o rodapé, o radial não.
+
+   Os halos usam slate (#1e293b, #0f172a, #020617) com alfa baixo. É o mesmo azul
+   que saiu das superfícies na migração, mas aqui o papel é outro: lá competia
+   com o fundo como material de card, aqui é atmosfera atrás de tudo. */
+.bg-smoke-abyss {
+  background-color: #020202;
+  background-image:
+    radial-gradient(at 50% 40%, rgba(30, 41, 59, 0.3) 0px, transparent 40%),
+    radial-gradient(at 80% 10%, rgba(15, 23, 42, 0.4) 0px, transparent 50%),
+    radial-gradient(at 10% 90%, rgba(2, 6, 23, 0.8) 0px, transparent 60%);
 }
 
 /* Tracking de corpo. O Linear aplica −0.011em já no texto de 15px, e é parte
