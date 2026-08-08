@@ -15,6 +15,7 @@ import org.springframework.web.client.RestClient;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -38,6 +39,9 @@ public class IpeaService {
     private static final ZoneOffset BRT = ZoneOffset.of("-03:00");
     private static final String HOST = "ipeadata.gov.br";
     private static final String PATH = "/api/odata4/Metadados('%s')/Valores";
+
+    /** Pregões de folga aceitos no Ibovespa antes de considerar a série vencida. */
+    private static final int DEFASAGEM_PREGOES = 1;
 
     /**
      * Último IP do IPEA que respondeu. Evita pagar o connect timeout do endereço
@@ -302,10 +306,38 @@ public class IpeaService {
         LocalDate today = LocalDate.now();
 
         if (codigo.equals(IBOVESPA_FECHAMENTO)) {
-            // Diário: aceitamos ontem, já que o fechamento de hoje pode não ter saído.
-            return lastDate.isBefore(today.minusDays(1));
+            return lastDate.isBefore(ultimoPregaoPublicado(today));
         }
         return lastDate.isBefore(today.withDayOfMonth(1).minusMonths(1));
+    }
+
+    /**
+     * Pregão mais recente cujo fechamento já se espera encontrar na API.
+     *
+     * <p>Contar em dias corridos fazia a série vencer no fim de semana, quando a B3
+     * não abre e portanto nada novo pode chegar — cada expiração de cache rebaixava
+     * 1,4 MB e persistia zero pontos. Contamos em dias úteis.
+     *
+     * <p>{@link #DEFASAGEM_PREGOES} existe porque o IPEA publica com atraso: em
+     * 08/08/2026 a API ainda parava em quinta 06/08, sem a sexta 07/08. Sem essa
+     * folga, exigir o último dia útil recriaria o mesmo laço. A folga também absorve
+     * feriados isolados da B3, que não temos calendário para reconhecer.
+     */
+    private LocalDate ultimoPregaoPublicado(LocalDate hoje) {
+        LocalDate pregao = diaUtilAnterior(hoje);
+        for (int i = 0; i < DEFASAGEM_PREGOES; i++) {
+            pregao = diaUtilAnterior(pregao);
+        }
+        return pregao;
+    }
+
+    private LocalDate diaUtilAnterior(LocalDate data) {
+        LocalDate anterior = data.minusDays(1);
+        while (anterior.getDayOfWeek() == DayOfWeek.SATURDAY
+                || anterior.getDayOfWeek() == DayOfWeek.SUNDAY) {
+            anterior = anterior.minusDays(1);
+        }
+        return anterior;
     }
 
     /** Pontos vêm do banco em ordem cronológica crescente — o último é o mais recente. */
