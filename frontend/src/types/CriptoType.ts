@@ -7,12 +7,20 @@ export interface CryptoMarket {
   marketCap: number;
   priceChange24h: number;
   imageUrl: string;
+  /**
+   * Quando o backend buscou esse snapshot. O CoinGecko e a fonte padrao da pagina
+   * e a leitura e servida do banco, entao sem esta data o usuario nao tem como
+   * distinguir cotacao de agora de cotacao de dias atras.
+   */
+  fetchedAt: string;
 }
 
 // CoinGecko — GET /api/coingecko/{name}
 export interface CryptoByName {
   id: string;
   priceBrl: number;
+  /** Data do snapshot (moeda no top 100) ou da cotacao ao vivo (moeda fora dele) */
+  fetchedAt: string;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -1,6 +1,7 @@
 package com.brasilpanel.backend.service.financial;
 
 import com.brasilpanel.backend.dto.api.coinGecko.CryptoCoinGeckoMarketDTO;
+import com.brasilpanel.backend.model.CryptoSnapshot;
 import com.brasilpanel.backend.model.PibSnapshot;
 import com.brasilpanel.backend.repository.snapshot.CryptoSnapshotRepository;
 import com.brasilpanel.backend.repository.snapshot.PibSnapshotRepository;
@@ -15,9 +16,12 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 
 /**
  * Cobre as duas partes do SnapshotService com lógica própria: o upsert do PIB
@@ -104,16 +108,23 @@ class SnapshotServiceTest {
     @Nested
     class Cripto {
 
+        /** fetchedAt nulo de propósito: é assim que o DTO chega da API, que não manda a data. */
         private CryptoCoinGeckoMarketDTO moeda(String id, String simbolo, String nome, double preco) {
-            return new CryptoCoinGeckoMarketDTO(id, simbolo, nome, preco, 1_000L, 1.5, "https://img");
+            return new CryptoCoinGeckoMarketDTO(id, simbolo, nome, preco, 1_000L, 1.5, "https://img", null);
         }
+
+        private LocalDateTime buscadoEm;
 
         @BeforeEach
         void seed() {
+            // Nunca uma data fixa: o instante do fetch é "agora" por definição, e uma
+            // constante envelheceria junto com o arquivo.
+            buscadoEm = LocalDateTime.now();
+
             service.saveCryptoList(List.of(
                     moeda("bitcoin", "btc", "Bitcoin", 350_000.0),
                     moeda("usd-coin", "usdc", "USDC", 5.4)
-            ), MOEDA);
+            ), MOEDA, buscadoEm);
 
             // getLatestCryptoBatch reconsulta por igualdade exata de fetchedAt.
             // Sem esvaziar o contexto, a leitura devolveria a instância em memória,
@@ -148,6 +159,23 @@ class SnapshotServiceTest {
         @DisplayName("moeda fora do batch não é encontrada")
         void coinOutsideBatchIsNotFound() {
             assertThat(service.getLatestCrypto("dogecoin")).isEmpty();
+        }
+
+        @Test
+        @DisplayName("grava o instante recebido, e o mesmo em todo o batch")
+        void storesTheGivenFetchInstantAcrossTheBatch() {
+            // É esse valor que o painel exibe como "atualizado há X min". Se o batch
+            // gravasse instantes diferentes por moeda, a data mostrada dependeria de
+            // qual linha o front olhasse primeiro.
+            var batch = service.getLatestCryptoBatch();
+
+            assertThat(batch).isNotEmpty();
+            assertThat(batch).extracting(CryptoSnapshot::getFetchedAt)
+                    .containsOnly(batch.getFirst().getFetchedAt());
+            // A coluna timestamp trunca a precisão do LocalDateTime, então comparar
+            // por igualdade exata seria frágil — o que importa é ser o mesmo segundo.
+            assertThat(batch.getFirst().getFetchedAt())
+                    .isCloseTo(buscadoEm, within(1, ChronoUnit.SECONDS));
         }
     }
 }

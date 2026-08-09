@@ -307,14 +307,18 @@ public class SnapshotService {
      * Persiste lista de criptomoedas retornada pelo CoinGecko.
      * Cada item da lista vira um registro separado com o mesmo fetchedAt.
      *
-     * @param list     lista de moedas
-     * @param currency moeda de referência dos preços (ex: "brl", "usd")
+     * <p>O instante vem de fora, de quem chamou a API, em vez de ser gerado aqui:
+     * o mesmo valor é devolvido ao painel junto com os preços, e um {@code now()}
+     * criado neste método seria uma segunda verdade sobre o mesmo fetch.
+     *
+     * @param list      lista de moedas
+     * @param currency  moeda de referência dos preços (ex: "brl", "usd")
+     * @param fetchedAt instante da busca na fonte, comum a todo o batch
      */
     @Transactional
-    public void saveCryptoList(List<CryptoCoinGeckoMarketDTO> list, String currency) {
+    public void saveCryptoList(List<CryptoCoinGeckoMarketDTO> list, String currency,
+                               LocalDateTime fetchedAt) {
         try {
-            LocalDateTime fetchedAt = LocalDateTime.now();
-
             List<CryptoSnapshot> snapshots = list.stream()
                     .map(dto -> CryptoSnapshot.builder()
                             .coinId(dto.id())

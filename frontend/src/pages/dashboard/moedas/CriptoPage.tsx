@@ -104,7 +104,12 @@ export default function CriptoPage() {
     }));
   }, [isCmc, cmcMarket, geckoMarket]);
 
-  const updatedAt = isCmc ? timeAgo(cmcMarket?.[0]?.fetchedAt) : null;
+  // As duas fontes sao servidas de snapshot do backend, entao as duas precisam
+  // mostrar a data. Antes so a CMC mostrava, e o CoinGecko — que e a fonte padrao
+  // e cuja leitura nao vence nunca no banco — aparecia sem data nenhuma.
+  const updatedAt = isCmc
+    ? timeAgo(cmcMarket?.[0]?.fetchedAt)
+    : timeAgo(geckoMarket?.[0]?.fetchedAt);
 
   // A CoinMarketCap devolve currentPrice e marketCap nulos em moedas que não
   // cota (ex.: BT / Bozkurt Token). Os formatadores aceitam null e devolvem um

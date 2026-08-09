@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -52,8 +53,12 @@ public class CoinGeckoService {
                 throw new CryptoCoinGeckoException("Nenhuma criptomoeda encontrada");
             }
 
-            snapshotService.saveCryptoList(data, BRL_COIN_PRICE);
-            return data;
+            // O CoinGecko não devolve a data do fetch, então ela é carimbada aqui e o
+            // mesmo instante vai para o banco e para a resposta — sem isso, o primeiro
+            // boot (banco vazio) serviria preços sem data nenhuma ao painel.
+            LocalDateTime buscadoEm = LocalDateTime.now();
+            snapshotService.saveCryptoList(data, BRL_COIN_PRICE, buscadoEm);
+            return data.stream().map(dto -> dto.withFetchedAt(buscadoEm)).toList();
 
         } catch (CryptoCoinGeckoException e){
             throw e;
@@ -74,7 +79,7 @@ public class CoinGeckoService {
         Optional<CryptoSnapshot> snapshot = snapshotService.getLatestCrypto(cryptoName);
         if (snapshot.isPresent()) {
             CryptoSnapshot s = snapshot.get();
-            return new CryptoCoinGeckoByNameDTO(s.getCoinId(), bd(s.getCurrentPrice()));
+            return new CryptoCoinGeckoByNameDTO(s.getCoinId(), bd(s.getCurrentPrice()), s.getFetchedAt());
         }
 
         // fallback — API externa (moeda fora do top 100 ou banco vazio)
@@ -89,8 +94,10 @@ public class CoinGeckoService {
                 throw new CoinGeckoException("Crypto '" + cryptoName + "' não encontrada");
             }
             // Preço BRL
+            // Cotação ao vivo: a data é o agora, não a do último batch — a moeda está
+            // fora do top 100 e nunca passou pelo snapshot.
             Double price = data.get(cryptoName).get(BRL_COIN_PRICE);
-            return new CryptoCoinGeckoByNameDTO(cryptoName, price);
+            return new CryptoCoinGeckoByNameDTO(cryptoName, price, LocalDateTime.now());
 
         } catch (CoinGeckoException e) {
             throw e;
@@ -109,7 +116,8 @@ public class CoinGeckoService {
                 bd(s.getCurrentPrice()),
                 s.getMarketCap() != null ? s.getMarketCap().longValue() : null,
                 bd(s.getPriceChange24h()),
-                s.getImageUrl()
+                s.getImageUrl(),
+                s.getFetchedAt()
         );
     }
 
