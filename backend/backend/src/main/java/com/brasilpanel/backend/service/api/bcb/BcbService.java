@@ -3,6 +3,7 @@ package com.brasilpanel.backend.service.api.bcb;
 import com.brasilpanel.backend.dto.api.bcb.*;
 import com.brasilpanel.backend.exception.customized.BcbApiException;
 import com.brasilpanel.backend.model.FinancialDataPoint;
+import com.brasilpanel.backend.service.financial.DbFirst;
 import com.brasilpanel.backend.service.financial.FinancialDataService;
 import com.brasilpanel.backend.service.financial.SeriesFreshness;
 import com.brasilpanel.backend.service.financial.SeriesPeriodicity;
@@ -55,22 +56,8 @@ public class BcbService implements BcbImplementations{
      */
     private <T> T dbFirst(String rotulo, Optional<T> doBanco, LocalDate ultimaData,
                           SeriesPeriodicity periodicidade, Supplier<T> refresh) {
-        if (doBanco.isPresent() && !SeriesFreshness.isStale(ultimaData, periodicidade)) {
-            return doBanco.get();
-        }
-        if (doBanco.isPresent()) {
-            log.info("{} desatualizado no banco (última: {}). Buscando API...", rotulo, ultimaData);
-        }
-        try {
-            return refresh.get();
-        } catch (BcbApiException e) {
-            if (doBanco.isEmpty()) {
-                throw e;
-            }
-            log.warn("API do BCB indisponível para {} ({}). Servindo dados do banco (última: {}).",
-                    rotulo, e.getMessage(), ultimaData);
-            return doBanco.get();
-        }
+        return DbFirst.serve(rotulo, doBanco,
+                SeriesFreshness.isStale(ultimaData, periodicidade), ultimaData, refresh);
     }
 
     @Cacheable("selic")

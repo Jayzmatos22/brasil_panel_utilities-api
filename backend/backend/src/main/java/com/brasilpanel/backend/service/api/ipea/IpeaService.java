@@ -6,6 +6,7 @@ import com.brasilpanel.backend.dto.api.ipea.IpeaResponseDTO;
 import com.brasilpanel.backend.dto.api.ipea.IpeaSerieDTO;
 import com.brasilpanel.backend.exception.customized.IpeaException;
 import com.brasilpanel.backend.model.FinancialDataPoint;
+import com.brasilpanel.backend.service.financial.DbFirst;
 import com.brasilpanel.backend.service.financial.FinancialDataService;
 import com.brasilpanel.backend.service.financial.SeriesFreshness;
 import com.brasilpanel.backend.service.financial.SeriesPeriodicity;
@@ -269,33 +270,16 @@ public class IpeaService {
     private List<IpeaItemDTO> loadSerie(String codigo) {
         List<FinancialDataPoint> points = financialDataService.getAllPoints(codigo, SOURCE);
 
-        if (!points.isEmpty() && !isDesatualizado(codigo, points)) {
-            log.info("Série {} servida do banco ({} pontos, última: {}).",
-                    codigo, points.size(), ultimaData(points));
-            return toItems(points);
-        }
+        Optional<List<IpeaItemDTO>> doBanco = points.isEmpty()
+                ? Optional.empty()
+                : Optional.of(toItems(points));
 
-        if (!points.isEmpty()) {
-            log.info("Série {} desatualizada (Última: {}). Buscando API...", codigo, ultimaData(points));
-        }
-
-        try {
-            List<IpeaItemDTO> fresh = fetchSerie(codigo);
-            persist(codigo, fresh);
-            log.info("Série {} servida da API ({} pontos).", codigo, fresh.size());
-            return fresh;
-        } catch (IpeaException e) {
-            // Dado velho é melhor que erro 502: a API do IPEA cai com frequência e o
-            // painel só precisa dos pontos mais recentes que já temos. Sem nada no
-            // banco não há o que degradar, então a falha sobe.
-            if (points.isEmpty()) {
-                throw e;
-            }
-            log.warn("API do IPEA indisponível para a série {} ({}). "
-                            + "Servindo dados do banco ({} pontos, última: {}).",
-                    codigo, e.getMessage(), points.size(), ultimaData(points));
-            return toItems(points);
-        }
+        return DbFirst.serve(codigo, doBanco, isDesatualizado(codigo, points),
+                ultimaData(points), () -> {
+                    List<IpeaItemDTO> fresh = fetchSerie(codigo);
+                    persist(codigo, fresh);
+                    return fresh;
+                });
     }
 
     /** Ibovespa é diário (pregão); as demais séries são mensais ou anuais. */
@@ -308,7 +292,7 @@ public class IpeaService {
 
     /** Pontos vêm do banco em ordem cronológica crescente — o último é o mais recente. */
     private LocalDate ultimaData(List<FinancialDataPoint> points) {
-        return points.get(points.size() - 1).getReferenceDate();
+        return points.isEmpty() ? null : points.get(points.size() - 1).getReferenceDate();
     }
 
     private List<IpeaItemDTO> toItems(List<FinancialDataPoint> points) {
