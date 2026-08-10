@@ -12,7 +12,9 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -78,7 +80,7 @@ class StaticDataSeederTest {
     @Test
     @DisplayName("carrega os bancos quando a tabela está vazia")
     void bancos_tabelaVazia_carregaDaApi() {
-        when(bankRepository.count()).thenReturn(0L);
+        when(bankRepository.findLastSyncedAt()).thenReturn(Optional.empty());
         server.expect(requestTo(URL_BANCOS))
                 .andRespond(withSuccess(JSON_BANCOS, MediaType.APPLICATION_JSON));
 
@@ -93,9 +95,10 @@ class StaticDataSeederTest {
     }
 
     @Test
-    @DisplayName("tabela já populada não gera chamada à BrasilAPI")
-    void bancos_tabelaPopulada_naoChamaApi() {
-        when(bankRepository.count()).thenReturn(300L);
+    @DisplayName("tabela populada e recente não gera chamada à BrasilAPI")
+    void bancos_sincronizacaoRecente_naoChamaApi() {
+        when(bankRepository.findLastSyncedAt())
+                .thenReturn(Optional.of(LocalDateTime.now().minusDays(1)));
 
         seeder.seedBanks();
 
@@ -104,9 +107,49 @@ class StaticDataSeederTest {
     }
 
     @Test
+    @DisplayName("sincronização antiga dispara recarga completa")
+    void bancos_sincronizacaoAntiga_recarrega() {
+        // Antes o seeder só olhava se a tabela estava vazia: uma vez semeada, ela
+        // nunca mais era atualizada e banco novo na BrasilAPI jamais entrava.
+        when(bankRepository.findLastSyncedAt())
+                .thenReturn(Optional.of(LocalDateTime.now().minusDays(60)));
+        server.expect(requestTo(URL_BANCOS))
+                .andRespond(withSuccess(JSON_BANCOS, MediaType.APPLICATION_JSON));
+
+        seeder.seedBanks();
+
+        // A recarga limpa antes de gravar: sem isso o unique de code/ispb colidiria.
+        verify(bankRepository).deleteAllInBatch();
+        verify(bankRepository).saveAll(anyList());
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("banco sem ISPB é descartado — a coluna é NOT NULL")
+    void bancos_descartaSemIspb() {
+        when(bankRepository.findLastSyncedAt()).thenReturn(Optional.empty());
+        server.expect(requestTo(URL_BANCOS))
+                .andRespond(withSuccess("""
+                        [
+                          {"ispb": "00000000", "name": "COM ISPB", "code": 1, "fullName": "Com Ispb S.A."},
+                          {"ispb": null, "name": "SEM ISPB", "code": 77, "fullName": "Sem Ispb S.A."},
+                          {"ispb": "", "name": "ISPB VAZIO", "code": 78, "fullName": "Ispb Vazio S.A."}
+                        ]
+                        """, MediaType.APPLICATION_JSON));
+
+        seeder.seedBanks();
+
+        ArgumentCaptor<List<Bank>> captor = ArgumentCaptor.forClass(List.class);
+        verify(bankRepository).saveAll(captor.capture());
+        assertThat(captor.getValue())
+                .extracting(Bank::getName)
+                .containsExactly("COM ISPB");
+    }
+
+    @Test
     @DisplayName("descarta bancos sem código, sem nome e com código zero")
     void bancos_descartaEntradasInvalidas() {
-        when(bankRepository.count()).thenReturn(0L);
+        when(bankRepository.findLastSyncedAt()).thenReturn(Optional.empty());
         server.expect(requestTo(URL_BANCOS))
                 .andRespond(withSuccess(JSON_BANCOS_SUJOS, MediaType.APPLICATION_JSON));
 
@@ -123,7 +166,7 @@ class StaticDataSeederTest {
     @Test
     @DisplayName("lista vazia não persiste nada")
     void bancos_listaVazia_naoPersiste() {
-        when(bankRepository.count()).thenReturn(0L);
+        when(bankRepository.findLastSyncedAt()).thenReturn(Optional.empty());
         server.expect(requestTo(URL_BANCOS))
                 .andRespond(withSuccess("[]", MediaType.APPLICATION_JSON));
 
@@ -135,7 +178,7 @@ class StaticDataSeederTest {
     @Test
     @DisplayName("BrasilAPI fora do ar não derruba o boot")
     void bancos_apiFalha_naoPropagaExcecao() {
-        when(bankRepository.count()).thenReturn(0L);
+        when(bankRepository.findLastSyncedAt()).thenReturn(Optional.empty());
         server.expect(requestTo(URL_BANCOS)).andRespond(withServerError());
 
         assertThatCode(() -> seeder.seedBanks()).doesNotThrowAnyException();
@@ -189,7 +232,7 @@ class StaticDataSeederTest {
     @Test
     @DisplayName("run() cobre as duas fontes, mesmo com a primeira falhando")
     void run_primeiraFonteFalha_aindaCarregaASegunda() {
-        when(bankRepository.count()).thenReturn(0L);
+        when(bankRepository.findLastSyncedAt()).thenReturn(Optional.empty());
         when(stateRepository.count()).thenReturn(0L);
         server.expect(requestTo(URL_BANCOS)).andRespond(withServerError());
         server.expect(requestTo(URL_ESTADOS))
