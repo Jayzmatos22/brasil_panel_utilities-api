@@ -73,7 +73,11 @@ public class SecurityConfig {
                             "/api/banks/**",
                             "/api/coingecko/**",
                             "/api/coinmarketcap/**",
-                            "/api/cep/**",
+                            // Precisa casar com o @RequestMapping do ViaCepController.
+                            // Estava "/api/cep/**", prefixo que nenhum controller
+                            // atende: a regra era morta e /api/viacep caía em
+                            // anyRequest().authenticated().
+                            "/api/viacep/**",
                             "/api/bcb/**",
                             "/api/frankfurter",
                             "/api/frankfurter/**",

@@ -106,6 +106,14 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(502).body(ex.getMessage());
     }
 
+    // CEP bem formado que não existe. O ViaCEP sinaliza isso com 200 + {"erro"},
+    // então sem este 404 o cliente não teria como distinguir "não existe" de
+    // "encontrado".
+    @ExceptionHandler(ViaCepNotFoundException.class)
+    public ResponseEntity<String> handleViaCepNotFound(ViaCepNotFoundException ex){
+        return ResponseEntity.status(404).body(ex.getMessage());
+    }
+
     // Atende BrasilAPI
     @ExceptionHandler(BrasilApiException.class)
     public ResponseEntity<String> handleBrasilApi(BrasilApiException ex){

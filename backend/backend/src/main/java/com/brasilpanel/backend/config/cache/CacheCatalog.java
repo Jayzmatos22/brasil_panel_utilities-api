@@ -68,6 +68,10 @@ final class CacheCatalog {
                 new CacheSpec("salario-minimo", ttl.daily(), SMALL),
                 // ViaCEP: CEP → endereço é praticamente imutável (base CORREIOS muda raramente)
                 new CacheSpec("viacep", ttl.daily(), 500),
+                // ViaCEP busca reversa: chave = uf|cidade|logradouro. Cardinalidade
+                // maior que a do CEP direto porque cada termo digitado no filtro de
+                // rua gera uma combinação nova.
+                new CacheSpec("viacep-busca", ttl.daily(), 300),
                 // IBGE/SIDRA — PIB por estado: divulgado anualmente (1 entrada)
                 new CacheSpec("sidra-pib-estados", ttl.daily(), 1));
     }
