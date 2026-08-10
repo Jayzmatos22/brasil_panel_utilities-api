@@ -12,6 +12,8 @@ import com.brasilpanel.backend.exception.customized.MetalsException;
 import com.brasilpanel.backend.model.LbmaFixingSnapshot;
 import com.brasilpanel.backend.model.MetalHistorySnapshot;
 import com.brasilpanel.backend.model.MetalSnapshot;
+import com.brasilpanel.backend.service.financial.DbFirst;
+import com.brasilpanel.backend.service.financial.SnapshotFreshness;
 import com.brasilpanel.backend.service.financial.SnapshotService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,15 +44,36 @@ public class MetalsDevService {
     @Value("${metals.api-key}")
     private String apiKey;
 
+    // Ver getMetals: scheduler semanal + cota de ~100 req/mês pedem folga larga.
+    static final Duration JANELA_METAIS = Duration.ofDays(10);
+
+    // Ver getLbmaFixing: cobre fim de semana e feriado prolongado, quando não há
+    // fixing publicado para buscar.
+    static final Duration JANELA_LBMA = Duration.ofDays(5);
+
+    /**
+     * Cotação de metais servida do banco enquanto valer.
+     *
+     * <p>A janela é generosa de propósito. O scheduler roda <b>uma vez por semana</b>
+     * (segunda, 08:00) e a cota do plano free é de ~100 req/mês, já quase toda
+     * comprometida entre esse refresh, os dois fixings diários e o histórico. Dez dias
+     * dão folga para uma segunda-feira perdida sem que a leitura comece a consumir
+     * cota; só uma semana inteira sem refresh faz a leitura reabastecer.
+     *
+     * <p>Antes disso o snapshot era servido para sempre: com o scheduler quebrado, o
+     * painel exibiria a mesma cotação indefinidamente, sem nunca tentar de novo.
+     */
     @Cacheable("metals")
     public MetalsDataDTO getMetals() {
-        // DB-first: serve o snapshot mais recente; só chama a API se o banco estiver vazio.
-        // Crítico para a cota de 100 req/mês — leituras não consomem a API.
         Optional<MetalSnapshot> latest = snapshotService.getLatestMetals();
-        if (latest.isPresent()) {
-            return toDTO(latest.get());
-        }
-        return refreshMetals();
+        LocalDateTime buscadoEm = latest.map(MetalSnapshot::getFetchedAt).orElse(null);
+
+        return DbFirst.serve(
+                "Metais (Metals Dev)",
+                latest.map(this::toDTO),
+                SnapshotFreshness.isStale(buscadoEm, JANELA_METAIS),
+                buscadoEm != null ? buscadoEm.toLocalDate() : null,
+                this::refreshMetals);
     }
 
     /**
@@ -165,8 +188,7 @@ public class MetalsDevService {
     }
 
     private boolean isHistoryFresh(MetalHistorySnapshot s) {
-        return s.getFetchedAt() != null
-                && s.getFetchedAt().isAfter(LocalDateTime.now().minus(HISTORY_FRESHNESS));
+        return !SnapshotFreshness.isStale(s.getFetchedAt(), HISTORY_FRESHNESS);
     }
 
     private MetalHistoryDTO toHistoryDTO(List<MetalHistorySnapshot> series) {
@@ -189,20 +211,42 @@ public class MetalsDevService {
 
     // ── Fixing LBMA (authority) ─────────────────────────────────────────────
 
+    /**
+     * Fixing LBMA servido do banco enquanto valer.
+     *
+     * <p>Cinco dias porque o fixing só existe em dia útil: de sexta 13:00 até segunda
+     * 08:00 já são 67h sem publicação nenhuma, e um feriado prolongado estica isso.
+     * Vencer antes disso faria a leitura buscar um fixing que a LBMA não publicou —
+     * gasto de cota em troca de nada.
+     *
+     * <p>Uma janela de calendário ({@code SeriesFreshness}, DIARIA_UTIL) modelaria
+     * isso com mais precisão, já que o fixing é publicado por pregão. Ficou de fora
+     * porque a cota é de ~100 req/mês: aqui o ganho do passo é passar a degradar, não
+     * afinar o instante do vencimento, e o modelo mais preciso erra para o lado caro.
+     */
     @Cacheable(value = "lbma-fixing", sync = true)
     public LbmaFixingDTO getLbmaFixing() {
-        // DB-first: serve o fixing mais recente; só chama a API se o banco estiver vazio.
         Optional<LbmaFixingSnapshot> latest = snapshotService.getLatestLbmaFixing();
-        if (latest.isPresent()) {
-            return toLbmaDTO(latest.get());
-        }
-        return refreshLbmaFixing();
+        LocalDateTime buscadoEm = latest.map(LbmaFixingSnapshot::getFetchedAt).orElse(null);
+
+        return DbFirst.serve(
+                "Fixing LBMA",
+                latest.map(this::toLbmaDTO),
+                SnapshotFreshness.isStale(buscadoEm, JANELA_LBMA),
+                buscadoEm != null ? buscadoEm.toLocalDate() : null,
+                this::refreshLbmaFixing);
     }
 
     /**
      * Busca o fixing oficial LBMA na API e persiste, ignorando o atalho DB-first.
-     * Usado pelo scheduler e como fallback de leitura. Uma requisição traz todos
-     * os fixings AM/PM (ouro, platina, paládio) + o fixing único da prata.
+     * Uma requisição traz todos os fixings AM/PM (ouro, platina, paládio) + o fixing
+     * único da prata.
+     *
+     * <p>Este é o lado <b>escrita</b>: falha sobe. Antes ele degradava por conta
+     * própria, relendo o banco nos dois catches, e isso escondia a falha de quem mais
+     * precisava vê-la — o {@code MetalsScheduler} recebia o snapshot antigo como se
+     * fosse resultado da busca e registrava "atualizado com sucesso" sem ter
+     * atualizado nada. Quem degrada agora é o {@link #getLbmaFixing()}, na leitura.
      */
     public LbmaFixingDTO refreshLbmaFixing() {
         String url = "https://api.metals.dev/v1/metal/authority?api_key=" + apiKey
@@ -233,19 +277,9 @@ public class MetalsDevService {
             return dto;
 
         } catch (MetalsException e) {
-            Optional<LbmaFixingSnapshot> latest = snapshotService.getLatestLbmaFixing();
-            if (latest.isPresent()) {
-                log.warn("Authority LBMA falhou ({}); servindo fixing do banco", e.getMessage());
-                return toLbmaDTO(latest.get());
-            }
             throw e;
         } catch (Exception e) {
             log.error("Erro ao buscar fixing LBMA: {}", e.getMessage());
-            Optional<LbmaFixingSnapshot> latest = snapshotService.getLatestLbmaFixing();
-            if (latest.isPresent()) {
-                log.warn("Servindo fixing LBMA do banco após erro de comunicação");
-                return toLbmaDTO(latest.get());
-            }
             throw new MetalsException("Erro na comunicação com a API de metais", 502);
         }
     }
