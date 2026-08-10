@@ -8,6 +8,8 @@ import com.brasilpanel.backend.dto.api.coinMarketCap.CmcStatusDTO;
 import com.brasilpanel.backend.exception.customized.CoinMarketCapException;
 import com.brasilpanel.backend.exception.customized.CoinMarketCapNotFoundException;
 import com.brasilpanel.backend.model.CmcCryptoSnapshot;
+import com.brasilpanel.backend.service.financial.DbFirst;
+import com.brasilpanel.backend.service.financial.SnapshotFreshness;
 import com.brasilpanel.backend.service.financial.SnapshotService;
 import com.brasilpanel.backend.validators.api.CryptoCoinMarketCap;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +26,8 @@ import org.springframework.web.client.RestClient;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -35,8 +39,9 @@ import java.util.Optional;
  * um refresh a cada 10 min custa ~4.320 créditos/mês — 29% da cota.
  *
  * <p><b>A leitura é DB-first.</b> O scheduler reabastece a tabela e as consultas de
- * usuário são servidas do banco. O <b>único</b> caminho de leitura que pode tocar a API
- * é o primeiro boot, com a tabela ainda vazia.
+ * usuário são servidas do banco. A leitura só toca a API em dois casos: primeiro boot,
+ * com a tabela vazia, e batch mais velho que {@link #JANELA_LISTINGS} — que na prática
+ * significa scheduler parado, já que ele roda de 10 em 10 minutos.
  *
  * <p>Busca por termo <b>nunca</b> vai à API: {@code /api/coinmarketcap/**} é público, e
  * um termo desconhecido custando 1 crédito deixaria qualquer um esvaziar a cota do mês
@@ -60,6 +65,17 @@ public class CoinMarketCapService {
     /** Padrão público do CDN de logos — evita gastar créditos com /cryptocurrency/info. */
     private static final String LOGO_URL_PATTERN =
             "https://s2.coinmarketcap.com/static/img/coins/64x64/%d.png";
+
+    /**
+     * Por quanto tempo o batch salvo é servido sem reconferir a fonte.
+     *
+     * <p>Deliberadamente muito maior que o cron do scheduler (10 min): quem reabastece
+     * o banco é ele, e esta janela só precisa agir quando ele para. Uma hora dá 6
+     * ciclos de folga, então falha transitória da CMC não vira crédito gasto na
+     * leitura — e um cache derrubado por restart também não. Encurtar isso transforma
+     * qualquer soluço do scheduler em consumo de cota.
+     */
+    static final Duration JANELA_LISTINGS = Duration.ofHours(1);
 
     private final RestClient restClient;
     private final SnapshotService snapshotService;
@@ -88,21 +104,32 @@ public class CoinMarketCapService {
     // ── Leitura (DB-first) ──────────────────────────────────────────────────
 
     /**
-     * Ranking por market cap servido do último batch salvo.
-     * Só chama a API se o banco ainda não tem nenhum batch (primeiro boot).
+     * Ranking por market cap servido do último batch salvo, enquanto ele valer.
+     *
+     * <p>Vencido o batch, busca na fonte; se a busca falhar e houver batch salvo,
+     * devolve o antigo com log de aviso em vez de derrubar a resposta. Antes disso o
+     * batch era servido para sempre, sem nenhuma checagem de idade.
      *
      * @return lista vazia quando a fonte está desligada — cabe ao frontend sinalizar
      */
     @Cacheable("cmc-listings")
     public List<CmcMarketDTO> returnAllCryptos() {
         List<CmcCryptoSnapshot> latest = snapshotService.getLatestCmcBatch();
+        LocalDateTime buscadoEm = latest.isEmpty() ? null : latest.getFirst().getFetchedAt();
 
-        if (latest.isEmpty()) {
-            refreshListings();
-            latest = snapshotService.getLatestCmcBatch();
-        }
+        return DbFirst.serve(
+                "CoinMarketCap listings",
+                latest.isEmpty() ? Optional.empty() : Optional.of(toMarketDTOs(latest)),
+                SnapshotFreshness.isStale(buscadoEm, JANELA_LISTINGS),
+                buscadoEm != null ? buscadoEm.toLocalDate() : null,
+                () -> {
+                    refreshListings();
+                    return toMarketDTOs(snapshotService.getLatestCmcBatch());
+                });
+    }
 
-        return latest.stream().map(CoinMarketCapService::toMarketDTO).toList();
+    private static List<CmcMarketDTO> toMarketDTOs(List<CmcCryptoSnapshot> batch) {
+        return batch.stream().map(CoinMarketCapService::toMarketDTO).toList();
     }
 
     /**

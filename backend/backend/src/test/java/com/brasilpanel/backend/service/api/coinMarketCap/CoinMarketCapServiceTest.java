@@ -95,7 +95,10 @@ class CoinMarketCapServiceTest {
                 .percentChange7d(new BigDecimal("-3.7953"))
                 .marketCapDominance(new BigDecimal("58.6704"))
                 .currency("BRL")
-                .fetchedAt(LocalDateTime.of(2026, 7, 29, 18, 0))
+                // "Banco em dia" precisa ser relativo ao agora. Com data literal este
+                // fixture passava a vencer sozinho no dia em que a checagem de idade
+                // entrou, e os testes de leitura DB-first passavam a bater na API.
+                .fetchedAt(LocalDateTime.now())
                 .build();
     }
 
@@ -241,5 +244,48 @@ class CoinMarketCapServiceTest {
                 .isInstanceOf(CoinMarketCapException.class);
 
         verify(snapshotService, never()).saveCmcListings(anyList(), anyString());
+    }
+
+    // ── Frescor do batch e degradação ────────────────────────────────────────
+    // A janela mora aqui, e não no SnapshotFreshnessTest, porque é decisão de cota
+    // desta fonte: o CmcScheduler roda de 10 em 10 min e cada busca custa crédito.
+
+    @org.junit.jupiter.api.Nested
+    @DisplayName("frescor do batch")
+    class FrescorDoBatch {
+
+        /** Instantes sempre relativos ao agora — data fixa envelheceria e venceria sozinha. */
+        private com.brasilpanel.backend.model.CmcCryptoSnapshot batchDe(java.time.LocalDateTime quando) {
+            var s = mock(com.brasilpanel.backend.model.CmcCryptoSnapshot.class);
+            when(s.getFetchedAt()).thenReturn(quando);
+            return s;
+        }
+
+        @Test
+        @DisplayName("alguns ciclos perdidos do scheduler nao gastam credito na leitura")
+        void poucosCiclosPerdidosNaoGastamCredito() {
+            // 50 min sem refresh = 5 ciclos perdidos. Ainda dentro da janela de 1h:
+            // soluço transitório da CMC não pode virar consumo de cota.
+            var batch = List.of(batchDe(java.time.LocalDateTime.now().minusMinutes(50)));
+            when(snapshotService.getLatestCmcBatch()).thenReturn(batch);
+
+            service.returnAllCryptos();
+
+            server.verify();   // nenhuma requisição registrada
+        }
+
+        @Test
+        @DisplayName("batch vencido e API fora do ar serve o batch antigo, nao derruba")
+        void batchVencidoComApiForaServeOAntigo() {
+            // Este é o ganho do passo: antes a CMC não degradava nada.
+            var batch = List.of(batchDe(java.time.LocalDateTime.now().minusHours(3)));
+            when(snapshotService.getLatestCmcBatch()).thenReturn(batch);
+            server.expect(requestTo(org.hamcrest.Matchers.containsString("listings/latest")))
+                    .andRespond(withSuccess(JSON_ERROR, MediaType.APPLICATION_JSON));
+
+            assertThat(service.returnAllCryptos()).hasSize(1);
+
+            server.verify();   // tentou buscar, falhou, e ainda assim respondeu
+        }
     }
 }

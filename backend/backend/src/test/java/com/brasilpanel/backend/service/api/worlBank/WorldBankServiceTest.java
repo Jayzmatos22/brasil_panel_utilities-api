@@ -54,6 +54,9 @@ class WorldBankServiceTest {
                 .year(ano)
                 .value(new BigDecimal("11000000000000"))
                 .currency(moeda)
+                // Sem isto o snapshot chega com fetchedAt nulo, que a checagem de
+                // idade trata como vencido — e o caso "vem do banco" iria à API.
+                .fetchedAt(java.time.LocalDateTime.now())
                 .build();
     }
 

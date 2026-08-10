@@ -3,6 +3,8 @@ package com.brasilpanel.backend.service.api.worlBank;
 import com.brasilpanel.backend.dto.api.worldbank.PibBrasilDTO;
 import com.brasilpanel.backend.exception.customized.WorldBankException;
 import com.brasilpanel.backend.model.PibSnapshot;
+import com.brasilpanel.backend.service.financial.DbFirst;
+import com.brasilpanel.backend.service.financial.SnapshotFreshness;
 import com.brasilpanel.backend.service.financial.SnapshotService;
 import com.brasilpanel.backend.validators.api.WorldBankValidator;
 import lombok.RequiredArgsConstructor;
@@ -12,10 +14,13 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Serve o PIB do Brasil (World Bank, NY.GDP.MKTP.CN — moeda local, R$) priorizando o banco local.
@@ -36,15 +41,36 @@ public class WorldBankService {
     private static final String CURRENCY = "BRL";
     // Quantos anos buscar na série histórica (1 requisição via mrv).
     private static final int SERIES_YEARS = 35;
+    // Ver getCurrentPib: janela por duração porque a data de publicação do World Bank
+    // não é dedutível. Conservadora — o dado muda uma vez por ano.
+    static final Duration JANELA_PIB = Duration.ofDays(7);
 
-    // PIB atual: World Bank publica revisões anuais — 24h garante frescor sem
-    // sobrecarregar a API para dado que muda uma vez por ano.
+    /**
+     * PIB mais recente, servido do banco enquanto valer.
+     *
+     * <p>A janela é por duração, não por calendário: o World Bank publica o ano novo
+     * e revisa os anteriores sem data fixa, então "o último ponto publicado" não é
+     * dedutível — chutar a data de publicação criaria um vencimento fictício. Sete
+     * dias é conservador para dado que muda uma vez por ano e ainda pega revisão em
+     * tempo razoável.
+     *
+     * <p>Vencido, busca na fonte; se a busca falhar e houver snapshot, devolve o
+     * antigo em vez de derrubar a resposta — antes disso o banco era servido para
+     * sempre e a API só era tocada com a tabela vazia.
+     */
     @Cacheable("worldbank-pib-current")
     public PibBrasilDTO getCurrentPib() {
-        return snapshotService.getLatestPib()
-                .filter(s -> CURRENCY.equals(s.getCurrency())) // snapshot em moeda antiga → re-busca em R$
-                .map(this::toDTO)
-                .orElseGet(this::refreshCurrentPib);
+        // snapshot em moeda antiga → tratado como ausente, para re-buscar em R$
+        Optional<PibSnapshot> stored = snapshotService.getLatestPib()
+                .filter(s -> CURRENCY.equals(s.getCurrency()));
+        LocalDateTime buscadoEm = stored.map(PibSnapshot::getFetchedAt).orElse(null);
+
+        return DbFirst.serve(
+                "PIB do Brasil (World Bank)",
+                stored.map(this::toDTO),
+                SnapshotFreshness.isStale(buscadoEm, JANELA_PIB),
+                buscadoEm != null ? buscadoEm.toLocalDate() : null,
+                this::refreshCurrentPib);
     }
 
     // PIB histórico: dado de anos passados nunca muda. Ano corrente pode ser

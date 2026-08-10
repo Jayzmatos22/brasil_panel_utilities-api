@@ -3,6 +3,8 @@ package com.brasilpanel.backend.service.api.sidra;
 import com.brasilpanel.backend.dto.api.ibge.PibEstadualDTO;
 import com.brasilpanel.backend.exception.customized.IbgeException;
 import com.brasilpanel.backend.model.PibEstadualSnapshot;
+import com.brasilpanel.backend.service.financial.DbFirst;
+import com.brasilpanel.backend.service.financial.SnapshotFreshness;
 import com.brasilpanel.backend.service.financial.SnapshotService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,9 +14,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
 import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Serve o PIB por Unidade da Federação (IBGE/SIDRA, tabela 5938 / variável 37 — PIB a preços
@@ -33,18 +38,40 @@ public class SidraService {
             "https://apisidra.ibge.gov.br/values/t/5938/n3/all/v/37/p/last";
     // SIDRA entrega o PIB em mil reais; convertemos para reais absolutos.
     private static final BigDecimal MIL = BigDecimal.valueOf(1000);
+    // Ver getPibPorEstado: sem scheduler, esta janela é o que realimenta o banco.
+    static final Duration JANELA_PIB_UF = Duration.ofDays(7);
 
     /**
-     * PIB por estado do ano mais recente, do maior para o menor.
-     * DB-first: se já há snapshot, serve do banco; senão busca no SIDRA (1 requisição) e persiste.
+     * PIB por estado do ano mais recente, do maior para o menor, servido do banco
+     * enquanto valer.
+     *
+     * <p><b>Esta fonte não tem scheduler.</b> Quem realimenta o banco é justamente o
+     * caminho "vencido → busca" daqui, então a janela não é só economia: sem ela o
+     * primeiro snapshot seria servido para sempre e o painel nunca veria um ano novo.
+     *
+     * <p>A janela é por duração e não por calendário porque o IBGE publica o PIB
+     * estadual com cerca de dois anos de defasagem, sem data fixa — deduzir "o último
+     * ano publicado" exigiria codificar essa defasagem e erraria a cada revisão de
+     * cronograma. Sete dias é conservador para dado anual.
+     *
+     * <p>Se a busca falhar e houver snapshot, devolve o antigo com log de aviso, em
+     * vez de derrubar a resposta.
      */
     @Cacheable("sidra-pib-estados")
     public List<PibEstadualDTO> getPibPorEstado() {
-        return snapshotService.getLatestPibEstadualYear()
-                .map(year -> snapshotService.getPibEstadualByYear(year).stream()
-                        .map(this::toDTO)
-                        .toList())
-                .orElseGet(this::refreshPibPorEstado);
+        List<PibEstadualSnapshot> stored = snapshotService.getLatestPibEstadualYear()
+                .map(snapshotService::getPibEstadualByYear)
+                .orElseGet(List::of);
+        LocalDateTime buscadoEm = stored.isEmpty() ? null : stored.getFirst().getFetchedAt();
+
+        return DbFirst.serve(
+                "PIB estadual (SIDRA)",
+                stored.isEmpty()
+                        ? Optional.empty()
+                        : Optional.of(stored.stream().map(this::toDTO).toList()),
+                SnapshotFreshness.isStale(buscadoEm, JANELA_PIB_UF),
+                buscadoEm != null ? buscadoEm.toLocalDate() : null,
+                this::refreshPibPorEstado);
     }
 
     /** Busca o PIB por UF no SIDRA (1 requisição), persiste cada UF e devolve a lista. */
