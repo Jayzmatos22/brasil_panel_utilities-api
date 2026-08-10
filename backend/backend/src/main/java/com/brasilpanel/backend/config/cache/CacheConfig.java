@@ -49,6 +49,7 @@ public class CacheConfig {
                         .maximumSize(spec.maximumSize())
                         .recordStats()
                         .build());
+
     }
 
     /**

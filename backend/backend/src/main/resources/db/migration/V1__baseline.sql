@@ -1,3 +1,4 @@
+
 -- V1 — baseline do schema existente.
 --
 -- Gerado a partir das entidades JPA em dialeto PostgreSQL, refletindo exatamente

@@ -63,7 +63,7 @@ export default function AdminUsersPage() {
   const totalCount = users?.length ?? 0;
 
   return (
-    <motion.div className="@container/page flex flex-col gap-6" variants={container} initial="hidden" animate="show">
+    <motion.div className="@container/page  flex flex-col gap-6" variants={container} initial="hidden" animate="show">
 
       {/* ── Hero Section (Vídeo + Título + Cards) ── */}
       <motion.div 
