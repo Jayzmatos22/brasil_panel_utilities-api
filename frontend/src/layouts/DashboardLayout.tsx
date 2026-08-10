@@ -46,7 +46,7 @@ const NAV = [
   {
     group: 'Brasil', icon: Map,
     items: [
-      { label: 'IBGE',   path: '/dashboard/brasil/ibge',   icon: Map       },
+      { label: 'Estados e Municípios', path: '/dashboard/brasil/ibge', icon: Map },
       { label: 'IPEA',   path: '/dashboard/brasil/ipea',   icon: Users     },
       { label: 'Bancos', path: '/dashboard/brasil/bancos', icon: Building2 },
     ],
@@ -71,7 +71,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/dashboard/mercado/metais':     'Metais Preciosos',
   '/dashboard/moedas/cambio':      'Câmbio',
   '/dashboard/moedas/cripto':      'Criptomoedas',
-  '/dashboard/brasil/ibge':        'IBGE — Municípios',
+  '/dashboard/brasil/ibge':        'Estados e Municípios',
   '/dashboard/brasil/ipea':        'IPEA — Séries',
   '/dashboard/brasil/bancos':      'Bancos',
   '/dashboard/admin/usuarios':     'Admin — Usuários',

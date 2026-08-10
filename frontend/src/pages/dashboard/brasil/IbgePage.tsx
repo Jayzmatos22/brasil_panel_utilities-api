@@ -1,9 +1,11 @@
-import { useState, type ChangeEvent, memo } from "react";
+import { useState, useEffect, type ChangeEvent, memo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Search,
   BarChart3,
   MapPin,
+  MapPinned,
+  Signpost,
   AlertCircle,
   LoaderCircle,
 } from "lucide-react";
@@ -12,6 +14,7 @@ import {
   useCitiesByState,
   useStatesRanking,
 } from "../../../hooks/UseIbge";
+import { useViaCep, useCepSearch } from "../../../hooks/UseViaCep";
 import { BarChartEcharts } from "../../../components/charts/BarChartEcharts";
 import { container, item } from "../../../lib/motion/presets";
 
@@ -46,20 +49,67 @@ const VisualErrorState = ({ message }: { message: string }) => (
   </div>
 );
 
-const CityChip = memo(({ name }: { name: string }) => (
-  <div
-    className="bg-white/3 border border-white/10 rounded-lg px-4 py-2.5 text-slate-300 text-sm 
-               hover:bg-emerald-500/10 hover:text-white hover:border-emerald-500/30 
-               transition-all duration-200 cursor-default"
-  >
-    {name}
-  </div>
-));
+// O chip já tinha estados de hover que sugeriam clique sem fazer nada. Agora ele
+// seleciona o município, que é o que destrava a busca de CEP por logradouro.
+const CityChip = memo(
+  ({
+    name,
+    selected,
+    onSelect,
+  }: {
+    name: string;
+    selected: boolean;
+    onSelect: (name: string) => void;
+  }) => (
+    <button
+      type="button"
+      aria-pressed={selected}
+      onClick={() => onSelect(name)}
+      className={`text-left rounded-lg px-4 py-2.5 text-sm border transition-all duration-200 cursor-pointer
+                  coarse:min-h-11 ${
+                    selected
+                      ? "bg-emerald-500/15 text-white border-emerald-500/40 shadow-[0_0_18px_-6px_rgba(16,185,129,0.6)]"
+                      : "bg-white/3 text-slate-300 border-white/10 hover:bg-emerald-500/10 hover:text-white hover:border-emerald-500/30"
+                  }`}
+    >
+      {name}
+    </button>
+  ),
+);
+
+// Par rótulo/valor do card de CEP. Valor vazio some, em vez de virar um campo em
+// branco — vários campos do ViaCEP (unidade, gia) só existem em alguns CEPs.
+const CepField = ({
+  label,
+  value,
+  mono,
+}: {
+  label: string;
+  value?: string | number | null;
+  mono?: boolean;
+}) => {
+  if (value === null || value === undefined || value === "") return null;
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className="text-slate-500 text-[10px] font-medium uppercase tracking-wider">
+        {label}
+      </span>
+      <span
+        className={`text-white text-sm ${mono ? "font-mono text-emerald-300" : "font-medium"}`}
+      >
+        {value}
+      </span>
+    </div>
+  );
+};
 
 // ─── Main Page ──────────────────────────────────────────────────────────────
 export default function IbgePage() {
   const [selectedState, setSelectedState] = useState("");
   const [filtro, setFiltro] = useState("");
+  const [selectedCity, setSelectedCity] = useState("");
+  const [cep, setCep] = useState("");
+  const [rua, setRua] = useState("");
 
   // Hooks remain EXACTLY as provided. Types are inferred automatically.
   const { data: states, isLoading: loadingStates } = useStates();
@@ -72,6 +122,28 @@ export default function IbgePage() {
     isLoading: loadingRanking,
     error: rankingError,
   } = useStatesRanking();
+
+  const {
+    data: endereco,
+    isFetching: buscandoCep,
+    isError: cepNaoEncontrado,
+  } = useViaCep(cep);
+
+  const {
+    data: cepsDaRua,
+    isFetching: buscandoRua,
+    isError: erroBuscaRua,
+  } = useCepSearch(selectedState, selectedCity, rua);
+
+  // O CEP é um atalho para o eixo que a página já opera: resolvido o endereço,
+  // o estado e o município passam a ser os dele, e o resto da tela reage
+  // sozinho — ranking, card do estado e lista de municípios.
+  useEffect(() => {
+    if (!endereco) return;
+    setSelectedState(endereco.uf);
+    setFiltro(endereco.municipio);
+    setSelectedCity(endereco.municipio);
+  }, [endereco]);
 
   const bannerImage =
     findIbgeImage("estado-img") || Object.values(IBGE_IMAGES)[0];
@@ -175,6 +247,8 @@ export default function IbgePage() {
               onChange={(e) => {
                 setSelectedState(e.target.value);
                 setFiltro("");
+                setSelectedCity("");
+                setRua("");
               }}
               className="h-12 px-4 rounded-xl bg-white/5 backdrop-blur-md text-white border border-white/10 
                          outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 
@@ -228,7 +302,101 @@ export default function IbgePage() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* CEP — terceira via de entrada no mesmo eixo Estado → Município */}
+        <div className="flex flex-col gap-1.5 flex-1 max-w-xs">
+          <label
+            htmlFor="cep-input"
+            className="text-slate-400 text-xs font-medium uppercase tracking-wider"
+          >
+            Buscar por CEP
+          </label>
+          <div className="relative">
+            <MapPinned
+              size={15}
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"
+            />
+            <input
+              id="cep-input"
+              type="text"
+              inputMode="numeric"
+              maxLength={9}
+              value={cep}
+              onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                setCep(e.target.value)
+              }
+              placeholder="01310-100"
+              className="w-full h-12 pl-11 pr-10 rounded-xl bg-white/5 backdrop-blur-md text-white border border-white/10
+                         placeholder-slate-500 outline-none focus:ring-2 focus:ring-yellow-400/50 focus:border-yellow-400/50
+                         transition-all text-sm font-mono hover:bg-white/10"
+            />
+            {buscandoCep && (
+              <LoaderCircle
+                size={15}
+                className="absolute right-4 top-1/2 -translate-y-1/2 animate-spin text-yellow-400"
+              />
+            )}
+          </div>
+        </div>
       </motion.div>
+
+      {/* ══════════════════════════════════════════════════════════════════
+          RESULTADO DO CEP — ViaCEP
+         ══════════════════════════════════════════════════════════════════ */}
+      <AnimatePresence mode="wait">
+        {cepNaoEncontrado && !buscandoCep && (
+          <motion.div
+            key="cep-erro"
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+          >
+            <VisualErrorState message="CEP não encontrado na base dos Correios." />
+          </motion.div>
+        )}
+
+        {endereco && !buscandoCep && (
+          <motion.section
+            key={endereco.cep}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 12 }}
+            transition={{ duration: 0.25 }}
+            className="relative overflow-hidden bg-surface-3 border border-white/10 backdrop-blur-md
+                       rounded-2xl p-6 shadow-xl shadow-black/20 flex flex-col gap-5"
+          >
+            {/* Trilho amarelo: marca a origem ViaCEP, distinta do verde do IBGE */}
+            <div className="absolute left-0 top-0 bottom-0 w-0.75 bg-linear-to-b from-[#FFDF00] to-transparent" />
+
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <MapPinned size={16} className="text-yellow-400" />
+                <h2 className="text-white font-semibold text-sm uppercase tracking-wider">
+                  {endereco.logradouro || "Localidade"}
+                </h2>
+              </div>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-yellow-400/30 bg-yellow-400/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-yellow-200">
+                ViaCEP · {endereco.cep}
+              </span>
+            </div>
+
+            <div className="grid-auto-cards gap-x-6 gap-y-4 [--card-min:8rem]">
+              <CepField label="Bairro" value={endereco.bairro} />
+              <CepField label="Complemento" value={endereco.complemento} />
+              <CepField label="Unidade" value={endereco.unidade} />
+              <CepField label="Município" value={endereco.municipio} />
+              {/* A ponte com o IBGE: este código é o mesmo id de ibge_cities */}
+              <CepField label="Cód. IBGE" value={endereco.municipioId} mono />
+              <CepField label="UF" value={endereco.uf} mono />
+              <CepField label="Estado" value={endereco.estado} />
+              <CepField label="Região" value={endereco.regiao} />
+              <CepField label="DDD" value={endereco.ddd} mono />
+              <CepField label="SIAFI" value={endereco.siafi} mono />
+              <CepField label="GIA" value={endereco.gia} mono />
+            </div>
+          </motion.section>
+        )}
+      </AnimatePresence>
 
       {/* ══════════════════════════════════════════════════════════════════
           RANKING & STATE INFO GRID
@@ -368,7 +536,15 @@ export default function IbgePage() {
             ) : cities && cities.length > 0 ? (
               <div className="grid-auto-cards gap-3 [--card-min:8rem] max-h-100 overflow-y-auto scrollbar-thin pr-2">
                 {cities.map((city) => (
-                  <CityChip key={city.id} name={city.nome} />
+                  <CityChip
+                    key={city.id}
+                    name={city.nome}
+                    selected={city.nome === selectedCity}
+                    onSelect={(nome) => {
+                      setSelectedCity(nome === selectedCity ? "" : nome);
+                      setRua("");
+                    }}
+                  />
                 ))}
               </div>
             ) : (
@@ -377,6 +553,121 @@ export default function IbgePage() {
                   Nenhum município encontrado para este filtro.
                 </p>
               </div>
+            )}
+          </motion.section>
+        )}
+      </AnimatePresence>
+
+      {/* ══════════════════════════════════════════════════════════════════
+          BUSCA REVERSA — logradouro → CEPs (ViaCEP)
+         ══════════════════════════════════════════════════════════════════ */}
+      <AnimatePresence>
+        {selectedCity && (
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.3 }}
+            className="relative bg-surface-3 border border-white/10 backdrop-blur-md rounded-2xl p-6 shadow-xl shadow-black/20"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-5">
+              <h2 className="text-white font-semibold text-sm uppercase tracking-wider flex items-center gap-2">
+                <Signpost size={16} className="text-yellow-400" />
+                CEPs por rua em {selectedCity}
+              </h2>
+
+              <div className="relative w-full sm:w-72">
+                <Search
+                  size={14}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"
+                />
+                <input
+                  aria-label={`Buscar rua em ${selectedCity}`}
+                  value={rua}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                    setRua(e.target.value)
+                  }
+                  placeholder="Nome da rua (mín. 3 letras)..."
+                  className="w-full h-10 coarse:min-h-11 pl-10 pr-9 rounded-control bg-white/5 text-white border border-white/10
+                             placeholder-slate-500 outline-none focus:ring-2 focus:ring-yellow-400/30 transition-all text-sm"
+                />
+                {buscandoRua && (
+                  <LoaderCircle
+                    size={14}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-yellow-400"
+                  />
+                )}
+              </div>
+            </div>
+
+            {erroBuscaRua ? (
+              <VisualErrorState message="Não foi possível consultar os CEPs desta rua." />
+            ) : rua.trim().length < 3 ? (
+              <p className="text-slate-500 text-sm py-8 text-center">
+                Digite ao menos 3 letras do nome da rua — é o mínimo aceito pela
+                base dos Correios.
+              </p>
+            ) : buscandoRua ? (
+              <div className="flex flex-col gap-2 py-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <SkeletonBlock key={i} className="h-10 w-full" />
+                ))}
+              </div>
+            ) : cepsDaRua && cepsDaRua.length > 0 ? (
+              <>
+                {/* A origem limita em 50 resultados: dizer isso evita que a
+                    lista truncada pareça a resposta completa. */}
+                {cepsDaRua.length >= 50 && (
+                  <p className="text-slate-500 text-xs mb-3">
+                    Exibindo os 50 primeiros resultados — refine a busca para
+                    ver outros.
+                  </p>
+                )}
+                <div className="overflow-x-auto overscroll-x-contain max-h-100 overflow-y-auto scrollbar-thin">
+                  <table className="w-full min-w-md text-sm">
+                    <thead className="sticky top-0 bg-slate-950/90 backdrop-blur-sm z-10">
+                      <tr className="border-b border-white/10">
+                        <th className="text-left py-3 px-4 text-slate-500 font-medium w-28 text-xs uppercase tracking-wider">
+                          CEP
+                        </th>
+                        <th className="text-left py-3 px-4 text-slate-500 font-medium text-xs uppercase tracking-wider">
+                          Logradouro
+                        </th>
+                        <th className="text-left py-3 px-4 text-slate-500 font-medium hidden md:table-cell text-xs uppercase tracking-wider">
+                          Bairro
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {cepsDaRua.map((e) => (
+                        <tr
+                          key={`${e.cep}-${e.logradouro}`}
+                          className="border-b border-white/5 hover:bg-yellow-500/5 transition-colors group/row"
+                        >
+                          <td className="py-3 px-4 text-yellow-400/80 font-mono group-hover/row:text-yellow-300 transition-colors">
+                            {e.cep}
+                          </td>
+                          <td className="py-3 px-4 text-slate-300 group-hover/row:text-white transition-colors font-medium">
+                            {e.logradouro}
+                            {e.complemento && (
+                              <span className="text-slate-500 text-xs block">
+                                {e.complemento}
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 text-slate-500 text-xs hidden md:table-cell group-hover/row:text-slate-400 transition-colors">
+                            {e.bairro}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            ) : (
+              <p className="text-slate-500 text-sm py-8 text-center">
+                Nenhuma rua com esse nome em {selectedCity}.
+              </p>
             )}
           </motion.section>
         )}
