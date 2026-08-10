@@ -6,27 +6,7 @@ export interface Bank {
   fullName: string;
 }
 
-// ─── Conta bancária do usuário (dados internos do app, não vêm do backend) ───
-
-export type StatusAccount = 'ATIVA' | 'DESATIVADA' | 'BLOQUEADA';
-export type CardType = 'CREDITO' | 'DEBITO' | 'MULTIPLO' | 'NAO-INFORMADO';
-
-export interface Card {
-  cardNumber: string;
-  cardholderName: string;
-  expirationDate: string;
-  cvv: string;
-  type: CardType;
-  limit?: number;
-}
-
-export interface DataBank {
-  idAccount: string;
-  holder: string;
-  agency: string;
-  numberAccount: string;
-  bankName?: string;
-  balance: number;
-  status: StatusAccount;
-  card: Card;
-}
+// `DataBank`, `Card` e `CardType` foram removidos junto com o onboarding de
+// dados bancários. Serviam a um formulário que gravava número de cartão e CVV em
+// texto puro no localStorage, e nenhum desses campos existia no backend.
+// A lista de bancos da BrasilAPI continua servindo /dashboard/brasil/bancos.

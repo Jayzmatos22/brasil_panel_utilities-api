@@ -16,8 +16,7 @@ import LoginPage       from './pages/auth/LoginPage';
 import VerifyEmailPage from './pages/auth/VerifyEmailPage';
 
 // Onboarding (com header)
-import AddressPage from './pages/onboarding/AddressPage';
-import BankPage    from './pages/onboarding/BankPage';
+import PerfilPage from './pages/onboarding/PerfilPage';
 
 // ─── Páginas do dashboard — carregadas sob demanda ───────────────────────────
 // Importadas com lazy() para não entrarem no bundle inicial: juntas passam de
@@ -77,10 +76,33 @@ function OnboardingLayout() {
       <HeaderApp />
       <div className="flex-1 w-full flex justify-center items-start mt-20 p-4 py-8">
         <Routes>
-          <Route path="/dados-endereco"  element={<AddressPage />} />
-          <Route path="/dados-bancarios" element={<BankPage />} />
+          <Route path="/dados-perfil" element={<PerfilPage />} />
+          {/* Fora do onboarding, qualquer caminho desconhecido é um 404 de
+              verdade. Antes o catch-all abaixo renderizava este layout vazio
+              para qualquer URL inexistente. */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </div>
+    </div>
+  );
+}
+
+// ─── 404 ─────────────────────────────────────────────────────────────────────
+function NotFound() {
+  return (
+    <div className="flex flex-col items-center gap-4 text-center py-16">
+      <p className="text-6xl font-bold text-slate-700">404</p>
+      <h1 className="text-white text-xl">Página não encontrada</h1>
+      <p className="text-slate-400 text-sm max-w-md">
+        O endereço acessado não existe ou foi movido.
+      </p>
+      <a
+        href="/dashboard/economia"
+        className="mt-2 h-11 px-6 inline-flex items-center rounded-md bg-yellow-500 hover:bg-yellow-400
+                   text-slate-950 font-bold text-sm transition-all"
+      >
+        Ir para o painel
+      </a>
     </div>
   );
 }

@@ -1,6 +1,3 @@
-import type { DataBank } from './BankDataType';
-import type { UserAddress } from './AddressUserType';
-
 // ─── Auth — POST /api/auth/login ─────────────────────────────────────────────
 export interface LoginRequest {
   email: string;
@@ -44,13 +41,16 @@ export interface UserResponse {
   createdAt: string;
 }
 
-// ─── Modelo completo do usuário no app (inclui dados locais) ─────────────────
+// ─── Modelo do usuário no app ────────────────────────────────────────────────
+//
+// `address` e `bank` saíram daqui: eram obrigatórios no tipo mas o backend nunca
+// os enviava — nenhuma dessas informações é persistida no Postgres. Quem lia
+// `currentUser.bank.idAccount` quebrava com TypeError sempre que o localStorage
+// estivesse limpo.
 export interface User {
   idUserAccount: string;
   name: string;
   email: string;
-  address: UserAddress;
-  bank: DataBank;
 }
 
 
