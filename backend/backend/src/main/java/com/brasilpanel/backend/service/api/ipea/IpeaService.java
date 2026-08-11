@@ -10,7 +10,7 @@ import com.brasilpanel.backend.service.financial.DbFirst;
 import com.brasilpanel.backend.service.financial.FinancialDataService;
 import com.brasilpanel.backend.service.financial.SeriesFreshness;
 import com.brasilpanel.backend.service.financial.SeriesPeriodicity;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -18,12 +18,16 @@ import org.springframework.web.client.RestClient;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -33,7 +37,6 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Service
 @Slf4j
-@RequiredArgsConstructor
 public class IpeaService {
     private final RestClient restClient;
     private final FinancialDataService financialDataService;
@@ -43,10 +46,37 @@ public class IpeaService {
     private static final String PATH = "/api/odata4/Metadados('%s')/Valores";
 
     /**
+     * Por quanto tempo um endereço que falhou fica no fim da fila de candidatos.
+     * Não é banimento: passado o prazo ele volta a ser tentado, porque um IP pode
+     * voltar. Curto o bastante para acompanhar manutenção do lado do IPEA.
+     */
+    private static final Duration FAILURE_MEMORY = Duration.ofMinutes(10);
+
+    /**
      * Último IP do IPEA que respondeu. Evita pagar o connect timeout do endereço
      * defeituoso em cada série — o refresh percorre dezenas delas em sequência.
      */
     private volatile String lastHealthyAddress;
+
+    /**
+     * Quando cada endereço falhou pela última vez. Sem isto o endereço morto era
+     * tentado de novo em toda série, e o {@code lastHealthyAddress} nunca era
+     * limpo ao parar de funcionar — as duas coisas cobravam um connect timeout
+     * inteiro por série, repetidamente.
+     */
+    private final Map<String, Instant> recentFailures = new ConcurrentHashMap<>();
+
+    /**
+     * Construtor explícito, e não {@code @RequiredArgsConstructor}: o
+     * {@code @Qualifier} precisa chegar ao parâmetro do construtor, e o Lombok só
+     * copia anotações listadas em {@code lombok.config} — que este projeto não tem.
+     * Sem isso o Spring injetaria o cliente {@code @Primary}, de connect timeout longo.
+     */
+    public IpeaService(@Qualifier("ipeaRestClient") RestClient restClient,
+                       FinancialDataService financialDataService) {
+        this.restClient = restClient;
+        this.financialDataService = financialDataService;
+    }
 
     // Emprego
     private static final String DESOCUPACAO = "PNADC12_NDESOCM12";
@@ -171,7 +201,7 @@ public class IpeaService {
     );
 
     // Pib
-    @Cacheable("ipea-pib-mensal")
+    @Cacheable(value = "ipea-pib-mensal", sync = true)
     public List<IpeaSerieDTO> getMonthlyPib(){
         return List.of(
                 serie(PIB_MENSAL, "PIB mensal do Brasil R$ (milhôes)")
@@ -180,7 +210,7 @@ public class IpeaService {
 
 
     // MACRO ECONOMIA
-    @Cacheable("ipea-emprego")
+    @Cacheable(value = "ipea-emprego", sync = true)
     public List<IpeaSerieDTO> getEmprego() {
         return List.of(
                 serie(DESOCUPACAO, "Taxa de desocupação (%)"),
@@ -189,7 +219,7 @@ public class IpeaService {
     }
 
 
-    @Cacheable("ipea-renda")
+    @Cacheable(value = "ipea-renda", sync = true)
     public List<IpeaSerieDTO> getRenda() {
         return List.of(
                 serie(SALARIO_MINIMO_REAL, "Salário mínimo real (R$)"),
@@ -199,7 +229,7 @@ public class IpeaService {
     }
 
 
-    @Cacheable("ipea-desigualdade")
+    @Cacheable(value = "ipea-desigualdade", sync = true)
     public List<IpeaSerieDTO> getDesigualdade() {
         return List.of(
                 serie(GINI, "Coeficiente de Gini"),
@@ -208,7 +238,7 @@ public class IpeaService {
     }
 
 
-    @Cacheable("ipea-macro")
+    @Cacheable(value = "ipea-macro", sync = true)
     public List<IpeaSerieDTO> getMacro() {
         return List.of(
                 serie(SELIC, "Taxa Selic/Overnight (% a.a.)"),
@@ -219,7 +249,7 @@ public class IpeaService {
     }
 
 
-    @Cacheable("ipea-precos")
+    @Cacheable(value = "ipea-precos", sync = true)
     public List<IpeaSerieDTO> getPrecos() {
         return List.of(
                 serie(INPC, "INPC - índice"),
@@ -228,7 +258,7 @@ public class IpeaService {
     }
 
 
-    @Cacheable("ipea-populacao")
+    @Cacheable(value = "ipea-populacao", sync = true)
     public List<IpeaSerieDTO> getPopulacao() {
         return List.of(
                 serie(POPULACAO, "População total (mil pessoas)"),
@@ -329,56 +359,56 @@ public class IpeaService {
 
     // BALANÇA DE PAGAMENTOS - (BPM6) (BCB / BP (BPM6))
 
-    @Cacheable("ipea-reservas-ativos")
+    @Cacheable(value = "ipea-reservas-ativos", sync = true)
     public List<IpeaSerieDTO> getReserveAssets() {
         return List.of(
                 serie(ATIVOS_RESERVA, "Ativos de Reserva Internacional")
         );
     }
 
-    @Cacheable("ipea-transacoes-correntes")
+    @Cacheable(value = "ipea-transacoes-correntes", sync = true)
     public List<IpeaSerieDTO> getCurrentTransactionsBalance() {
         return List.of(
                 serie(TRANSACOES_CORRENTES_SALDO, "Saldo em Transações Correntes")
         );
     }
 
-    @Cacheable("ipea-balanca-comercial")
+    @Cacheable(value = "ipea-balanca-comercial", sync = true)
     public List<IpeaSerieDTO> getTradeBalance() {
         return List.of(
                 serie(BALANCA_COMERCIAL, "Saldo da Balança Comercial")
         );
     }
 
-    @Cacheable("ipea-servicos")
+    @Cacheable(value = "ipea-servicos", sync = true)
     public List<IpeaSerieDTO> getServicesBalance() {
         return List.of(
                 serie(SERVICOS, "Saldo da Conta de Serviços")
         );
     }
 
-    @Cacheable("ipea-renda-primaria")
+    @Cacheable(value = "ipea-renda-primaria", sync = true)
     public List<IpeaSerieDTO> getPrimaryIncome() {
         return List.of(
                 serie(RENDA_PRIMARIA, "Saldo da Renda Primária")
         );
     }
 
-    @Cacheable("ipea-investimento-direto")
+    @Cacheable(value = "ipea-investimento-direto", sync = true)
     public List<IpeaSerieDTO> getDirectInvestment() {
         return List.of(
                 serie(INVESTIMENTO_DIRETO, "Investimento Direto no País")
         );
     }
 
-    @Cacheable("ipea-conta-capital")
+    @Cacheable(value = "ipea-conta-capital", sync = true)
     public List<IpeaSerieDTO> getCapitalAccount() {
         return List.of(
                 serie(CONTA_CAPITAL, "Saldo da Conta Capital")
         );
     }
 
-    @Cacheable("ipea-conta-financeira")
+    @Cacheable(value = "ipea-conta-financeira", sync = true)
     public List<IpeaSerieDTO> getFinancialAccount() {
         return List.of(
                 serie(CONTA_FINANCEIRA, "Saldo da Conta Financeira")
@@ -386,7 +416,7 @@ public class IpeaService {
     }
 
 
-    @Cacheable("ipea-investimento-carteira")
+    @Cacheable(value = "ipea-investimento-carteira", sync = true)
     public List<IpeaSerieDTO> getInvestmentWallet() {
         return List.of(
                 serie(INVESTIMENTO_CARTEIRA, "Investimento em Carteira")
@@ -394,14 +424,14 @@ public class IpeaService {
     }
 
 
-    @Cacheable("ipea-servicos-despesa")
+    @Cacheable(value = "ipea-servicos-despesa", sync = true)
     public List<IpeaSerieDTO> getServicesExpense() {
         return List.of(
                 serie(SERVICOS_DESPESA, "Serviços - Despesa")
         );
     }
 
-    @Cacheable("ipea-investimento-direto-ingressos")
+    @Cacheable(value = "ipea-investimento-direto-ingressos", sync = true)
     public List<IpeaSerieDTO> getDirectInvestmentInflows() {
         return List.of(
                 serie(INVESTIMENTO_DIRETO_INGRESSOS,
@@ -409,7 +439,7 @@ public class IpeaService {
         );
     }
 
-    @Cacheable("ipea-balanca-transacoes-correntes-pib")
+    @Cacheable(value = "ipea-balanca-transacoes-correntes-pib", sync = true)
     public List<IpeaSerieDTO> getCurrentTransactionsPercentagePib() {
         return List.of(serie(TRANSACOES_CORRENTES_PIB, "Balanço de pagamentos: transações correntes (% PIB)"));
     }
@@ -418,7 +448,7 @@ public class IpeaService {
 
 
     // EXPORTAÇÕES - Comércio Exterior (FUNCEX)
-    @Cacheable("ipea-exportacoes-total")
+    @Cacheable(value = "ipea-exportacoes-total", sync = true)
     public List<IpeaSerieDTO> getTotalExports() {
         return List.of(
                 serie(EXPORTACOES_TOTAL_FOB,
@@ -426,7 +456,7 @@ public class IpeaService {
         );
     }
 
-    @Cacheable("ipea-quantum-exportacoes")
+    @Cacheable(value = "ipea-quantum-exportacoes", sync = true)
     public List<IpeaSerieDTO> getExportQuantumIndex() {
         return List.of(
                 serie(INDICE_QUANTUM_EXPORTACOES,
@@ -434,7 +464,7 @@ public class IpeaService {
         );
     }
 
-    @Cacheable("ipea-exportacoes-produtos-basicos")
+    @Cacheable(value = "ipea-exportacoes-produtos-basicos", sync = true)
     public List<IpeaSerieDTO> getBasicProductsExports() {
         return List.of(
                 serie(EXPORTACOES_PRODUTOS_BASICOS,
@@ -443,49 +473,49 @@ public class IpeaService {
     }
 
     // - Categorias grandes.
-    @Cacheable("ipea-exportacoes-agricultura-pecuaria-quantum")
+    @Cacheable(value = "ipea-exportacoes-agricultura-pecuaria-quantum", sync = true)
     public List<IpeaSerieDTO> getAgricultureLivestockQuantumExports() {
         return List.of(serie(AGRICULTURA_E_PECUARIA_QUANTUM, "Índice de Quantum - Agricultura e Pecuária"));
     }
 
-    @Cacheable("ipea-exportacoes-bens-consumo")
+    @Cacheable(value = "ipea-exportacoes-bens-consumo", sync = true)
     public List<IpeaSerieDTO> getConsumerGoodsExports() {
         return List.of(serie(EXPORTACOES_BENS_CONSUMO, "Exportações de Bens de Consumo (FOB)"));
     }
 
-    @Cacheable("ipea-exportacoes-precos-bens-capital")
+    @Cacheable(value = "ipea-exportacoes-precos-bens-capital", sync = true)
     public List<IpeaSerieDTO> getCapitalGoodsPriceIndex() {
         return List.of(serie(INDICE_PRECOS_BENS_CAPITAL, "Índice de Preços - Bens de Capital"));
     }
 
-    @Cacheable("ipea-exportacoes-precos-bens-duraveis")
+    @Cacheable(value = "ipea-exportacoes-precos-bens-duraveis", sync = true)
     public List<IpeaSerieDTO> getDurableConsumerGoodsPriceIndex() {
         return List.of(serie(INDICE_PRECOS_BENS_DURAVEIS, "Índice de Preços - Bens de Consumo Duráveis"));
     }
 
-    @Cacheable("ipea-exportacoes-precos-bens-nao-duraveis")
+    @Cacheable(value = "ipea-exportacoes-precos-bens-nao-duraveis", sync = true)
     public List<IpeaSerieDTO> getNonDurableConsumerGoodsPriceIndex() {
         return List.of(serie(INDICE_PRECOS_BENS_NAO_DURAVEIS, "Índice de Preços - Bens de Consumo Não Duráveis"));
     }
 
-    @Cacheable("ipea-exportacoes-valor-bens-intermediarios")
+    @Cacheable(value = "ipea-exportacoes-valor-bens-intermediarios", sync = true)
     public List<IpeaSerieDTO> getIntermediateGoodsFobValue() {
         return List.of(serie(VALOR_FOB_BENS_INTERMEDIARIOS, "Valor FOB - Bens Intermediários"));
     }
 
-    @Cacheable("ipea-exportacoes-quantum-bens-intermediarios")
+    @Cacheable(value = "ipea-exportacoes-quantum-bens-intermediarios", sync = true)
     public List<IpeaSerieDTO> getIntermediateGoodsQuantumIndex() {
         return List.of(serie(INDICE_QUANTUM_BENS_INTERMEDIARIOS, "Índice de Quantum - Bens Intermediários"));
     }
 
-    @Cacheable("ipea-exportacoes-valor-combustiveis")
+    @Cacheable(value = "ipea-exportacoes-valor-combustiveis", sync = true)
     public List<IpeaSerieDTO> getFuelsFobValue() {
         return List.of(serie(VALOR_FOB_COMBUSTIVEIS, "Valor FOB - Combustíveis"));
     }
 
 
     // Brasil - Ibovespa
-    @Cacheable("ipea-ibovespa-fechamento")
+    @Cacheable(value = "ipea-ibovespa-fechamento", sync = true)
     public List<IpeaSerieDTO> getIbovespaClosingIndex() {
         return List.of(serie(IBOVESPA_FECHAMENTO, "Índice de ações: Ibovespa - fechamento"));
     }
@@ -494,37 +524,37 @@ public class IpeaService {
 
 
     // -- IMPOSTOS --
-    @Cacheable("ipea-imposto-ii")
+    @Cacheable(value = "ipea-imposto-ii", sync = true)
     public List<IpeaSerieDTO> getImportTax() {
         return List.of(serie(IMPOSTO_II, "Imposto sobre a Importação (II) - Receita Bruta"));
     }
 
-    @Cacheable("ipea-imposto-irpf")
+    @Cacheable(value = "ipea-imposto-irpf", sync = true)
     public List<IpeaSerieDTO> getPersonalIncomeTax() {
         return List.of(serie(IMPOSTO_IRPF, "Imposto de Renda (IRPF) - Receita Bruta"));
     }
 
-    @Cacheable("ipea-imposto-irpj")
+    @Cacheable(value = "ipea-imposto-irpj", sync = true)
     public List<IpeaSerieDTO> getCorporateIncomeTax() {
         return List.of(serie(IMPOSTO_IRPJ, "Imposto de Renda (IRPJ) - Receita Bruta"));
     }
 
-    @Cacheable("ipea-imposto-ir-total")
+    @Cacheable(value = "ipea-imposto-ir-total", sync = true)
     public List<IpeaSerieDTO> getTotalIncomeTax() {
         return List.of(serie(IMPOSTO_IR_TOTAL, "Imposto de Renda Total - Receita Bruta"));
     }
 
-    @Cacheable("ipea-imposto-iof")
+    @Cacheable(value = "ipea-imposto-iof", sync = true)
     public List<IpeaSerieDTO> getIofTax() {
         return List.of(serie(IMPOSTO_IOF, "Imposto sobre Operações Financeiras (IOF) - Receita Bruta"));
     }
 
-    @Cacheable("ipea-imposto-ipi")
+    @Cacheable(value = "ipea-imposto-ipi", sync = true)
     public List<IpeaSerieDTO> getIpiTax() {
         return List.of(serie(IMPOSTO_IPI, "Imposto sobre Produtos Industrializados (IPI) - Receita Bruta"));
     }
 
-    @Cacheable("ipea-imposto-itr")
+    @Cacheable(value = "ipea-imposto-itr", sync = true)
     public List<IpeaSerieDTO> getItrTax() {
         return List.of(serie(IMPOSTO_ITR, "Imposto sobre a propriedade territorial rural - R$ mi"));
     }
@@ -532,37 +562,37 @@ public class IpeaService {
 
 
     // Câmbio Contratado
-    @Cacheable("ipea-cambio-comercial")
+    @Cacheable(value = "ipea-cambio-comercial", sync = true)
     public List<IpeaSerieDTO> getContractedExchangeCommercial() {
         return List.of(serie(CAMBIO_COMERCIAL, "Câmbio contratado - comercial (US$ milhões)"));
     }
 
-    @Cacheable("ipea-cambio-comercial-exportacao")
+    @Cacheable(value = "ipea-cambio-comercial-exportacao", sync = true)
     public List<IpeaSerieDTO> getContractedExchangeCommercialExports() {
         return List.of(serie(CAMBIO_COMERCIAL_EXP, "Câmbio contratado - comercial - exportação (US$ milhões)"));
     }
 
-    @Cacheable("ipea-cambio-comercial-importacao")
+    @Cacheable(value = "ipea-cambio-comercial-importacao", sync = true)
     public List<IpeaSerieDTO> getContractedExchangeCommercialImports() {
         return List.of(serie(CAMBIO_COMERCIAL_IMP, "Câmbio contratado - comercial - importação (US$ milhões)"));
     }
 
-    @Cacheable("ipea-cambio-comercial-financeiro")
+    @Cacheable(value = "ipea-cambio-comercial-financeiro", sync = true)
     public List<IpeaSerieDTO> getContractedExchangeTotal() {
         return List.of(serie(CAMBIO_COMERCIAL_FINANC, "Câmbio contratado - comercial e financeiro (US$ milhões)"));
     }
 
-    @Cacheable("ipea-cambio-financeiro")
+    @Cacheable(value = "ipea-cambio-financeiro", sync = true)
     public List<IpeaSerieDTO> getContractedExchangeFinancial() {
         return List.of(serie(CAMBIO_FINANCEIRO, "Câmbio contratado - financeiro (US$ milhões)"));
     }
 
-    @Cacheable("ipea-cambio-financeiro-compra")
+    @Cacheable(value = "ipea-cambio-financeiro-compra", sync = true)
     public List<IpeaSerieDTO> getContractedExchangeFinancialPurchases() {
         return List.of(serie(CAMBIO_FINANCEIRO_COMPRA, "Câmbio contratado - financeiro - compra (US$ milhões)"));
     }
 
-    @Cacheable("ipea-cambio-financeiro-venda")
+    @Cacheable(value = "ipea-cambio-financeiro-venda", sync = true)
     public List<IpeaSerieDTO> getContractedExchangeFinancialSales() {
         return List.of(serie(CAMBIO_FINANCEIRO_VENDA, "Câmbio contratado - financeiro - venda (US$ milhões)"));
     }
@@ -599,42 +629,83 @@ public class IpeaService {
         Exception ultimaFalha = null;
 
         for (String endereco : enderecosCandidatos(codigo)) {
+            long inicio = System.nanoTime();
             try {
                 IpeaResponseDTO response = restClient.get()
                         .uri("http://" + endereco + path)
                         .retrieve()
                         .body(IpeaResponseDTO.class);
                 lastHealthyAddress = endereco;
+                recentFailures.remove(endereco);
+                log.debug("Série {} obtida de {} em {} ms", codigo, endereco, millisDesde(inicio));
                 return response;
             } catch (Exception e) {
                 ultimaFalha = e;
-                log.warn("Endereço {} falhou para a série {}: {}", endereco, codigo, e.toString());
+                registrarFalha(endereco);
+                // Em nível warn e com o tempo gasto: é este numero que revela se a
+                // latencia da pagina vem do connect timeout ou da resposta em si.
+                log.warn("Endereço {} falhou para a série {} após {} ms: {}",
+                        endereco, codigo, millisDesde(inicio), e.toString());
             }
         }
 
         throw new IpeaException("Erro ao buscar série: " + codigo, 502, ultimaFalha);
     }
 
-    /** Endereços a tentar, começando pelo último que funcionou. */
-    private List<String> enderecosCandidatos(String codigo) {
-        List<String> candidatos = new ArrayList<>();
+    private static long millisDesde(long inicioNanos) {
+        return (System.nanoTime() - inicioNanos) / 1_000_000;
+    }
 
-        String healthy = lastHealthyAddress;
-        if (healthy != null) {
-            candidatos.add(healthy);
+    /** Marca o endereço como suspeito e o descarta como "último saudável" se for ele. */
+    private void registrarFalha(String endereco) {
+        recentFailures.put(endereco, Instant.now());
+        if (endereco.equals(lastHealthyAddress)) {
+            lastHealthyAddress = null;
         }
+    }
+
+    private boolean falhouRecentemente(String endereco) {
+        Instant falha = recentFailures.get(endereco);
+        return falha != null && falha.isAfter(Instant.now().minus(FAILURE_MEMORY));
+    }
+
+    /**
+     * Ordem de tentativa: último endereço que funcionou, depois os que não falharam
+     * recentemente e, por último, os que falharam. Nenhum candidato é descartado — um
+     * IP pode voltar —, mas o que está morto deixa de ser o primeiro a cobrar timeout.
+     */
+    private List<String> enderecosCandidatos(String codigo) {
+        List<String> resolvidos = new ArrayList<>();
 
         try {
             for (InetAddress address : InetAddress.getAllByName(HOST)) {
                 String ip = address instanceof Inet6Address
                         ? "[" + address.getHostAddress() + "]"
                         : address.getHostAddress();
-                if (!candidatos.contains(ip)) {
-                    candidatos.add(ip);
+                if (!resolvidos.contains(ip)) {
+                    resolvidos.add(ip);
                 }
             }
         } catch (UnknownHostException e) {
             log.warn("Falha ao resolver {} para a série {}: {}", HOST, codigo, e.getMessage());
+        }
+
+        List<String> saudaveis = new ArrayList<>();
+        List<String> suspeitos = new ArrayList<>();
+        for (String ip : resolvidos) {
+            (falhouRecentemente(ip) ? suspeitos : saudaveis).add(ip);
+        }
+
+        List<String> candidatos = new ArrayList<>();
+        String healthy = lastHealthyAddress;
+        if (healthy != null) {
+            candidatos.add(healthy);
+        }
+        for (String ip : saudaveis) {
+            if (!candidatos.contains(ip)) candidatos.add(ip);
+        }
+        for (String ip : suspeitos) {
+            if (!candidatos.contains(ip)) candidatos.add(ip);
         }
 
         // Sem resolução e sem histórico, resta deixar o RestClient tentar pelo nome.
