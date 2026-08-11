@@ -39,6 +39,11 @@ public final class SeriesFreshness {
         return switch (periodicity) {
             case DIARIA_UTIL -> lastDate.isBefore(ultimoPregaoPublicado(today));
             case MENSAL -> lastDate.isBefore(today.withDayOfMonth(1).minusMonths(1));
+            // Mesma forma da mensal, um período acima: tolera um ano de defasagem
+            // de publicação. Estatística anual sai muito depois do ano de
+            // referência — a PNAD do ano Y só chega em Y+1 —, então exigir o ano
+            // corrente marcaria como vencida uma série que está em dia.
+            case ANUAL -> lastDate.isBefore(today.withDayOfYear(1).minusYears(1));
         };
     }
 

@@ -29,6 +29,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
@@ -392,11 +393,30 @@ public class IpeaService {
                 });
     }
 
-    /** Ibovespa é diário (pregão); as demais séries são mensais ou anuais. */
+    /**
+     * Séries publicadas uma vez por ano.
+     *
+     * <p>Estavam caindo no padrão mensal e por isso ficavam permanentemente
+     * vencidas: em 11/08/2026 o Gini parava em 2025-01-01 — que é o dado corrente —
+     * mas a régua mensal exigia ponto de julho/2026. Cada expiração de cache virava
+     * uma ida à fonte por um valor que não existe: ~0,34 s por série, sem gravar
+     * nada, contra um host que já é instável.
+     */
+    private static final Set<String> SERIES_ANUAIS = Set.of(
+            GINI, POBREZA, RENDA_PER_CAPITA,
+            PROJECAO_TOTAL, PROJECAO_HOMENS, PROJECAO_MULHERES
+    );
+
+    /** Ibovespa é diário (pregão); as demais são anuais ou mensais. */
     private boolean isDesatualizado(String codigo, List<FinancialDataPoint> points) {
-        SeriesPeriodicity periodicidade = codigo.equals(IBOVESPA_FECHAMENTO)
-                ? SeriesPeriodicity.DIARIA_UTIL
-                : SeriesPeriodicity.MENSAL;
+        SeriesPeriodicity periodicidade;
+        if (codigo.equals(IBOVESPA_FECHAMENTO)) {
+            periodicidade = SeriesPeriodicity.DIARIA_UTIL;
+        } else if (SERIES_ANUAIS.contains(codigo)) {
+            periodicidade = SeriesPeriodicity.ANUAL;
+        } else {
+            periodicidade = SeriesPeriodicity.MENSAL;
+        }
         return SeriesFreshness.isStale(ultimaData(points), periodicidade);
     }
 

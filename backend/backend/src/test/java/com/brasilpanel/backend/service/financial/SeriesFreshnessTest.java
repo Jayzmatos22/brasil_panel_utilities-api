@@ -122,6 +122,73 @@ class SeriesFreshnessTest {
     }
 
     @Nested
+    @DisplayName("séries anuais (ANUAL)")
+    class Anual {
+
+        /** Último ponto real do Gini no banco em 11/08/2026 — o caso que originou a regra. */
+        private static final LocalDate GINI_2025 = LocalDate.parse("2025-01-01");
+
+        @Test
+        @DisplayName("o ano anterior ainda vale")
+        void anoAnteriorAindaVale() {
+            boolean vencido = SeriesFreshness.isStale(GINI_2025, SeriesPeriodicity.ANUAL, TERCA);
+
+            assertThat(vencido)
+                    .as("a PNAD do ano Y só é publicada em Y+1; cobrar o ano corrente marcaria "
+                            + "como vencida uma série que está em dia")
+                    .isFalse();
+        }
+
+        @Test
+        @DisplayName("a mesma série vencia pela régua mensal — o defeito corrigido")
+        void reguaMensalMarcavaComoVencida() {
+            // Antes do ANUAL, Gini, pobreza e renda média caíam no padrão mensal e
+            // ficavam permanentemente vencidos: cada expiração de cache virava uma ida
+            // à fonte por um valor que não existe, sem gravar nada.
+            boolean pelaReguaMensal =
+                    SeriesFreshness.isStale(GINI_2025, SeriesPeriodicity.MENSAL, TERCA);
+            boolean pelaReguaAnual =
+                    SeriesFreshness.isStale(GINI_2025, SeriesPeriodicity.ANUAL, TERCA);
+
+            assertThat(pelaReguaMensal)
+                    .as("é assim que a série se comportava antes da correção")
+                    .isTrue();
+            assertThat(pelaReguaAnual).isFalse();
+        }
+
+        @Test
+        @DisplayName("dois anos atrás já venceu")
+        void doisAnosAtrasJaVenceu() {
+            boolean vencido = SeriesFreshness.isStale(
+                    LocalDate.parse("2024-01-01"), SeriesPeriodicity.ANUAL, TERCA);
+
+            assertThat(vencido)
+                    .as("a folga é de um ano; passado isso, espera-se dado novo publicado")
+                    .isTrue();
+        }
+
+        @Test
+        @DisplayName("a folga é de exatamente um ano, não mais")
+        void folgaEDeUmAnoApenas() {
+            // 31/12/2024 é um dia antes do limite (01/01/2025) — já vencido.
+            assertThat(SeriesFreshness.isStale(
+                    LocalDate.parse("2024-12-31"), SeriesPeriodicity.ANUAL, TERCA)).isTrue();
+            assertThat(SeriesFreshness.isStale(
+                    LocalDate.parse("2025-01-01"), SeriesPeriodicity.ANUAL, TERCA)).isFalse();
+        }
+
+        @Test
+        @DisplayName("projeção populacional com data futura nunca vence")
+        void projecaoFuturaNuncaVence() {
+            // As séries DEPIS_* projetam até 2070 — o ponto mais recente está no futuro.
+            boolean vencido = SeriesFreshness.isStale(
+                    LocalDate.parse("2070-01-01"), SeriesPeriodicity.ANUAL, TERCA);
+
+            assertThat(vencido).isFalse();
+        }
+    }
+
+    @Nested
     @DisplayName("dia útil anterior")
     class DiaUtilAnterior {
 
