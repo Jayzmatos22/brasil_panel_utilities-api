@@ -10,6 +10,7 @@ import com.brasilpanel.backend.service.financial.DbFirst;
 import com.brasilpanel.backend.service.financial.FinancialDataService;
 import com.brasilpanel.backend.service.financial.SeriesFreshness;
 import com.brasilpanel.backend.service.financial.SeriesPeriodicity;
+import jakarta.annotation.PreDestroy;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -23,11 +24,16 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -76,6 +82,80 @@ public class IpeaService {
                        FinancialDataService financialDataService) {
         this.restClient = restClient;
         this.financialDataService = financialDataService;
+    }
+
+    // ── Fan-out das séries ───────────────────────────────────────────────────
+
+    /**
+     * Teto de séries buscadas ao mesmo tempo.
+     *
+     * <p>Pool limitado, e não virtual threads, apesar do Java 21: são 45 métodos
+     * cacheados e um fan-out ilimitado dispararia centenas de chamadas simultâneas
+     * ao IPEA se vários caches vencessem juntos — exatamente o martelamento que o
+     * {@code sync = true} eliminou. 8 também respeita o pool do Hikari (padrão 10):
+     * cada série abre transações curtas e independentes em {@code savePoint}.
+     */
+    private static final int FAN_OUT_THREADS = 8;
+
+    private final ExecutorService fanOut = Executors.newFixedThreadPool(FAN_OUT_THREADS, r -> {
+        Thread t = new Thread(r, "ipea-serie");
+        t.setDaemon(true);
+        return t;
+    });
+
+    @PreDestroy
+    void encerrarFanOut() {
+        fanOut.shutdown();
+    }
+
+    /** Uma série a buscar: código no IPEA e rótulo exibido no painel. */
+    private record SerieSpec(String codigo, String nome) {}
+
+    private static SerieSpec spec(String codigo, String nome) {
+        return new SerieSpec(codigo, nome);
+    }
+
+    /**
+     * Busca as séries do endpoint em paralelo, preservando a ordem declarada.
+     *
+     * <p>Seguro porque não há transação envolvendo a chamada: cada método de
+     * {@link FinancialDataService} abre a sua, então nada precisa atravessar de
+     * uma thread para outra. O ganho é direto — as séries de um endpoint são
+     * independentes entre si e cada uma custa uma ida à rede.
+     *
+     * <p>Com uma série só, chama direto: o salto de thread custaria mais que o
+     * paralelismo renderia.
+     */
+    private List<IpeaSerieDTO> series(SerieSpec... specs) {
+        if (specs.length == 1) {
+            return List.of(serie(specs[0].codigo(), specs[0].nome()));
+        }
+
+        List<CompletableFuture<IpeaSerieDTO>> futuros = Arrays.stream(specs)
+                .map(s -> CompletableFuture.supplyAsync(() -> serie(s.codigo(), s.nome()), fanOut))
+                .toList();
+
+        try {
+            return futuros.stream().map(CompletableFuture::join).toList();
+        } catch (CompletionException e) {
+            throw desembrulhar(e);
+        }
+    }
+
+    /**
+     * O {@code join} embrulha a causa em {@link CompletionException}. Sem desfazer
+     * isso, a {@link IpeaException} perderia o status que o GlobalExceptionHandler
+     * mapeia e a falha chegaria ao cliente como 500 genérico.
+     */
+    private static RuntimeException desembrulhar(CompletionException e) {
+        Throwable causa = e.getCause();
+        if (causa instanceof RuntimeException re) {
+            return re;
+        }
+        if (causa instanceof Error erro) {
+            throw erro;
+        }
+        return e;
     }
 
     // Emprego
@@ -212,59 +292,59 @@ public class IpeaService {
     // MACRO ECONOMIA
     @Cacheable(value = "ipea-emprego", sync = true)
     public List<IpeaSerieDTO> getEmprego() {
-        return List.of(
-                serie(DESOCUPACAO, "Taxa de desocupação (%)"),
-                serie(OCUPACAO, "Nível de ocupação (%)")
+        return series(
+                spec(DESOCUPACAO, "Taxa de desocupação (%)"),
+                spec(OCUPACAO, "Nível de ocupação (%)")
         );
     }
 
 
     @Cacheable(value = "ipea-renda", sync = true)
     public List<IpeaSerieDTO> getRenda() {
-        return List.of(
-                serie(SALARIO_MINIMO_REAL, "Salário mínimo real (R$)"),
-                serie(SALARIO_MINIMO_PPC, "Salário mínimo PPC (USD)"),
-                serie(RENDA_PER_CAPITA, "Renda domiciliar per capita (R$)")
+        return series(
+                spec(SALARIO_MINIMO_REAL, "Salário mínimo real (R$)"),
+                spec(SALARIO_MINIMO_PPC, "Salário mínimo PPC (USD)"),
+                spec(RENDA_PER_CAPITA, "Renda domiciliar per capita (R$)")
         );
     }
 
 
     @Cacheable(value = "ipea-desigualdade", sync = true)
     public List<IpeaSerieDTO> getDesigualdade() {
-        return List.of(
-                serie(GINI, "Coeficiente de Gini"),
-                serie(POBREZA, "Taxa de pobreza % (PPC$3/dia)")
+        return series(
+                spec(GINI, "Coeficiente de Gini"),
+                spec(POBREZA, "Taxa de pobreza % (PPC$3/dia)")
         );
     }
 
 
     @Cacheable(value = "ipea-macro", sync = true)
     public List<IpeaSerieDTO> getMacro() {
-        return List.of(
-                serie(SELIC, "Taxa Selic/Overnight (% a.a.)"),
-                serie(RESERVAS, "Reservas internacionais (US$ milhões)"),
-                serie(ARRECADACAO, "Arrecadação federal (R$ milhões)"),
-                serie(TAXA_DESOCUPACAO14MAIS, "Taxa de desocupação - 14 anos e acima")
+        return series(
+                spec(SELIC, "Taxa Selic/Overnight (% a.a.)"),
+                spec(RESERVAS, "Reservas internacionais (US$ milhões)"),
+                spec(ARRECADACAO, "Arrecadação federal (R$ milhões)"),
+                spec(TAXA_DESOCUPACAO14MAIS, "Taxa de desocupação - 14 anos e acima")
         );
     }
 
 
     @Cacheable(value = "ipea-precos", sync = true)
     public List<IpeaSerieDTO> getPrecos() {
-        return List.of(
-                serie(INPC, "INPC - índice"),
-                serie(IGPM, "IGP-M - índice")
+        return series(
+                spec(INPC, "INPC - índice"),
+                spec(IGPM, "IGP-M - índice")
         );
     }
 
 
     @Cacheable(value = "ipea-populacao", sync = true)
     public List<IpeaSerieDTO> getPopulacao() {
-        return List.of(
-                serie(POPULACAO, "População total (mil pessoas)"),
-                serie(PROJECAO_TOTAL, "Projeção população total"),
-                serie(PROJECAO_HOMENS, "Projeção população homens"),
-                serie(PROJECAO_MULHERES, "Projeção população mulheres")
+        return series(
+                spec(POPULACAO, "População total (mil pessoas)"),
+                spec(PROJECAO_TOTAL, "Projeção população total"),
+                spec(PROJECAO_HOMENS, "Projeção população homens"),
+                spec(PROJECAO_MULHERES, "Projeção população mulheres")
         );
     }
 
