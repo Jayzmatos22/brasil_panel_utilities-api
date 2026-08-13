@@ -42,7 +42,9 @@ export default function VerifyEmailPage() {
       // O JWT já veio em cookie httpOnly; aqui guardamos só o hint de exibição.
       saveSession(res.email, res.role, res.expiresInMs);
       toast.success('E-mail verificado! Bem-vindo ao Brasil Panel.');
-      navigate('/dashboard/economia', { replace: true });
+      // Novo usuário verificado vai ao onboarding de perfil (profissão e
+      // formação). É pulável — a própria PerfilPage segue para o painel.
+      navigate('/dados-perfil', { replace: true });
     },
     onError: (err: Error) => toast.error(err.message ?? 'Código inválido.'),
   });
