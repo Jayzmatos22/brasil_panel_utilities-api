@@ -7,15 +7,29 @@ import {
   ShieldAlert,
   KeyRound,
   AlertOctagon,
+  Briefcase,
+  LoaderCircle,
 } from "lucide-react";
 import { FormField } from "../../components/forms/FormField";
 import { SubmitButton } from "../../components/forms/SubmitButton";
+import { ProfileFields } from "../../components/forms/ProfileFields";
 import { container, item } from "../../lib/motion/presets";
 import {
   useUpdateName,
   useUpdatePassword,
   useDeleteAccount,
 } from "../../hooks/UseSettings";
+import {
+  useProfile,
+  useProfileOptions,
+  useUpdateProfile,
+} from "../../hooks/UseProfile";
+import {
+  EMPTY_PROFILE_FORM,
+  formToRequest,
+  profileToForm,
+  type ProfileFormState,
+} from "../../lib/profile/profileForm";
 
 // ── Mapeamento de temas para escalabilidade ──────────────────────────
 const themeMap = {
@@ -36,6 +50,14 @@ const themeMap = {
     iconBg: "bg-amber-500/10 border border-amber-500/20",
     iconColor: "text-amber-400",
     titleColor: "text-amber-50",
+  },
+  blue: {
+    border: "border-sky-500/20",
+    bg: "bg-sky-500/[0.03]",
+    topLine: "bg-linear-to-r from-sky-500/50 via-blue-400/30 to-transparent",
+    iconBg: "bg-sky-500/10 border border-sky-500/20",
+    iconColor: "text-sky-400",
+    titleColor: "text-sky-50",
   },
   red: {
     border: "border-red-500/30",
@@ -58,7 +80,7 @@ function SettingsSection({
   title: string;
   description: string;
   children: React.ReactNode;
-  theme?: "green" | "yellow" | "red";
+  theme?: "green" | "yellow" | "red" | "blue";
 }) {
   const styles = themeMap[theme];
 
@@ -91,6 +113,62 @@ function SettingsSection({
       </div>
       {children}
     </motion.section>
+  );
+}
+
+// ── Seção de perfil profissional/acadêmico ───────────────────────────────
+// Fica em componente próprio para inicializar o formulário a partir do perfil
+// já salvo direto no useState — sem sincronizar via useEffect. Por isso só
+// monta depois que ambas as queries (opções + perfil) resolvem: a inicialização
+// acontece uma vez, com os dados prontos.
+function CareerSection() {
+  const { data: options, isLoading: loadingOptions } = useProfileOptions();
+  const { data: profile, isLoading: loadingProfile } = useProfile();
+
+  if (loadingOptions || loadingProfile || !options) {
+    return (
+      <div className="flex items-center justify-center gap-2 text-slate-400 py-8">
+        <LoaderCircle size={18} className="animate-spin" />
+        Carregando opções…
+      </div>
+    );
+  }
+
+  return <CareerForm options={options} profile={profile} />;
+}
+
+function CareerForm({
+  options,
+  profile,
+}: {
+  options: NonNullable<ReturnType<typeof useProfileOptions>["data"]>;
+  profile: ReturnType<typeof useProfile>["data"];
+}) {
+  const [form, setForm] = useState<ProfileFormState>(() =>
+    profile ? profileToForm(profile) : EMPTY_PROFILE_FORM,
+  );
+  const { mutate: saveProfile, isPending } = useUpdateProfile();
+
+  const patch = (p: Partial<ProfileFormState>) =>
+    setForm((prev) => ({ ...prev, ...p }));
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    saveProfile(formToRequest(form));
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+      <ProfileFields options={options} value={form} onChange={patch} disabled={isPending} />
+      <div className="flex justify-end">
+        <SubmitButton
+          isPending={isPending}
+          label="Salvar perfil"
+          pendingLabel="Salvando…"
+          className="bg-linear-to-r from-sky-600 to-blue-600 hover:from-sky-500 hover:to-blue-500 text-white shadow-[0_0_20px_rgba(14,165,233,0.15)] hover:shadow-[0_0_25px_rgba(14,165,233,0.3)] transition-all duration-300 px-8"
+        />
+      </div>
+    </form>
   );
 }
 
@@ -161,6 +239,14 @@ export default function SettingsAuthPage() {
       hoverBorder: "hover:border-emerald-500/40",
       hoverBg: "hover:bg-emerald-500/[0.05]",
       iconColor: "text-emerald-400",
+    },
+    {
+      id: "section-career",
+      icon: <Briefcase size={16} />,
+      label: "Profissão e Formação",
+      hoverBorder: "hover:border-sky-500/40",
+      hoverBg: "hover:bg-sky-500/[0.05]",
+      iconColor: "text-sky-400",
     },
     {
       id: "section-security",
@@ -280,6 +366,18 @@ export default function SettingsAuthPage() {
               />
             </div>
           </form>
+        </SettingsSection>
+      </div>
+
+      {/* ── Perfil profissional e acadêmico ── */}
+      <div id="section-career" className="scroll-mt-28">
+        <SettingsSection
+          theme="blue"
+          icon={<Briefcase size={18} />}
+          title="Profissão e Formação"
+          description="Área, subárea e nível — use para receber os indicadores mais relevantes ao seu perfil."
+        >
+          <CareerSection />
         </SettingsSection>
       </div>
 
