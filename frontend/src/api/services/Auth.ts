@@ -10,7 +10,9 @@ import type {
   VerifyEmailRequest,
   UpdateNameRequest,
   DeleteAccountRequest,
-  UpdatePasswordRequest
+  UpdatePasswordRequest,
+  ProfileRequest,
+  ProfileResponse
 } from '../../types/UserType';
 
 export const authService = {
@@ -37,4 +39,16 @@ export const authService = {
 
   deleteAccount: (data: DeleteAccountRequest) =>
   apiClient.delete<void>('/auth/delete-account', { data }).then((r) => r.data),
+
+  // ── Perfil profissional (onboarding) ──────────────────────────────────────
+  // A identidade vem do cookie de sessão; nenhum destes envia e-mail ou id.
+
+  getProfile: () =>
+    apiClient.get<ProfileResponse>('/auth/profile').then((r) => r.data),
+
+  updateProfile: (data: ProfileRequest) =>
+    apiClient.patch<ProfileResponse>('/auth/update-profile', data).then((r) => r.data),
+
+  skipOnboarding: () =>
+    apiClient.post<void>('/auth/skip-onboarding').then((r) => r.data),
 };

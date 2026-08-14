@@ -70,18 +70,18 @@ import { AnimatePresence, MotionConfig } from 'motion/react';
 import './App.css';
 
 // ─── Onboarding layout (header + fundo) ──────────────────────────────────────
-function OnboardingLayout() {
+//
+// Casca compartilhada pela tela de perfil e pelo 404. Antes ela embutia um
+// <Routes> aninhado, o que colocava /dados-perfil fora do PrivateRoute: a tela
+// era pública, e "salvar" mandava um visitante deslogado para o painel, de onde
+// o guard o devolvia ao login com o preenchimento perdido. Agora cada rota é
+// declarada no roteador principal, cada uma sob o guard que lhe cabe.
+function OnboardingShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen w-full bg-app flex flex-col overflow-x-hidden">
       <HeaderApp />
       <div className="flex-1 w-full flex justify-center items-start mt-20 p-4 py-8">
-        <Routes>
-          <Route path="/dados-perfil" element={<PerfilPage />} />
-          {/* Fora do onboarding, qualquer caminho desconhecido é um 404 de
-              verdade. Antes o catch-all abaixo renderizava este layout vazio
-              para qualquer URL inexistente. */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        {children}
       </div>
     </div>
   );
@@ -114,6 +114,16 @@ function AppRoutes() {
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
+
+        {/* ── Onboarding (requer autenticação) ──
+            Sob o guard porque grava perfil do usuário logado: a identidade vem
+            do cookie de sessão, e sem sessão o PATCH voltaria 401. */}
+        <Route element={<PrivateRoute />}>
+          <Route
+            path="/dados-perfil"
+            element={<OnboardingShell><PerfilPage /></OnboardingShell>}
+          />
+        </Route>
 
         {/* ── Dashboard (requer autenticação) ── */}
         <Route element={<PrivateRoute />}>
@@ -172,8 +182,8 @@ function AppRoutes() {
             OnboardingLayout. */}
         <Route path="/sobre" element={aboutElement} />
 
-        {/* ── Onboarding (com header Brasil Panel) ── */}
-        <Route path="/*" element={<OnboardingLayout />} />
+        {/* ── 404 (com header Brasil Panel) ── */}
+        <Route path="/*" element={<OnboardingShell><NotFound /></OnboardingShell>} />
 
       </Routes>
     </AnimatePresence>

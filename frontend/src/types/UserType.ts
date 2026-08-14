@@ -75,3 +75,48 @@ export interface UserRow {
   role:      'USER' | 'ADMIN';
   createdAt: string;
 }
+
+// ─── Perfil profissional — /api/auth/profile ─────────────────────────────────
+//
+// As constantes abaixo espelham os enums ProfessionalArea e EducationLevel do
+// backend, que têm CHECK correspondente no Postgres. O que trafega é a
+// constante; os rótulos exibidos vivem na PerfilPage e podem mudar sem tocar em
+// nada aqui. Acrescentar valor exige migration do lado de lá.
+export type ProfessionalArea =
+  | 'TECNOLOGIA'
+  | 'FINANCAS'
+  | 'EDUCACAO'
+  | 'SAUDE'
+  | 'INDUSTRIA'
+  | 'COMERCIO_SERVICOS'
+  | 'SETOR_PUBLICO'
+  | 'OUTRA';
+
+export type EducationLevel =
+  | 'ENSINO_FUNDAMENTAL'
+  | 'ENSINO_MEDIO'
+  | 'ENSINO_TECNICO'
+  | 'SUPERIOR_CURSANDO'
+  | 'SUPERIOR_COMPLETO'
+  | 'POS_GRADUACAO'
+  | 'MESTRADO_DOUTORADO';
+
+export interface ProfileRequest {
+  profession:     string;
+  area:           ProfessionalArea | null;
+  educationLevel: EducationLevel;
+  institution:    string | null;
+}
+
+/**
+ * `onboardingCompletedAt` nulo significa que a etapa ainda não foi apresentada —
+ * é o que distingue "nunca viu" de "viu e pulou". Não é remarcado quando o
+ * perfil é editado depois.
+ */
+export interface ProfileResponse {
+  profession:            string | null;
+  area:                  ProfessionalArea | null;
+  educationLevel:        EducationLevel | null;
+  institution:           string | null;
+  onboardingCompletedAt: string | null;
+}
