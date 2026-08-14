@@ -5,6 +5,7 @@ import jakarta.validation.ConstraintViolationException;
 import org.apache.catalina.connector.ClientAbortException;
 import org.springframework.context.MessageSourceResolvable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -73,6 +74,18 @@ public class GlobalExceptionHandler {
                 .findFirst()
                 .orElse("Dados inválidos");
         return ResponseEntity.badRequest().body(message);
+    }
+
+
+    // Corpo que o Jackson não consegue desserializar: JSON malformado ou, o caso
+    // que trouxe este handler, valor fora de um enum ("area": "INEXISTENTE").
+    // Sem ele a exceção caía no handler genérico e virava 500 — erro do cliente
+    // reportado como falha do servidor. A mensagem é fixa de propósito: a da
+    // exceção cita nomes de classe e o caminho do campo.
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<String> handleNotReadable(HttpMessageNotReadableException ex) {
+        log.debug("Corpo da requisição rejeitado: {}", ex.getMessage());
+        return ResponseEntity.badRequest().body("Corpo da requisição inválido.");
     }
 
 

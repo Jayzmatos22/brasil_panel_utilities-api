@@ -2,11 +2,15 @@ package com.brasilpanel.backend.controller.auth;
 
 import com.brasilpanel.backend.config.jwt.JwtService;
 import com.brasilpanel.backend.dto.user.AuthResponseDTO;
+import com.brasilpanel.backend.dto.user.ProfileResponseDTO;
 import com.brasilpanel.backend.exception.customized.TooManyAttemptsException;
+import com.brasilpanel.backend.model.EducationLevel;
+import com.brasilpanel.backend.model.ProfessionalArea;
 import com.brasilpanel.backend.service.auth.AuthService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -14,15 +18,23 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -152,5 +164,98 @@ class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"email\":\"nao-e-email\",\"password\":\"\"}"))
                 .andExpect(status().isBadRequest());
+    }
+
+
+    // ── Perfil profissional (onboarding) ─────────────────────────────────────
+
+    @Nested
+    @WithMockUser(username = EMAIL)
+    class Perfil {
+
+        private String perfilJson(String area, String escolaridade) {
+            return """
+                   {"profession":"Analista de dados","area":"%s",
+                    "educationLevel":"%s","institution":"UFBA"}
+                   """.formatted(area, escolaridade);
+        }
+
+        @Test
+        @DisplayName("área fora do enum devolve 400, não 500")
+        void unknownEnumValueReturns400() throws Exception {
+            // A escolha por enum trouxe este caso: o Jackson lança
+            // HttpMessageNotReadableException, que sem handler próprio caía no
+            // genérico e virava 500 — erro do cliente reportado como falha do servidor.
+            mockMvc.perform(patch("/api/auth/update-profile")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(perfilJson("INEXISTENTE", "SUPERIOR_COMPLETO")))
+                    .andExpect(status().isBadRequest())
+                    // A mensagem do Jackson cita nomes de classe e o caminho do campo.
+                    .andExpect(content().string(Matchers.not(Matchers.containsString("ProfessionalArea"))));
+        }
+
+        @Test
+        @DisplayName("profissão em branco devolve 400 sem chegar ao service")
+        void blankProfessionReturns400() throws Exception {
+            mockMvc.perform(patch("/api/auth/update-profile")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                     {"profession":"  ","area":"TECNOLOGIA",
+                                      "educationLevel":"SUPERIOR_COMPLETO"}
+                                     """))
+                    .andExpect(status().isBadRequest());
+
+            verify(authService, never()).updateProfile(anyString(), any());
+        }
+
+        @Test
+        @DisplayName("escolaridade ausente devolve 400")
+        void missingEducationLevelReturns400() throws Exception {
+            mockMvc.perform(patch("/api/auth/update-profile")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"profession\":\"Analista de dados\"}"))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("perfil válido é salvo sob a identidade do token, não do corpo")
+        void validProfileIsStoredUnderTheAuthenticatedIdentity() throws Exception {
+            when(authService.updateProfile(anyString(), any()))
+                    .thenReturn(new ProfileResponseDTO("Analista de dados",
+                            ProfessionalArea.TECNOLOGIA, EducationLevel.SUPERIOR_COMPLETO,
+                            "UFBA", LocalDateTime.now()));
+
+            mockMvc.perform(patch("/api/auth/update-profile")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(perfilJson("TECNOLOGIA", "SUPERIOR_COMPLETO")))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.profession").value("Analista de dados"))
+                    .andExpect(jsonPath("$.onboardingCompletedAt").exists());
+
+            // O e-mail vem do principal. Se viesse do corpo, qualquer sessão
+            // editaria o perfil de qualquer outra conta.
+            verify(authService).updateProfile(eq(EMAIL), any());
+        }
+
+        @Test
+        @DisplayName("pular onboarding devolve 204")
+        void skipOnboardingReturns204() throws Exception {
+            mockMvc.perform(post("/api/auth/skip-onboarding"))
+                    .andExpect(status().isNoContent());
+
+            verify(authService).skipOnboarding(EMAIL);
+        }
+
+        @Test
+        @DisplayName("consultar perfil nunca preenchido devolve 200 com campos nulos")
+        void emptyProfileReturns200WithNullFields() throws Exception {
+            when(authService.getProfile(EMAIL))
+                    .thenReturn(new ProfileResponseDTO(null, null, null, null, null));
+
+            mockMvc.perform(get("/api/auth/profile"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.profession").doesNotExist())
+                    .andExpect(jsonPath("$.onboardingCompletedAt").doesNotExist());
+        }
     }
 }

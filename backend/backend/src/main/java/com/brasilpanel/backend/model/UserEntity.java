@@ -54,6 +54,29 @@ public class UserEntity implements UserDetails {
     @CreationTimestamp
     private LocalDateTime createdAt;
 
+    // ── Perfil profissional (onboarding) ──────────────────────────────────
+    // Todos opcionais: a etapa pode ser pulada, e quem se cadastrou antes da
+    // V3 não tem nada preenchido.
+
+    @Column(length = 120)
+    private String profession;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 40)
+    private ProfessionalArea area;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 40)
+    private EducationLevel educationLevel;
+
+    @Column(length = 160)
+    private String institution;
+
+    // Marca a passagem pelo onboarding — preenchido ou pulado. Null distingue
+    // "ainda não viu a etapa" de "viu e não quis responder"; sem isso, quem pula
+    // reveria a tela para sempre.
+    private LocalDateTime onboardingCompletedAt;
+
     // Permite ao AdminSeeder / serviço de promoção alterar o role
     public void setRole(Role role) {
         this.role = role;
@@ -93,5 +116,26 @@ public class UserEntity implements UserDetails {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    // ── Setters de perfil ─────────────────────────────────────────────────
+    public void setProfession(String profession) {
+        this.profession = profession;
+    }
+
+    public void setArea(ProfessionalArea area) {
+        this.area = area;
+    }
+
+    public void setEducationLevel(EducationLevel educationLevel) {
+        this.educationLevel = educationLevel;
+    }
+
+    public void setInstitution(String institution) {
+        this.institution = institution;
+    }
+
+    public void setOnboardingCompletedAt(LocalDateTime onboardingCompletedAt) {
+        this.onboardingCompletedAt = onboardingCompletedAt;
     }
 }

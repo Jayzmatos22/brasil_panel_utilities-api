@@ -4,6 +4,8 @@ import com.brasilpanel.backend.config.jwt.JwtService;
 import com.brasilpanel.backend.dto.user.*;
 import com.brasilpanel.backend.exception.customized.TooManyAttemptsException;
 import com.brasilpanel.backend.mappers.UserMapper;
+import com.brasilpanel.backend.model.EducationLevel;
+import com.brasilpanel.backend.model.ProfessionalArea;
 import com.brasilpanel.backend.model.Role;
 import com.brasilpanel.backend.model.UserEntity;
 import com.brasilpanel.backend.repository.user.UserRepository;
@@ -18,6 +20,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
@@ -303,6 +306,122 @@ AuthServiceTest {
             assertThatThrownBy(() -> authService.loginUser(dto))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("não verificado");
+        }
+    }
+
+
+    // ── Perfil profissional (onboarding) ─────────────────────────────────────
+
+    @Nested
+    class Perfil {
+
+        private ProfileRequestDTO dtoCompleto() {
+            return new ProfileRequestDTO(
+                    "Analista de dados",
+                    ProfessionalArea.TECNOLOGIA,
+                    EducationLevel.SUPERIOR_COMPLETO,
+                    "UFBA");
+        }
+
+        @Test
+        @DisplayName("salvar perfil grava os campos e encerra o onboarding")
+        void updateProfileStoresFieldsAndClosesOnboarding() {
+            when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(usuarioVerificado));
+
+            var resposta = authService.updateProfile(EMAIL, dtoCompleto());
+
+            assertThat(resposta.profession()).isEqualTo("Analista de dados");
+            assertThat(resposta.area()).isEqualTo(ProfessionalArea.TECNOLOGIA);
+            assertThat(resposta.educationLevel()).isEqualTo(EducationLevel.SUPERIOR_COMPLETO);
+            assertThat(resposta.institution()).isEqualTo("UFBA");
+            // O carimbo é o que impede a tela de reaparecer na próxima sessão.
+            assertThat(resposta.onboardingCompletedAt()).isNotNull();
+            verify(userRepository).save(usuarioVerificado);
+        }
+
+        @Test
+        @DisplayName("instituição em branco é gravada como null, não como string vazia")
+        void blankInstitutionBecomesNull() {
+            when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(usuarioVerificado));
+
+            var dto = new ProfileRequestDTO(
+                    "  Professor  ", ProfessionalArea.EDUCACAO, EducationLevel.MESTRADO_DOUTORADO, "   ");
+
+            var resposta = authService.updateProfile(EMAIL, dto);
+
+            // Dois jeitos de dizer "não informado" no banco vira consulta com OR
+            // em todo lugar que ler o campo.
+            assertThat(resposta.institution()).isNull();
+            assertThat(resposta.profession()).isEqualTo("Professor");
+        }
+
+        @Test
+        @DisplayName("editar o perfil depois não remarca a data de conclusão")
+        void editingProfileLaterKeepsTheOriginalCompletionStamp() {
+            // Regressão da semântica do campo: onboardingCompletedAt responde
+            // "já passou pela etapa?", não "quando editou pela última vez?".
+            var concluidoEm = LocalDateTime.now().minusDays(30);
+            usuarioVerificado.setOnboardingCompletedAt(concluidoEm);
+            when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(usuarioVerificado));
+
+            var resposta = authService.updateProfile(EMAIL, dtoCompleto());
+
+            assertThat(resposta.onboardingCompletedAt()).isEqualTo(concluidoEm);
+        }
+
+        @Test
+        @DisplayName("pular encerra o onboarding sem preencher nada")
+        void skipClosesOnboardingWithoutStoringData() {
+            when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(usuarioVerificado));
+
+            authService.skipOnboarding(EMAIL);
+
+            assertThat(usuarioVerificado.getOnboardingCompletedAt()).isNotNull();
+            assertThat(usuarioVerificado.getProfession()).isNull();
+            assertThat(usuarioVerificado.getEducationLevel()).isNull();
+            verify(userRepository).save(usuarioVerificado);
+        }
+
+        @Test
+        @DisplayName("pular de novo não move o carimbo nem apaga perfil já preenchido")
+        void skipIsIdempotentAndNonDestructive() {
+            var concluidoEm = LocalDateTime.now().minusDays(7);
+            usuarioVerificado.setOnboardingCompletedAt(concluidoEm);
+            usuarioVerificado.setProfession("Analista de dados");
+            when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(usuarioVerificado));
+
+            authService.skipOnboarding(EMAIL);
+
+            assertThat(usuarioVerificado.getOnboardingCompletedAt()).isEqualTo(concluidoEm);
+            assertThat(usuarioVerificado.getProfession()).isEqualTo("Analista de dados");
+            // Nada mudou: gravar seria escrita à toa a cada chamada.
+            verify(userRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("perfil de quem nunca preencheu vem todo nulo, sem estourar")
+        void profileOfUntouchedUserIsAllNull() {
+            when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(usuarioVerificado));
+
+            var resposta = authService.getProfile(EMAIL);
+
+            assertThat(resposta.profession()).isNull();
+            assertThat(resposta.area()).isNull();
+            assertThat(resposta.educationLevel()).isNull();
+            assertThat(resposta.institution()).isNull();
+            // Null aqui é o sinal de "ainda não viu a etapa".
+            assertThat(resposta.onboardingCompletedAt()).isNull();
+        }
+
+        @Test
+        @DisplayName("e-mail sem cadastro não grava perfil")
+        void unknownEmailDoesNotStoreAnything() {
+            when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> authService.updateProfile(EMAIL, dtoCompleto()))
+                    .isInstanceOf(UsernameNotFoundException.class);
+
+            verify(userRepository, never()).save(any());
         }
     }
 }

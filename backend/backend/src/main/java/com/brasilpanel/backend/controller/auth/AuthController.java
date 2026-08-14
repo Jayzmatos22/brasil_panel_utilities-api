@@ -137,6 +137,51 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
+    // ── Perfil profissional (onboarding) ──────────────────────────────────────
+    // Autenticados por omissão: não constam da lista permitAll do SecurityConfig,
+    // então caem em anyRequest().authenticated(). A identidade vem do JWT, nunca
+    // do corpo — um userId enviado pelo cliente permitiria editar perfil alheio.
+
+    @Operation(summary = "Consultar perfil",
+               description = "Perfil profissional do usuário autenticado. Campos nulos "
+                           + "significam não preenchido; onboardingCompletedAt nulo "
+                           + "significa que a etapa ainda não foi apresentada")
+    @ApiResponse(responseCode = "200", description = "Perfil retornado")
+    @ApiResponse(responseCode = "401", description = "Sessão ausente ou expirada")
+    @GetMapping("/profile")
+    public ResponseEntity<ProfileResponseDTO> profile(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(authService.getProfile(userDetails.getUsername()));
+    }
+
+
+    @Operation(summary = "Salvar perfil",
+               description = "Grava o perfil profissional e encerra o onboarding. "
+                           + "Serve também à edição posterior nas configurações")
+    @ApiResponse(responseCode = "200", description = "Perfil salvo")
+    @ApiResponse(responseCode = "400", description = "Dados inválidos")
+    @ApiResponse(responseCode = "401", description = "Sessão ausente ou expirada")
+    @PatchMapping("/update-profile")
+    public ResponseEntity<ProfileResponseDTO> updateProfile(
+            @RequestBody @Valid ProfileRequestDTO dto,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(authService.updateProfile(userDetails.getUsername(), dto));
+    }
+
+
+    @Operation(summary = "Pular onboarding",
+               description = "Marca a etapa como vista sem coletar dados. Idempotente: "
+                           + "não sobrescreve perfil já preenchido")
+    @ApiResponse(responseCode = "204", description = "Onboarding encerrado")
+    @ApiResponse(responseCode = "401", description = "Sessão ausente ou expirada")
+    @PostMapping("/skip-onboarding")
+    public ResponseEntity<Void> skipOnboarding(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        authService.skipOnboarding(userDetails.getUsername());
+        return ResponseEntity.noContent().build();
+    }
+
+
     @DeleteMapping("/delete-account")
     public ResponseEntity<Void> deleteAccount(
             @RequestBody @Valid DeleteAccountRequestDTO dto,

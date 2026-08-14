@@ -196,6 +196,81 @@ public class AuthService {
         userRepository.save(user);
     }
 
+    // ── Perfil profissional (onboarding) ──────────────────────────────────────────
+
+    /** Estado atual do perfil. Campos nulos são o esperado para quem nunca preencheu. */
+    public ProfileResponseDTO getProfile(String email) {
+        return toProfileResponse(buscarPorEmail(email));
+    }
+
+    /**
+     * Grava o perfil e encerra o onboarding.
+     *
+     * <p>Também serve à edição posterior pelas configurações — daí o carimbo de
+     * conclusão só ser aplicado na primeira vez: {@code onboardingCompletedAt}
+     * responde "já passou pela etapa?", não "quando editou pela última vez?".
+     */
+    public ProfileResponseDTO updateProfile(String email, ProfileRequestDTO dto) {
+        UserEntity user = buscarPorEmail(email);
+
+        user.setProfession(dto.profession().trim());
+        user.setArea(dto.area());
+        user.setEducationLevel(dto.educationLevel());
+        // Campo opcional: string vazia vira null, para o banco não guardar dois
+        // jeitos diferentes de dizer "não informado".
+        user.setInstitution(normalizarOpcional(dto.institution()));
+
+        marcarOnboardingConcluido(user);
+        userRepository.save(user);
+
+        return toProfileResponse(user);
+    }
+
+    /**
+     * Encerra o onboarding sem coletar nada ("pular por agora").
+     *
+     * <p>Idempotente e não destrutivo: chamar de novo não move o carimbo, e um
+     * perfil já preenchido não é apagado.
+     */
+    public void skipOnboarding(String email) {
+        UserEntity user = buscarPorEmail(email);
+
+        if (user.getOnboardingCompletedAt() != null) {
+            return;
+        }
+
+        marcarOnboardingConcluido(user);
+        userRepository.save(user);
+    }
+
+    private void marcarOnboardingConcluido(UserEntity user) {
+        if (user.getOnboardingCompletedAt() == null) {
+            user.setOnboardingCompletedAt(LocalDateTime.now());
+        }
+    }
+
+    private static String normalizarOpcional(String valor) {
+        if (valor == null || valor.isBlank()) {
+            return null;
+        }
+        return valor.trim();
+    }
+
+    private static ProfileResponseDTO toProfileResponse(UserEntity user) {
+        return new ProfileResponseDTO(
+                user.getProfession(),
+                user.getArea(),
+                user.getEducationLevel(),
+                user.getInstitution(),
+                user.getOnboardingCompletedAt());
+    }
+
+    private UserEntity buscarPorEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado"));
+    }
+
+
     // ── Deletar conta ─────────────────────────────────────────────────────────────
     public void deleteAccount(String email, DeleteAccountRequestDTO dto) {
         UserEntity user = userRepository.findByEmail(email)
