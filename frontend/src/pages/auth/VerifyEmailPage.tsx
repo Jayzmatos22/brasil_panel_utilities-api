@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type KeyboardEvent, type ClipboardEvent } 
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { LoaderCircle, MailCheck, RefreshCw } from 'lucide-react';
+import { LoaderCircle, MailCheck, RefreshCw, ShieldAlert } from 'lucide-react';
 import { authService } from '../../api/services/Auth';
 import type { AuthResponse } from '../../types/UserType';
 import { BrandLogo } from '../../components/brand/BrandLogo';
@@ -113,6 +113,21 @@ export default function VerifyEmailPage() {
               Enviamos um código de 6 dígitos para{' '}
               <span className="text-white font-medium">{email}</span>.
               Ele expira em 15 minutos.
+            </p>
+
+            {/* O aviso é permanente, e não um estado de erro que aparece depois
+                de o usuário esperar: o remetente ainda é uma conta comum, sem
+                domínio verificado, e o Gmail vem classificando a mensagem como
+                spam. Quem não souber olhar lá fica travado numa tela de seis
+                campos vazios sem entender por quê. Some quando a entrega deixar
+                de depender disso. */}
+            <p className="flex items-start gap-2 text-xs text-amber-300/90 bg-amber-500/10
+                          border border-amber-500/20 rounded-lg px-3 py-2 max-w-xs text-left">
+              <ShieldAlert size={14} className="shrink-0 mt-0.5" />
+              <span>
+                Não encontrou? Confira a caixa de <strong className="font-semibold">spam</strong>{' '}
+                ou lixo eletrônico — e marque como "não é spam" para os próximos chegarem.
+              </span>
             </p>
           </div>
 

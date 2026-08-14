@@ -35,12 +35,17 @@ public class EmailService {
     public void sendVerificationCode(String to, String code) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
+            // multipart = true: sem isso o helper monta um text/html solo, e
+            // mensagem transacional sem alternativa em texto puro é sinal
+            // clássico de filtro de spam. Ver setText(plain, html) abaixo.
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
             helper.setFrom(fromAddress, fromName);
             helper.setTo(to);
             helper.setSubject("Seu código de verificação — Brasil Panel");
-            helper.setText(buildHtml(code), true);   // true = HTML
+            // A ordem importa: o primeiro argumento é o texto puro, o segundo o
+            // HTML. O cliente de e-mail escolhe, e o filtro vê os dois.
+            helper.setText(buildPlainText(code), buildHtml(code));
 
             mailSender.send(message);
             log.info("EmailService: código de verificação enviado para '{}'.", to);
@@ -49,6 +54,30 @@ public class EmailService {
             log.error("EmailService: falha ao enviar e-mail para '{}': {}", to, e.getMessage());
             throw new RuntimeException("Falha ao enviar e-mail de verificação. Tente novamente.");
         }
+    }
+
+    /**
+     * Versão em texto puro, enviada junto do HTML como alternativa.
+     *
+     * <p>Não é decorativa: é ela que o cliente sem HTML exibe, e é a ausência
+     * dela que faz uma mensagem transacional parecer disparo automático para o
+     * filtro. Precisa conter a mesma informação essencial do HTML — o código e o
+     * prazo —, senão vira ruído e piora o sinal em vez de melhorar.
+     */
+    private String buildPlainText(String code) {
+        return """
+               Brasil Panel — confirme seu e-mail
+
+               Use o código abaixo para concluir seu cadastro.
+               Ele é válido por 15 minutos.
+
+                   %s
+
+               Se você não solicitou este cadastro, pode ignorar este e-mail
+               com segurança.
+
+               Este é um e-mail automático, não responda.
+               """.formatted(code);
     }
 
     /** Monta o corpo HTML do e-mail com as cores e identidade do Brasil Panel. */
