@@ -1,4 +1,4 @@
-import { useState, useEffect, type ChangeEvent, memo } from "react";
+import { useState, type ChangeEvent, memo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Search,
@@ -138,12 +138,21 @@ export default function IbgePage() {
   // O CEP é um atalho para o eixo que a página já opera: resolvido o endereço,
   // o estado e o município passam a ser os dele, e o resto da tela reage
   // sozinho — ranking, card do estado e lista de municípios.
-  useEffect(() => {
-    if (!endereco) return;
+  //
+  // Ajuste durante o render, e não em useEffect. Os três campos continuam
+  // editáveis à mão depois, então não dá para derivá-los do `endereco`; o que
+  // se quer é "quando chegar endereço novo, ele vence uma vez". Feito em efeito,
+  // isso custava um render a mais com a seleção antiga já pintada na tela, e é o
+  // que a regra set-state-in-effect aponta. Comparar com o último endereço
+  // aplicado resolve na mesma passada — o React descarta a saída e re-renderiza
+  // antes de commitar.
+  const [enderecoAplicado, setEnderecoAplicado] = useState<typeof endereco>(undefined);
+  if (endereco && endereco !== enderecoAplicado) {
+    setEnderecoAplicado(endereco);
     setSelectedState(endereco.uf);
     setFiltro(endereco.municipio);
     setSelectedCity(endereco.municipio);
-  }, [endereco]);
+  }
 
   const bannerImage =
     findIbgeImage("estado-img") || Object.values(IBGE_IMAGES)[0];
