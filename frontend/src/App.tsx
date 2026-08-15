@@ -72,9 +72,21 @@ import './App.css';
 // ─── Onboarding layout (header + fundo) ──────────────────────────────────────
 function OnboardingLayout() {
   return (
-    <div className="min-h-screen w-full bg-app flex flex-col overflow-x-hidden">
+    // bg-smoke-abyss, e não `bg-app`: esta rota chamava uma classe que não
+    // existe mais em lugar nenhum do CSS — o nome ficou, a regra sumiu, e a
+    // tela passou a mostrar o branco do documento. `.bg-smoke-abyss` (App.css)
+    // é o mesmo fundo do DashboardLayout e da landing.
+    //
+    // overflow-x-clip no lugar de -hidden por dois motivos: `hidden` força o
+    // outro eixo a `auto` e criaria um contexto de rolagem extra, e `clip` não
+    // arrisca decepar o ::before fixo do fundo.
+    //
+    // pt-16 reserva a altura do HeaderApp, que é `absolute` e portanto não
+    // ocupa espaço no fluxo. Antes isso era um `mt-20` no filho — 80px para um
+    // header de 64px, com o respiro embutido no mesmo número.
+    <div className="min-h-screen w-full bg-smoke-abyss flex flex-col overflow-x-clip pt-16">
       <HeaderApp />
-      <div className="flex-1 w-full flex justify-center items-start mt-20 p-4 py-8">
+      <div className="flex-1 w-full flex justify-center items-start px-gutter py-section">
         <Routes>
           <Route path="/dados-perfil" element={<PerfilPage />} />
           {/* Fora do onboarding, qualquer caminho desconhecido é um 404 de

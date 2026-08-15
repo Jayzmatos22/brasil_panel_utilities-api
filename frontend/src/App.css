@@ -24,21 +24,13 @@
    conteudo ao rolar, entao precisa deixar entrever o que corre por baixo:
    opaco cortaria a pagina em duas. Quem garante a legibilidade do que fica
    em cima e o backdrop-filter. */
-.header-dashboard {
+.principal-header {
   background-color: #1456f237;
   background-image:
     radial-gradient(at 10% 40%, rgba(30, 41, 59, 0.3) 0px, transparent 40%),
     radial-gradient(at 80% 10%, rgba(15, 23, 42, 0.4) 0px, transparent 50%),
     radial-gradient(at 10% 90%, rgba(2, 6, 23, 0.8) 0px, transparent 60%);
   backdrop-filter: blur(4px);
-}
-
-
-
-.bg-app {
-  background-color: #090c0c;
-  background-image: radial-gradient(#8e00fa6d 1px, transparent 1px);
-  background-size: 24px 24px;
 }
 
 .aside-bg {
@@ -278,7 +270,6 @@ body {
 }
 
 .hero-edge-glow {
-
   /* Sem mix-blend-mode. O `screen` foi o que estragou as versões anteriores:
      sobre fundo quase preto ele clareia, mas lava a saturação, e a cor saía
      acinzentada. Com alfa real sobre o preto a mistura é literal — cada
