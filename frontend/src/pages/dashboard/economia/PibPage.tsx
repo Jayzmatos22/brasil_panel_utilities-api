@@ -65,12 +65,12 @@ function SectionCard({
     <motion.section
       whileHover={{ y: -2 }}
       transition={{ type: "spring", stiffness: 220, damping: 22 }}
-      className={`group relative overflow-hidden rounded-2xl border border-slate-800/80 bg-surface-3 backdrop-blur-sm shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_20px_40px_-24px_rgba(0,0,0,0.6)] ${className}`}
+      className={`group relative overflow-hidden rounded-panel border border-white/10 bg-surface-3 backdrop-blur-md shadow-panel ${className}`}
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-emerald-400/30 to-transparent" />
       <header className="flex items-start justify-between gap-4 px-6 pt-5 pb-3">
         <div className="flex items-center gap-3 min-w-0">
-          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-900 border border-slate-800 text-emerald-400 shrink-0">
+          <span className="flex h-9 w-9 items-center justify-center rounded-control bg-surface-2 border border-white/10 text-emerald-400 shrink-0">
             {icon}
           </span>
           <div className="min-w-0">
@@ -118,7 +118,7 @@ function StatePanel({
   const toneClass =
     tone === "error"
       ? "border-red-900/50 bg-red-950/20 text-red-300"
-      : "border-slate-800 bg-slate-900/40 text-slate-400";
+      : "border-white/10 bg-surface-2 text-slate-400";
   return (
     <div
       role={tone === "error" ? "alert" : "status"}
@@ -383,7 +383,7 @@ export default function PibPage() {
       ? "bg-emerald-500/[0.06] border-emerald-900/50"
       : down
         ? "bg-red-500/[0.06] border-red-900/50"
-        : "bg-slate-900/60 border-slate-800";
+        : "bg-surface-2 border-white/10";
 
     return [
       {
@@ -729,7 +729,7 @@ export default function PibPage() {
           <div className="relative p-6 sm:p-8 flex flex-col gap-6">
             <header className="flex items-center justify-between flex-wrap gap-3">
               <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 border border-slate-800 text-emerald-400">
+                <span className="flex h-10 w-10 items-center justify-center rounded-card bg-surface-2 border border-white/10 text-emerald-400">
                   <CalendarDays size={18} />
                 </span>
                 <div>
@@ -750,11 +750,11 @@ export default function PibPage() {
               </div>
               {monthlyDataForYear && monthlyDataForYear.length > 0 && (
                 <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded-md border border-slate-800 bg-surface-2 px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider text-slate-300">
+                  <span className="inline-flex items-center gap-1.5 rounded-md border border-white/10 bg-surface-2 px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider text-slate-300">
                     {monthlyDataForYear.length} meses
                   </span>
                   {monthlyDataForCompareYear && (
-                    <span className="inline-flex items-center gap-1.5 rounded-md border border-slate-800 bg-surface-1 px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider text-slate-500">
+                    <span className="inline-flex items-center gap-1.5 rounded-md border border-white/10 bg-surface-1 px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider text-slate-500">
                       {monthlyDataForCompareYear.length} meses
                     </span>
                   )}
@@ -780,7 +780,7 @@ export default function PibPage() {
                         ? "bg-emerald-500/[0.06] border-emerald-900/50"
                         : comparisonSummary.pct < 0
                           ? "bg-red-500/[0.06] border-red-900/50"
-                          : "bg-slate-800/40 border-slate-700/50"
+                          : "bg-surface-2 border-white/10"
                     }`}
                   >
                     {comparisonSummary.pct > 0 ? (
@@ -867,7 +867,7 @@ export default function PibPage() {
                   </div>
                 )}
 
-                <div className="relative rounded-card border border-slate-800/70 bg-inset overflow-hidden">
+                <div className="relative rounded-card border border-white/5 bg-inset overflow-hidden">
                   {/* A tabela mensal tem 4 colunas fixas: em 375px eram ~66px
                       por coluna para valores como "R$ 1,2 tri". Em vez de
                       empilhar (o que destruiria a leitura tabular), ganha
@@ -877,7 +877,7 @@ export default function PibPage() {
                     {monthlyDataForCompareYear &&
                     monthlyComparisonRows.length > 0 ? (
                       /* ── TABELA COMPARAÇÃO MENSAL ── */
-                      <div className="flex min-w-lg flex-col divide-y divide-slate-800/40">
+                      <div className="flex min-w-lg flex-col divide-y divide-white/5">
                         {/* Cabeçalho da Tabela */}
                         <div className="grid grid-cols-4 gap-4 pb-3 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
                           <span>Mês</span>
@@ -960,7 +960,7 @@ export default function PibPage() {
           icon={<LineChartIcon size={16} />}
           badge={
             stats && (
-              <span className="hidden sm:inline-flex rounded-md border border-slate-800 bg-surface-2 px-2 py-1 text-[10px] font-mono uppercase tracking-wider text-slate-300">
+              <span className="hidden sm:inline-flex rounded-md border border-white/10 bg-surface-2 px-2 py-1 text-[10px] font-mono uppercase tracking-wider text-slate-300">
                 {stats.points.length} pontos
               </span>
             )
@@ -981,7 +981,7 @@ export default function PibPage() {
                 {statBlocks.map((block, idx) => (
                   <div
                     key={idx}
-                    className={`rounded-lg border px-4 py-3 ${block.isVar ? block.bgClass : "bg-surface-2 border-slate-800"}`}
+                    className={`rounded-lg border px-4 py-3 ${block.isVar ? block.bgClass : "bg-surface-2 border-white/10"}`}
                   >
                     <p className="text-[10px] uppercase tracking-[0.14em] text-slate-500 flex items-center gap-1.5">
                       {block.icon} {block.label}
@@ -994,7 +994,7 @@ export default function PibPage() {
                   </div>
                 ))}
               </div>
-              <div className="rounded-lg border border-slate-800/70 bg-inset p-3">
+              <div className="rounded-control border border-white/5 bg-inset p-3">
                 <LineChartEcharts points={stats.points} color="#009C3B" />
               </div>
             </>
@@ -1019,7 +1019,7 @@ export default function PibPage() {
           badge={
             pibEstados &&
             pibEstados.length > 0 && (
-              <span className="rounded-md border border-slate-800 bg-surface-2 px-2 py-1 text-[10px] font-mono uppercase tracking-wider text-slate-300">
+              <span className="rounded-md border border-white/10 bg-surface-2 px-2 py-1 text-[10px] font-mono uppercase tracking-wider text-slate-300">
                 Ref · {pibEstados[0].year}
               </span>
             )
@@ -1035,7 +1035,7 @@ export default function PibPage() {
               title="Erro ao carregar o PIB por estado"
             />
           ) : pibEstados && pibEstados.length > 0 ? (
-            <div className="rounded-lg border border-slate-800/70 bg-inset p-3">
+            <div className="rounded-control border border-white/5 bg-inset p-3">
               {/* Abaixo de 640px o gráfico de barras deixa de funcionar: São
                   Paulo é ~230× o menor estado, e nessa largura as barras dos
                   vinte e poucos menores caem abaixo de 2px — todas visualmente

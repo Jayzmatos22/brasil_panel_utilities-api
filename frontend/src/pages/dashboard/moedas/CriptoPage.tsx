@@ -159,7 +159,7 @@ export default function CriptoPage() {
       <motion.div 
         variants={item} 
         // Retiramos o p-6 daqui e usamos flex-col/row direto na raiz para as "metades" ocuparem tudo
-        className="relative overflow-hidden rounded-card border-3 border-blue-500 flex flex-col @3xl/page:flex-row min-h-50 float-card border-b-3 group"
+        className="relative overflow-hidden rounded-panel border border-white/10 flex flex-col @3xl/page:flex-row min-h-50 float-card group"
       >
         {/* Fundo da imagem global */}
         {bannerImage ? (
@@ -172,7 +172,7 @@ export default function CriptoPage() {
             <div className="absolute inset-0 bg-linear-to-r from-slate-950/95 via-slate-900/80 to-slate-900/30" />
           </div>
         ) : (
-          <div className="absolute inset-0 z-0 bg-slate-900 pointer-events-none" />
+          <div className="absolute inset-0 z-0 bg-surface-3 pointer-events-none" />
         )}
 
         {/* Metade Esquerda: Títulos (com padding interno próprio) */}
@@ -188,7 +188,7 @@ export default function CriptoPage() {
             <div
               role="group"
               aria-label="Fonte de dados"
-              className="inline-flex rounded-lg border border-slate-600/70 bg-slate-950/70 p-1 backdrop-blur-sm"
+              className="inline-flex rounded-control border border-white/10 bg-inset p-1 backdrop-blur-sm"
             >
               {(Object.keys(SOURCE_LABEL) as CryptoSource[]).map((key) => {
                 const active = source === key;
@@ -202,7 +202,7 @@ export default function CriptoPage() {
                       focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400
                       ${active
                         ? 'bg-yellow-400 text-slate-900 shadow-sm'
-                        : 'text-slate-300 hover:text-white hover:bg-slate-800/70'}`}
+                        : 'text-slate-300 hover:text-white hover:bg-white/10'}`}
                   >
                     {SOURCE_LABEL[key]}
                   </button>
@@ -219,21 +219,20 @@ export default function CriptoPage() {
         </div>
 
         {/* Metade Direita: Card de Busca (Colado no topo, base e direita) */}
-        <div className="relative z-10 w-full @3xl/page:w-80 @5xl/page:w-96 bg-slate-950/60 backdrop-blur-sm border-t @3xl/page:border-t-0 @3xl/page:border-l
-                         border-slate-500/30 p-card flex flex-col justify-center gap-3 shrink-0 ">
+        <div className="relative z-10 w-full @3xl/page:w-80 @5xl/page:w-96 bg-inset backdrop-blur-sm border-t @3xl/page:border-t-0 @3xl/page:border-l
+                         border-white/10 p-card flex flex-col justify-center gap-3 shrink-0 ">
           <h2 className="text-yellow-400 font-semibold text-xs uppercase tracking-wider">Buscar por Nome</h2>
           <div className="relative">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-900" />
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               value={search}
               onChange={(e: ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
               placeholder="Ex: bitcoin, ethereum..."
-              /* `bg-slate-900/80` estava aqui junto com `bg-white`: duas utilities de
-                 background na mesma classe. O branco vencia, então o slate era código
-                 morto — removido sem mudança visual. O campo continua claro de
-                 propósito? É o único input claro do painel; ver nota na revisão. */
-              className="w-full h-9 coarse:min-h-11 pl-9 pr-3 rounded-md bg-white text-black border border-slate-700
-                         placeholder-slate-500 outline-none focus:ring-2 focus:ring-yellow-500 transition-all text-sm"
+              /* Era o único input claro do painel — `bg-white text-black` sobre o
+                 card escuro, resquício de quando esta página tinha superfícies
+                 claras. Agora usa o input de vidro das outras telas. */
+              className="w-full h-9 coarse:min-h-11 pl-9 pr-3 rounded-md bg-white/5 backdrop-blur-md text-white border border-white/10
+                         placeholder-slate-500 outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500/50 transition-all text-sm"
             />
           </div>
           
@@ -250,7 +249,7 @@ export default function CriptoPage() {
             <motion.div
               initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="flex justify-between items-center bg-cyan-950 rounded-md px-3 py-2 border border-slate-500 mt-1"
+              className="flex justify-between items-center bg-surface-2 rounded-md px-3 py-2 border border-white/10 mt-1"
             >
               <span className="text-white font-medium text-xs uppercase tracking-wider">{searchResult.label}</span>
               <span className="text-green-400 font-mono font-bold text-sm">
@@ -266,12 +265,12 @@ export default function CriptoPage() {
       </motion.div>
 
       {/* Top 100 */}
-      <motion.div variants={item} whileHover={{ y: -4 }} className="bg-slate-900 border border-slate-700 rounded-xl p-5">
+      <motion.div variants={item} whileHover={{ y: -4 }} className="bg-surface-3 border border-white/10 backdrop-blur-md rounded-panel p-card shadow-panel">
         <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
           <h2 className="text-yellow-500 font-semibold text-sm uppercase tracking-wider">
             Top 100 por Market Cap
           </h2>
-          <span className="text-[11px] font-medium text-slate-400 border border-slate-700 rounded-full px-2.5 py-1">
+          <span className="text-[11px] font-medium text-slate-400 border border-white/10 rounded-full px-2.5 py-1">
             fonte: {SOURCE_LABEL[source]}
           </span>
         </div>
@@ -295,7 +294,7 @@ export default function CriptoPage() {
           <ScrollHint label="Arraste para o lado para ver todas as colunas">
             <table className="w-full min-w-3xl text-sm ">
               <thead>
-                <tr className="border-b-2 border-white/20 rounded-lg bg-slate-950">
+                <tr className="border-b border-white/10 bg-inset">
                   <th className="text-left py-2 px-3 text-slate-500 font-medium">#</th>
                   <th className="text-left py-2 px-3 text-blue-500 font-medium">Moeda</th>
                   <th className="text-right py-2 px-3 text-green-500 font-medium">Preço (BRL)</th>
@@ -311,7 +310,7 @@ export default function CriptoPage() {
                   const up = hasPriceChange && coin.priceChange24h >= 0;
 
                   return (
-                    <tr key={coin.key} className="border-b border-slate-800 hover:bg-slate-800 transition-colors">
+                    <tr key={coin.key} className="border-b border-white/5 hover:bg-white/5 transition-colors">
                       <td className="py-2 px-3 text-slate-500">{i + 1}</td>
                       <td className="py-2 px-3">
                         <div className="flex items-center gap-2">
@@ -369,57 +368,64 @@ export default function CriptoPage() {
         )}
       </motion.div>
 
-      {/* Comparativos (24h) */}
+      {/* Comparativos (24h)
+
+          Estes três cards eram claros — `bg-white/85` e `bg-white` com borda
+          slate-200 — únicos do painel inteiro. Sobre o fundo abyss liam como
+          recorte de outra aplicação, e as cores de série vinham na faixa 600/700
+          (#16a34a, #dc2626, #2563eb), calibradas para fundo claro: sobre
+          superfície escura elas escurecem em vez de destacar. Agora usam a mesma
+          pilha das outras seções e a faixa 400, como o resto do dashboard. */}
       <motion.div variants={item} className="grid-auto-cards gap-4 [--card-min:20rem]">
         {/* Card: Maiores Altas */}
-        <motion.div whileHover={{ y: -4 }} className="bg-white/85 border border-slate-200 shadow-sm rounded-xl p-5 flex flex-col gap-4">
+        <motion.div whileHover={{ y: -4 }} className="bg-surface-3 border border-white/10 backdrop-blur-md shadow-panel rounded-panel p-card flex flex-col gap-4">
           <div className="flex items-center gap-2">
-            <span className="text-green-600"><TrendingUp size={15} /></span>
-            <h2 className="text-green-600 font-semibold text-sm uppercase tracking-wider">Maiores altas (24h)</h2>
+            <span className="text-emerald-400"><TrendingUp size={15} /></span>
+            <h2 className="text-emerald-400 font-semibold text-sm uppercase tracking-wider">Maiores altas (24h)</h2>
           </div>
           {loadingMarket ? (
-            <div className="flex items-center gap-2 text-slate-500 text-sm">
+            <div className="flex items-center gap-2 text-slate-400 text-sm">
               <LoaderCircle size={16} className="animate-spin" /> Carregando...
             </div>
           ) : gainers.length ? (
-            <BarChartEcharts items={gainers} color="#16a34a" valueFormatter={pct} />
+            <BarChartEcharts items={gainers} color="#34d399" valueFormatter={pct} />
           ) : (
-            <p className="text-slate-500 text-sm">Sem dados.</p>
+            <p className="text-slate-400 text-sm">Sem dados.</p>
           )}
         </motion.div>
 
         {/* Card: Maiores Quedas */}
-        <motion.div whileHover={{ y: -4 }} className="bg-white/85 border border-slate-200 shadow-sm rounded-xl p-5 flex flex-col gap-4">
+        <motion.div whileHover={{ y: -4 }} className="bg-surface-3 border border-white/10 backdrop-blur-md shadow-panel rounded-panel p-card flex flex-col gap-4">
           <div className="flex items-center gap-2">
-            <span className="text-red-600"><TrendingDown size={15} /></span>
-            <h2 className="text-red-700 font-semibold text-sm uppercase tracking-wider">Maiores quedas (24h)</h2>
+            <span className="text-rose-400"><TrendingDown size={15} /></span>
+            <h2 className="text-rose-400 font-semibold text-sm uppercase tracking-wider">Maiores quedas (24h)</h2>
           </div>
           {loadingMarket ? (
-            <div className="flex items-center gap-2 text-slate-500 text-sm">
+            <div className="flex items-center gap-2 text-slate-400 text-sm">
               <LoaderCircle size={16} className="animate-spin" /> Carregando...
             </div>
           ) : losers.length ? (
-            <BarChartEcharts items={losers} color="#dc2626" valueFormatter={pct} />
+            <BarChartEcharts items={losers} color="#fb7185" valueFormatter={pct} />
           ) : (
-            <p className="text-slate-500 text-sm">Sem dados.</p>
+            <p className="text-slate-400 text-sm">Sem dados.</p>
           )}
         </motion.div>
       </motion.div>
 
       {/* Card: Top 10 por market cap */}
-      <motion.div variants={item} whileHover={{ y: -4 }} className="bg-white border border-slate-200 shadow-sm rounded-xl p-5 flex flex-col gap-4 mt-2">
+      <motion.div variants={item} whileHover={{ y: -4 }} className="bg-surface-3 border border-white/10 backdrop-blur-md shadow-panel rounded-panel p-card flex flex-col gap-4 mt-2">
         <div className="flex items-center gap-2">
-          <span className="text-blue-600"><BarChart3 size={15} /></span>
-          <h2 className="text-blue-700 font-semibold text-sm uppercase tracking-wider">Top 10 por market cap</h2>
+          <span className="text-blue-400"><BarChart3 size={15} /></span>
+          <h2 className="text-blue-400 font-semibold text-sm uppercase tracking-wider">Top 10 por market cap</h2>
         </div>
         {loadingMarket ? (
-          <div className="flex items-center gap-2 text-slate-500 text-sm">
+          <div className="flex items-center gap-2 text-slate-400 text-sm">
             <LoaderCircle size={16} className="animate-spin" /> Carregando...
           </div>
         ) : topCap.length ? (
-          <BarChartEcharts items={topCap} color="#2563eb" valueFormatter={compact} />
+          <BarChartEcharts items={topCap} color="#60a5fa" valueFormatter={compact} />
         ) : (
-          <p className="text-slate-500 text-sm">Sem dados.</p>
+          <p className="text-slate-400 text-sm">Sem dados.</p>
         )}
       </motion.div>
     </motion.div>

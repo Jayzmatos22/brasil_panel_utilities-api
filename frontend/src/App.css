@@ -170,10 +170,14 @@ body {
 
 /* ─── Cards de Ações ────────────────────────────────────────────────────── */
 
-.acoes-card-resultado-busca {
-  background: rgba(225, 143, 2, 0.882);
-}
+/* O card de resultado da busca tinha superfície própria aqui — laranja sólido
+   (rgba(225,143,2,0.882)) com brilho pulsante e deslocamento horizontal. Era a
+   única superfície opaca e saturada do painel; passou a usar bg-surface-3 como
+   as demais seções, e a regra, os dois @keyframes e o @media que os
+   acompanhavam saíram junto por terem ficado sem uso.
 
+   O ticker do histórico abaixo fica: o verde dele é um tinte de baixa opacidade
+   (alfa 0.04–0.25), que é como o resto do painel colore superfície. */
 .acoes-historico-ticker {
   background: linear-gradient(
     90deg,
@@ -509,42 +513,6 @@ body {
 
   .animate-slow-pan {
     animation: slow-pan 30s ease-in-out infinite;
-  }
-
-  /* ── Card de resultado de busca de ações ── */
-  @keyframes card-acoes-glow {
-    0%,
-    100% {
-      filter: drop-shadow(0 0 5px rgb(85, 76, 0));
-    }
-    50% {
-      filter: drop-shadow(0 0 12px rgb(180, 140, 0));
-    }
-  }
-
-  .acoes-card-resultado-busca {
-    animation: card-acoes-glow 3s ease-in-out infinite;
-  }
-
-  /* O deslocamento horizontal só existe onde há espaço para ele. */
-  @media (min-width: 64rem) {
-    @keyframes card-acoes {
-      0% {
-        transform: translateX(0);
-        filter: drop-shadow(0 0 5px rgb(85, 76, 0));
-      }
-      50% {
-        transform: translateX(25px);
-        filter: drop-shadow(0 0 5px rgb(19, 13, 0));
-      }
-      100% {
-        transform: translateX(0px);
-      }
-    }
-
-    .acoes-card-resultado-busca {
-      animation: card-acoes 2s linear infinite;
-    }
   }
 
   /* ── Respiração das camadas de brilho (hero de Admin) ── */

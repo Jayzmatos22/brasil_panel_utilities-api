@@ -72,9 +72,8 @@ const LBMA_FIXINGS = [
 function SectionCard({ children }: { children: React.ReactNode }) {
   return (
     <section
-      className="rounded-2xl border border-slate-800/80 bg-linear-to-b from-slate-900/60 to-slate-950/80
-                 shadow-[0_1px_0_0_rgba(255,255,255,0.03)_inset,0_20px_40px_-20px_rgba(0,0,0,0.5)]
-                 overflow-hidden"
+      className="rounded-panel border border-white/10 bg-surface-3 backdrop-blur-md
+                 shadow-panel overflow-hidden"
     >
       {children}
     </section>
@@ -93,7 +92,7 @@ function SectionHeader({
   right?: React.ReactNode;
 }) {
   return (
-    <header className="px-5 sm:px-6 pt-5 pb-4 flex items-start justify-between flex-wrap gap-3 border-b border-slate-800/60">
+    <header className="px-5 sm:px-6 pt-5 pb-4 flex items-start justify-between flex-wrap gap-3 border-b border-white/10">
       <div className="min-w-0">
         {eyebrow && (
           <p className="text-[10px] font-semibold text-amber-400/80 uppercase tracking-[0.14em]">
@@ -126,7 +125,7 @@ function StatePanel({
   const ring =
     tone === "error"
       ? "ring-rose-400/15 bg-rose-400/5"
-      : "ring-slate-800/60 bg-slate-900/40";
+      : "ring-white/10 bg-surface-2";
   const iconTone = tone === "error" ? "text-rose-400" : "text-slate-500";
   const titleTone = tone === "error" ? "text-rose-300" : "text-slate-300";
   return (
@@ -318,7 +317,7 @@ export default function MetaisPage() {
                   "focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/40 focus-visible:ring-offset-0",
                   isActive
                     ? "ring-1 ring-amber-400/40 bg-linear-to-b from-amber-400/[0.06] to-slate-900/80 shadow-[0_0_0_1px_rgba(251,191,36,0.08)_inset]"
-                    : "border border-slate-800/80 bg-slate-950/70 hover:border-slate-700 hover:bg-slate-900/60",
+                    : "border border-white/10 bg-surface-2 hover:border-white/20 hover:bg-surface-3",
                 ].join(" ")}
               >
                 {/* Background image layer */}
@@ -387,12 +386,12 @@ export default function MetaisPage() {
                       ? "text-emerald-400"
                       : "text-rose-400";
                   const bgTone = flat
-                    ? "bg-slate-800/40"
+                    ? "bg-surface-2"
                     : up
                       ? "bg-linear-to-b from-emerald-400/[0.08] to-emerald-400/[0.02]"
                       : "bg-linear-to-b from-rose-400/[0.08] to-rose-400/[0.02]";
                   const ringTone = flat
-                    ? "ring-slate-700/60"
+                    ? "ring-white/10"
                     : up
                       ? "ring-emerald-400/20"
                       : "ring-rose-400/20";
@@ -449,7 +448,7 @@ export default function MetaisPage() {
                       </div>
 
                       <div
-                        className={`text-xs font-mono border-t border-slate-800/60 pt-2.5 tabular-nums ${tone}`}
+                        className={`text-xs font-mono border-t border-white/10 pt-2.5 tabular-nums ${tone}`}
                       >
                         {up ? "+" : ""}
                         {usd(diff)}{" "}
@@ -483,9 +482,9 @@ export default function MetaisPage() {
                   value={effectiveMetal}
                   onChange={(e) => setSelected(e.target.value as MetalKey)}
                   disabled={availableMetals.length === 0}
-                  className="h-8 coarse:min-h-11 px-3 rounded-lg bg-inset text-sm text-white border border-slate-800
+                  className="h-8 coarse:min-h-11 px-3 rounded-control bg-inset text-sm text-white border border-white/10
                              outline-none focus:ring-2 focus:ring-amber-400/40 focus:border-amber-400/40
-                             hover:border-slate-700 transition-all duration-150
+                             hover:border-white/20 transition-all duration-150
                              disabled:opacity-40 disabled:cursor-not-allowed appearance-none
                              [background-image:url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20fill%3D%22none%22%20stroke%3D%22%2364748b%22%20stroke-width%3D%222%22%3E%3Cpath%20d%3D%22m4%206%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')]
                              [background-position:right_0.5rem_center] [background-repeat:no-repeat] [background-size:1rem]
@@ -542,8 +541,8 @@ export default function MetaisPage() {
                 {LBMA_FIXINGS.map(({ label, emoji, am, pm }) => (
                   <div
                     key={label}
-                    className="rounded-xl border border-slate-800/80 bg-surface-2 p-4 flex flex-col gap-3
-                               hover:border-slate-700 transition-colors duration-150"
+                    className="rounded-card border border-white/10 bg-surface-2 p-4 flex flex-col gap-3
+                               hover:border-white/20 transition-colors duration-150"
                   >
                     <div className="flex items-center gap-2">
                       <span
@@ -557,7 +556,7 @@ export default function MetaisPage() {
                       </span>
                     </div>
                     <div className="flex flex-col gap-2 pt-1">
-                      <div className="flex items-center justify-between text-sm border-b border-slate-800/50 pb-2">
+                      <div className="flex items-center justify-between text-sm border-b border-white/5 pb-2">
                         <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-[0.14em]">
                           AM
                         </span>
@@ -577,8 +576,8 @@ export default function MetaisPage() {
                   </div>
                 ))}
                 <div
-                  className="rounded-xl border border-slate-800/80 bg-surface-2 p-4 flex flex-col gap-3
-                                hover:border-slate-700 transition-colors duration-150"
+                  className="rounded-card border border-white/10 bg-surface-2 p-4 flex flex-col gap-3
+                                hover:border-white/20 transition-colors duration-150"
                 >
                   <div className="flex items-center gap-2">
                     <span className="text-base leading-none" aria-hidden="true">
