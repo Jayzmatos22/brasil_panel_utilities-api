@@ -707,50 +707,39 @@ export default function PibPage() {
       </motion.div>
 
       {/* ══════════════════════════════════════════════════════════════════
-         SÉRIE MENSAL — COMPARATIVO (CARD AMARELO)
+         SÉRIE MENSAL — COMPARATIVO
          ═════════════════════════════════════════════════════════════════ */}
       <motion.div variants={item}>
+        {/* Este painel tinha superfície própria: gradiente quente (#0c0a02 →
+            #1f1a0a), borda e halos amarelos. Era o único card da página fora do
+            tema — sobre o fundo .bg-smoke-abyss (#020202 + halos slate) lia como
+            material estranho, e o amarelo do PIB do ano principal disputava com
+            o verde/vermelho que ali significam alta e queda.
+
+            Agora usa a mesma pilha das outras superfícies do painel
+            (bg-surface-3 + border-white/10 + shadow-panel): overlay branco sobre
+            o abyss, que compõe com o fundo em vez de brigar com ele. */}
         <motion.section
           whileHover={{ y: -2 }}
           transition={{ type: "spring", stiffness: 220, damping: 22 }}
-          className="relative overflow-hidden rounded-2xl border border-yellow-500/15 shadow-[0_30px_60px_-30px_rgba(255,223,0,0.08),0_1px_0_0_rgba(255,255,255,0.04)_inset]"
-          style={{
-            background:
-              "linear-gradient(160deg, #0c0a02 0%, #131008 40%, #1a1606 70%, #1f1a0a 100%)",
-          }}
+          className="relative overflow-hidden rounded-panel border border-white/10 bg-surface-3 backdrop-blur-md shadow-panel"
         >
-          <div className="absolute inset-x-0 top-0 h-[2px] bg-linear-to-r from-transparent via-[#FFDF00]/60 to-transparent" />
-          <div
-            className="absolute -top-32 -left-32 w-[28rem] h-[28rem] rounded-full opacity-[0.12] blur-3xl pointer-events-none"
-            style={{
-              background:
-                "radial-gradient(circle, #FFDF00 0%, transparent 65%)",
-            }}
-          />
-          <div
-            className="absolute -bottom-20 -right-20 w-72 h-72 rounded-full opacity-[0.06] blur-3xl pointer-events-none"
-            style={{
-              background:
-                "radial-gradient(circle, #FFDF00 0%, transparent 65%)",
-            }}
-          />
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-white/[0.06] to-transparent" />
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-emerald-400/30 to-transparent" />
 
           <div className="relative p-6 sm:p-8 flex flex-col gap-6">
             <header className="flex items-center justify-between flex-wrap gap-3">
               <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FFDF00]/[0.07] border border-[#FFDF00]/20 text-[#FFDF00]">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 border border-slate-800 text-emerald-400">
                   <CalendarDays size={18} />
                 </span>
                 <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#FFDF00]/60">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
                     Visão Mensal Detalhada
                   </p>
                   <h2 className="text-sm font-medium text-white mt-0.5">
                     {monthlyDataForCompareYear ? (
                       <>
-                        {year}{" "}
-                        <span className="text-[#FFDF00]/50 mx-1">vs</span>{" "}
+                        {year} <span className="text-slate-500 mx-1">vs</span>{" "}
                         {compareYear}
                       </>
                     ) : (
@@ -761,11 +750,11 @@ export default function PibPage() {
               </div>
               {monthlyDataForYear && monthlyDataForYear.length > 0 && (
                 <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded-md border border-[#FFDF00]/20 bg-[#FFDF00]/[0.06] px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider text-[#FFDF00]/80">
+                  <span className="inline-flex items-center gap-1.5 rounded-md border border-slate-800 bg-surface-2 px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider text-slate-300">
                     {monthlyDataForYear.length} meses
                   </span>
                   {monthlyDataForCompareYear && (
-                    <span className="inline-flex items-center gap-1.5 rounded-md border border-slate-700 bg-slate-800/60 px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider text-slate-400">
+                    <span className="inline-flex items-center gap-1.5 rounded-md border border-slate-800 bg-surface-1 px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider text-slate-500">
                       {monthlyDataForCompareYear.length} meses
                     </span>
                   )}
@@ -860,7 +849,11 @@ export default function PibPage() {
                 {monthlyDataForCompareYear && (
                   <div className="flex items-center gap-5 mb-2">
                     <div className="flex items-center gap-2">
-                      <span className="h-2.5 w-2.5 rounded-sm bg-[#FFDF00]" />
+                      {/* Ano principal em branco, comparação em slate. A cor da
+                          coluna de Variação (verde/vermelho) fica reservada ao
+                          sinal de alta e queda — era o que o amarelo daqui
+                          embaralhava. */}
+                      <span className="h-2.5 w-2.5 rounded-sm bg-slate-100" />
                       <span className="text-xs text-slate-300 font-medium">
                         {year}
                       </span>
@@ -874,14 +867,7 @@ export default function PibPage() {
                   </div>
                 )}
 
-                <div className="relative rounded-xl border border-[#FFDF00]/10 bg-inset overflow-hidden">
-                  <div
-                    className="absolute inset-0 opacity-[0.03] pointer-events-none"
-                    style={{
-                      background:
-                        "radial-gradient(ellipse at 50% 0%, #FFDF00 0%, transparent 60%)",
-                    }}
-                  />
+                <div className="relative rounded-card border border-slate-800/70 bg-inset overflow-hidden">
                   {/* A tabela mensal tem 4 colunas fixas: em 375px eram ~66px
                       por coluna para valores como "R$ 1,2 tri". Em vez de
                       empilhar (o que destruiria a leitura tabular), ganha
@@ -914,7 +900,7 @@ export default function PibPage() {
                               <span className="text-sm text-slate-500 tabular-nums text-right">
                                 {compactBrl(row.compareValue)}
                               </span>
-                              <span className="text-sm text-[#FFDF00] tabular-nums text-right font-medium">
+                              <span className="text-sm text-slate-100 tabular-nums text-right font-medium">
                                 {compactBrl(row.primaryValue)}
                               </span>
                               <span
@@ -946,7 +932,7 @@ export default function PibPage() {
                       /* ── Modo single: gráfico único ── */
                       <BarChartEcharts
                         items={monthlyDataForYear}
-                        color="#FFDF00"
+                        color="#009C3B"
                         valueFormatter={compactBrl}
                       />
                     )}
