@@ -48,8 +48,8 @@ export default function AcoesPage() {
           value={input}
           onChange={(e: ChangeEvent<HTMLInputElement>) => setInput(e.target.value)}
           placeholder="Ex: AAPL, PETR4.SAO"
-          className="flex-1 min-w-0 h-10 coarse:min-h-11 px-3 rounded-md bg-slate-800 text-white border border-slate-600
-                     placeholder-slate-500 outline-none focus:ring-2 focus:ring-yellow-500 transition-all text-sm"
+          className="flex-1 min-w-0 h-10 coarse:min-h-11 px-3 rounded-md bg-white/5 backdrop-blur-md text-white border border-white/10
+                     placeholder-slate-500 outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500/50 transition-all text-sm"
         />
         <button
           type="submit"
@@ -100,7 +100,7 @@ export default function AcoesPage() {
       {stock && !isLoading && (
         <motion.div
         variants={item}
-        className="flex flex-col @2xl/page:flex-row overflow-hidden acoes-card-resultado-busca border border-slate-700 rounded-card max-w-2xl group transition-all duration-200 hover:border-slate-500"
+        className="flex flex-col @2xl/page:flex-row overflow-hidden bg-surface-3 border border-white/10 backdrop-blur-md shadow-panel rounded-panel max-w-2xl group transition-all duration-200 hover:border-white/20"
       >
           {/* Painel da imagem */}
           <div className="relative @2xl/page:w-2/5 h-48 @2xl/page:h-auto shrink-0 overflow-hidden">
@@ -120,7 +120,7 @@ export default function AcoesPage() {
           <div className="flex-1 p-6 flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <h2 className="text-white font-bold text-xl">{stock.symbol}</h2>
-              <span className={`flex items-center gap-1 text-sm font-semibold ${positive ? 'text-green-400' : 'text-red-800/90'}`}>
+              <span className={`flex items-center gap-1 text-sm font-semibold ${positive ? 'text-emerald-400' : 'text-rose-400'}`}>
                 {positive ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
                 {stock.changePercent}
               </span>
@@ -139,21 +139,21 @@ export default function AcoesPage() {
                 ['Variação',       `${stock.change >= 0 ? '+' : ''}${stock.change.toFixed(2)}`],
                 ['Volume',         stock.volume.toLocaleString('pt-BR')],
               ].map(([label, value]) => (
-                <div key={label} className="flex justify-between bg-white rounded px-3 py-2">
-                  <span className="text-slate-500">{label}</span>
-                  <span className="text-slate-700 font-mono">{value}</span>
+                <div key={label} className="flex justify-between rounded-control border border-white/5 bg-surface-2 px-3 py-2">
+                  <span className="text-slate-400">{label}</span>
+                  <span className="text-slate-100 font-mono tabular-nums">{value}</span>
                 </div>
               ))}
             </div>
 
-            <p className="w-fit text-white text-xs px-2 bg-green-950 rounded ring-1 ring-white">Último pregão: {stock.latestTradingDay}</p>
+            <p className="w-fit text-emerald-300 text-xs px-2 py-0.5 bg-emerald-500/10 rounded ring-1 ring-emerald-500/20">Último pregão: {stock.latestTradingDay}</p>
           </div>
         </motion.div>
       )}
 
       {/* Histórico */}
       {symbol && !error && (
-        <motion.div variants={item} whileHover={{ y: -4 }} className="acoes-historico-ticker border border-slate-700 rounded-xl p-6">
+        <motion.div variants={item} whileHover={{ y: -4 }} className="acoes-historico-ticker border border-white/10 rounded-panel p-card">
           <h2 className="text-yellow-500 font-semibold text-sm uppercase tracking-wider mb-4">
             Histórico — {symbol}
           </h2>

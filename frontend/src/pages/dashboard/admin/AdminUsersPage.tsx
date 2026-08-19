@@ -170,7 +170,7 @@ export default function AdminUsersPage() {
       {/* ── Table card ── */}
       <motion.div
         variants={item}
-        className="rounded-xl border border-slate-800 bg-slate-950/80 shadow-lg shadow-black/20 overflow-hidden"
+        className="rounded-panel border border-white/10 bg-surface-3 backdrop-blur-md shadow-panel overflow-hidden"
       >
         {isLoading ? (
           <div className="flex items-center justify-center gap-2.5 py-20 text-slate-400 text-sm">
@@ -181,34 +181,34 @@ export default function AdminUsersPage() {
           <div className="overflow-x-auto overscroll-x-contain">
             <table className="w-full min-w-lg text-sm" role="table">
               <thead>
-                <tr className="border-b border-slate-800/80">
+                <tr className="border-b border-white/10">
                   <th scope="col" className="text-left py-3 px-4 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Usuário</th>
                   <th scope="col" className="text-left py-3 px-4 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Função</th>
                   <th scope="col" className="text-left py-3 px-4 text-[11px] font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">Criado em</th>
                   <th scope="col" className="text-right py-3 px-4 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Ações</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60">
+              <tbody className="divide-y divide-white/5">
                 {users.map((u) => {
                   const isMe = u.email === myEmail;
                   return (
-                    <tr key={u.id} className="group hover:bg-slate-800/30 transition-colors duration-150">
+                    <tr key={u.id} className="group hover:bg-white/5 transition-colors duration-150">
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className={`shrink-0 flex items-center justify-center w-8 h-8 rounded-full text-xs font-semibold select-none ${u.role === 'ADMIN' ? 'bg-amber-400/15 text-amber-400 ring-1 ring-amber-400/20' : 'bg-slate-800 text-slate-400 ring-1 ring-slate-700'}`} aria-hidden="true">
+                          <div className={`shrink-0 flex items-center justify-center w-8 h-8 rounded-full text-xs font-semibold select-none ${u.role === 'ADMIN' ? 'bg-amber-400/15 text-amber-400 ring-1 ring-amber-400/20' : 'bg-surface-3 text-slate-400 ring-1 ring-white/10'}`} aria-hidden="true">
                             {u.name.split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase()}
                           </div>
                           <div className="min-w-0">
                             <div className="flex items-center gap-2">
                               <span className="text-sm font-medium text-white truncate">{u.name}</span>
-                              {isMe && (<span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded">você</span>)}
+                              {isMe && (<span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide bg-surface-3 text-slate-400 px-1.5 py-0.5 rounded">você</span>)}
                             </div>
                             <p className="text-xs text-slate-500 truncate">{u.email}</p>
                           </div>
                         </div>
                       </td>
                       <td className="py-3.5 px-4">
-                        <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-md ${u.role === 'ADMIN' ? 'bg-amber-400/10 text-amber-400 ring-1 ring-amber-400/15' : 'bg-slate-800/80 text-slate-400 ring-1 ring-slate-700/60'}`}>
+                        <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-md ${u.role === 'ADMIN' ? 'bg-amber-400/10 text-amber-400 ring-1 ring-amber-400/15' : 'bg-surface-3 text-slate-400 ring-1 ring-white/10'}`}>
                           {u.role === 'ADMIN' ? <ShieldCheck size={12} className="opacity-70" /> : <Users size={12} className="opacity-50" />}
                           {u.role === 'ADMIN' ? 'Admin' : 'Usuário'}
                         </span>
@@ -216,7 +216,7 @@ export default function AdminUsersPage() {
                       <td className="py-3.5 px-4 text-slate-500 text-xs tabular-nums hidden md:table-cell">{formatDate(u.createdAt)}</td>
                       <td className="py-3.5 px-4 text-right">
                         {isMe ? (
-                          <span className="inline-flex items-center gap-1 text-[11px] text-slate-600" title="Você não pode alterar sua própria função"><span className="w-1.5 h-1.5 rounded-full bg-slate-700" />Sem ação</span>
+                          <span className="inline-flex items-center gap-1 text-[11px] text-slate-600" title="Você não pode alterar sua própria função"><span className="w-1.5 h-1.5 rounded-full bg-white/20" />Sem ação</span>
                         ) : u.role === 'USER' ? (
                           <button onClick={() => promote(u.id)} disabled={promoting || demoting} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-emerald-400 bg-emerald-400/8 hover:bg-emerald-400/15 hover:text-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/40 focus-visible:ring-offset-1 focus-visible:ring-offset-slate-950 disabled:opacity-30 disabled:pointer-events-none transition-all duration-150 cursor-pointer">
                             <ShieldCheck size={13} /><span className="hidden sm:inline">Promover</span>
@@ -235,7 +235,7 @@ export default function AdminUsersPage() {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center gap-3 py-20 text-slate-500">
-            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-slate-800/60"><Users size={20} className="text-slate-600" /></div>
+            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-surface-3"><Users size={20} className="text-slate-600" /></div>
             <div className="text-center">
               <p className="text-sm font-medium text-slate-400">Nenhum usuário encontrado</p>
               <p className="mt-0.5 text-xs text-slate-600">Novos membros aparecerão aqui assim que se cadastrarem.</p>
