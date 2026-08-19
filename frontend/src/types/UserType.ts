@@ -6,6 +6,8 @@ export interface LoginRequest {
 
 /** O JWT não vem aqui: ele chega em cookie httpOnly, inacessível ao JavaScript. */
 export interface AuthResponse {
+  /** Nome do usuário — o cabeçalho do painel o exibe no lugar do e-mail. */
+  name: string;
   email: string;
   role: 'USER' | 'ADMIN';
   expiresInMs: number;

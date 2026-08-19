@@ -28,7 +28,7 @@ import {
   Landmark,
 } from "lucide-react";
 import { BrandLogo } from "../components/brand/BrandLogo";
-import { clearSession, getTokenEmail, isAdmin } from "../lib/auth/jwt";
+import { clearSession, getTokenName, isAdmin } from "../lib/auth/jwt";
 import { authService } from "../api/services/Auth";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { useResponsiveValue } from "../hooks/UseResponsiveValue";
@@ -194,9 +194,11 @@ export default function DashboardLayout() {
   const toggle = (group: string) =>
     setOpen((prev) => ({ ...prev, [group]: !prev[group] }));
 
-  const userEmail = useMemo(() => getTokenEmail(), []);
+  const userName = useMemo(() => getTokenName(), []);
   const admin = useMemo(() => isAdmin(), []);
-  const initials = userEmail[0]?.toUpperCase() ?? "U";
+  // A inicial passa a sair do nome, não do e-mail: com "Jailton" o avatar mostra
+  // J, que é o que a pessoa espera ver ao lado do próprio nome.
+  const initials = userName[0]?.toUpperCase() ?? "U";
   const pageTitle = PAGE_TITLES[location.pathname] ?? "Brasil Panel";
 
   const handleLogout = async () => {
@@ -266,14 +268,15 @@ export default function DashboardLayout() {
         </span>
 
         <div className="flex items-center gap-1 sm:gap-3 shrink-0">
-          <div className="hidden sm:flex flex-col items-end">
-            <span className="text-white text-xs font-medium leading-tight">
-              {userEmail.split("@")[0]}
-            </span>
-            <span className="text-slate-500 text-[10px] leading-tight">
-              {userEmail}
-            </span>
-          </div>
+          {/* Só o nome. Antes eram duas linhas — `email.split("@")[0]` por cima
+              e o e-mail inteiro por baixo — e nenhuma delas era o nome: a de
+              cima era o trecho antes do "@" ("jailtonmatos200"), porque o nome
+              existia no banco mas não atravessava o login. Agora atravessa, e a
+              segunda linha perdeu a função: repetia a identidade que a de cima
+              já dava, em slate-500 sobre o header — 3,81:1, abaixo do AA. */}
+          <span className="hidden sm:block text-white text-xs font-medium leading-tight max-w-40 truncate">
+            {userName}
+          </span>
           <div className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center text-slate-950 text-xs font-bold shrink-0">
             {initials}
           </div>

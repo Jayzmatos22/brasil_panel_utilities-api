@@ -26,7 +26,7 @@ export default function LoginPage() {
     mutationFn: (data: LoginRequest) => authService.login(data),
     onSuccess: (res: AuthResponse) => {
       // O JWT já veio em cookie httpOnly; aqui guardamos só o hint de exibição.
-      saveSession(res.email, res.role, res.expiresInMs);
+      saveSession(res.email, res.role, res.expiresInMs, res.name);
       toast.success('Login realizado com sucesso!');
       // `replace` para que o botão Voltar não traga a pessoa de volta ao
       // login já autenticada.

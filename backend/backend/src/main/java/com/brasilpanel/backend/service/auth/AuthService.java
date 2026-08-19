@@ -97,6 +97,7 @@ public class AuthService {
         // Retorna JWT — o usuário está autenticado
         return new AuthResponseDTO(
                 jwtService.generateToken(user),
+                user.getName(),
                 user.getEmail(),
                 user.getRole().name(),
                 jwtService.getExpirationMs());
@@ -151,6 +152,7 @@ public class AuthService {
 
         return new AuthResponseDTO(
                 jwtService.generateToken(user),
+                user.getName(),
                 user.getEmail(),
                 user.getRole().name(),
                 jwtService.getExpirationMs());
