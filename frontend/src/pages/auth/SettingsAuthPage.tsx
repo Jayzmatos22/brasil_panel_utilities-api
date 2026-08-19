@@ -85,14 +85,33 @@ function SettingsSection({
   const styles = themeMap[theme];
 
   return (
+    // Sem `overflow-hidden`, sem sombra projetada e com raio menor que o do
+    // casco. As tres coisas servem ao mesmo fim: fazer a secao ler como parte
+    // de dentro, e nao como card solto por cima.
+    //
+    // O `overflow-hidden` nao era so estetico — estava CORTANDO os selects. O
+    // painel do combobox e absoluto e passava 99px alem da borda inferior do
+    // card, entao "Senior" aparecia partido ao meio e Especialista, Coordenacao
+    // e Diretoria ficavam invisiveis e inalcancaveis. Medido no navegador antes
+    // da correcao: card em bottom 667, painel em bottom 766, e elementFromPoint
+    // na base do painel devolvia o <h2> da secao seguinte, nao a opcao.
+    //
+    // A sombra saiu porque sombra projetada e o que diz "estou FLUTUANDO acima
+    // de voce". Dentro do casco a profundidade vem da borda e do tom.
     <motion.section
       variants={item}
-      className={`relative overflow-hidden rounded-2xl border ${styles.border} ${styles.bg} backdrop-blur-md shadow-[0_8px_30px_rgb(0,0,0,0.2)] p-6 flex flex-col gap-6 transition-colors duration-300`}
+      className={`relative rounded-card border ${styles.border} ${styles.bg} p-card flex flex-col gap-6 transition-colors duration-300`}
     >
-      {/* Linha superior decorativa temática */}
-      <div
-        className={`absolute top-0 left-0 right-0 h-[2px] ${styles.topLine}`}
-      />
+      {/* Linha superior decorativa tematica.
+          Ganhou invólucro próprio com `overflow-hidden` porque era ela — e só
+          ela — que precisava do recorte: sem isso a faixa de 2px escaparia
+          quadrada nos cantos arredondados. `rounded-[inherit]` a mantém colada
+          ao raio do card mesmo se ele mudar. */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]">
+        <div
+          className={`absolute top-0 left-0 right-0 h-[2px] ${styles.topLine}`}
+        />
+      </div>
 
       <div className="flex items-center gap-4 pb-5 border-b border-slate-800/60">
         <span
@@ -106,7 +125,9 @@ function SettingsSection({
           >
             {title}
           </h2>
-          <p className="text-slate-500 text-xs mt-1 leading-relaxed">
+          {/* slate-400: em slate-500 a descricao ficava em ~4,1:1 sobre o
+              casco, abaixo dos 4,5 do AA para 12px. */}
+          <p className="text-slate-400 text-xs mt-1 leading-relaxed">
             {description}
           </p>
         </div>
@@ -122,14 +143,58 @@ function SettingsSection({
 // monta depois que ambas as queries (opções + perfil) resolvem: a inicialização
 // acontece uma vez, com os dados prontos.
 function CareerSection() {
-  const { data: options, isLoading: loadingOptions } = useProfileOptions();
-  const { data: profile, isLoading: loadingProfile } = useProfile();
+  const {
+    data: options,
+    isLoading: loadingOptions,
+    isError: optionsError,
+    refetch: refetchOptions,
+  } = useProfileOptions();
+  const {
+    data: profile,
+    isLoading: loadingProfile,
+    isError: profileError,
+    refetch: refetchProfile,
+  } = useProfile();
 
-  if (loadingOptions || loadingProfile || !options) {
+  if (loadingOptions || loadingProfile) {
     return (
       <div className="flex items-center justify-center gap-2 text-slate-400 py-8">
-        <LoaderCircle size={18} className="animate-spin" />
+        <LoaderCircle size={18} aria-hidden="true" className="animate-spin" />
         Carregando opções…
+      </div>
+    );
+  }
+
+  // Antes só existia o ramo de carregamento, e a condição era
+  // `loading || loading || !options`. Quando uma das queries falhava, `isLoading`
+  // virava false mas `options` seguia undefined — e a seção ficava girando
+  // "Carregando opções…" para sempre, sem erro e sem saída. Reproduzido com a
+  // sessão expirada: 403 nas duas chamadas, spinner eterno.
+  //
+  // A falha de `profile` também para aqui, e não é excesso de zelo: o
+  // CareerForm cai em EMPTY_PROFILE_FORM quando `profile` é undefined, então
+  // renderizar mesmo assim mostraria um formulário vazio a quem TEM perfil
+  // salvo — e `formToRequest` de um form vazio manda tudo null. Um clique em
+  // "Salvar perfil" apagaria o perfil por causa de uma leitura que falhou.
+  if (optionsError || profileError || !options) {
+    return (
+      <div className="flex flex-col items-center gap-4 py-8 text-center">
+        <p className="text-sm text-slate-400">
+          Não foi possível carregar seu perfil profissional agora.
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            void refetchOptions();
+            void refetchProfile();
+          }}
+          className="flex h-11 cursor-pointer items-center justify-center rounded-control border
+                     border-hairline-strong px-5 text-sm text-slate-300 transition-all
+                     hover:border-slate-500 hover:text-white
+                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60"
+        >
+          Tentar de novo
+        </button>
       </div>
     );
   }
@@ -275,7 +340,7 @@ export default function SettingsAuthPage() {
 
   return (
     <motion.div
-      className="@container/page relative overflow-x-clip flex flex-col gap-section max-w-3xl mx-auto w-full pb-12"
+      className="@container/page relative overflow-x-clip max-w-3xl mx-auto w-full pb-12"
       variants={container}
       initial="hidden"
       animate="show"
@@ -294,10 +359,36 @@ export default function SettingsAuthPage() {
           transbordo horizontal) ou reconstruir o brilho dentro dos limites do
           container. Um slate-900 a 50% sobre slate-950 quase nao aparece
           quando bem posicionado — o efeito nao paga o proprio custo. */}
-      <motion.div variants={item} className="relative z-10">
+      {/* ── Casco da página ──────────────────────────────────────────────────
+          A tela era quatro cards soltos separados por `gap-section` (40→64px),
+          e nada dizia que pertenciam ao mesmo lugar: cada um tinha sombra
+          projetada própria e o mesmo raio, então liam como quatro páginas
+          empilhadas.
+
+          O casco resolve por três sinais somados, e não só pela moldura:
+            1. RAIO  — casco em `rounded-panel` (1rem), seções em `rounded-card`
+                       (0,75rem). Raio de dentro menor que o de fora é o que o
+                       olho lê como encaixe;
+            2. SOMBRA — só o casco projeta. As seções perderam a delas: sombra
+                       projetada diz "estou acima de você", que é o oposto;
+            3. RITMO — o intervalo entre seções caiu de `gap-section` para
+                       `gap-6`, porque distância grande separa, distância curta
+                       agrupa.
+
+          O título entra DENTRO, e não fora. Você deixou em aberto; escolhi
+          incluir porque um casco que começa abaixo do h1 é uma caixa sem nome —
+          com o título dentro, o objeto na tela é "a página de Configurações",
+          e a régua abaixo dele separa cabeçalho de conteúdo.
+
+          Sem `overflow-hidden` aqui, pelo mesmo motivo da seção: os selects
+          abrem painel absoluto. */}
+      <div className="flex flex-col gap-6 rounded-panel border border-hairline-strong bg-surface-1 backdrop-blur-md shadow-panel p-card">
+      <motion.div variants={item} className="relative z-10 border-b border-hairline pb-6">
         <div className="flex items-center gap-3 mb-2">
           <div className="h-px flex-1 bg-linear-to-r from-slate-700 to-transparent" />
-          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-600">
+          {/* slate-400, nao slate-600: em 10px o slate-600 dava 2,67:1 sobre o
+              casco — reprova o AA com folga. */}
+          <span className="text-eyebrow font-semibold uppercase tracking-[0.2em] text-slate-400">
             Preferências
           </span>
           <div className="h-px flex-1 bg-linear-to-l from-slate-700 to-transparent" />
@@ -311,7 +402,7 @@ export default function SettingsAuthPage() {
         <h1 className="text-display font-bold bg-linear-to-b from-white to-slate-400 bg-clip-text text-transparent pb-[0.15em]">
           Configurações da Conta
         </h1>
-        <p className="text-slate-500 text-sm mt-2">
+        <p className="text-slate-400 text-sm mt-2">
           Gerencie suas informações pessoais e a segurança da sua conta.
         </p>
       </motion.div>
@@ -319,7 +410,18 @@ export default function SettingsAuthPage() {
       {/* ── Menu de Navegação Rápida (Sticky) ── */}
       <motion.nav
         variants={item}
-        className="sticky top-4 z-20 grid-auto-cards gap-3 bg-slate-950/70 backdrop-blur-xl border border-slate-800/60 rounded-panel p-3 shadow-panel-sm [--card-min:12rem]"
+        // rounded-card e nao rounded-panel, e sem sombra propria: dentro do
+        // casco o menu e mais um elemento subordinado. bg-inset no lugar de
+        // slate-950/70 porque preto translucido recua sobre qualquer fundo,
+        // enquanto o slate fixava um azul que so casava com o antigo.
+        // --card-min subiu de 12rem para 16rem, e o resultado no desktop e um
+        // 2x2. Dentro do casco sobram ~718px, e as tres alternativas eram:
+        // 12rem quebrava em 3+1 (linha orfa, parece desalinhado), 10rem punha
+        // os quatro numa linha so mas truncava os rotulos ("Perfil e Identi…"),
+        // e 16rem da duas colunas cheias. Truncar o rotulo de um controle de
+        // navegacao custa mais que uma linha a mais, e um 2x2 le como decisao,
+        // enquanto 3+1 le como sobra.
+        className="sticky top-4 z-20 grid-auto-cards gap-3 bg-inset backdrop-blur-xl border border-hairline rounded-card p-3 [--card-min:16rem]"
       >
         {quickNavItems.map((navItem) => (
           <button
@@ -496,6 +598,7 @@ export default function SettingsAuthPage() {
             </div>
           </form>
         </SettingsSection>
+      </div>
       </div>
     </motion.div>
   );

@@ -43,8 +43,13 @@ export function FormField({
         onChange={onChange}
         disabled={disabled}
       />
+      {/* slate-400, e nao slate-600. O 600 dava ~2,6:1 sobre as superficies
+          escuras onde este campo vive (painel de settings e telas de auth) —
+          bem abaixo dos 4,5 do AA para 12px, e a dica e justamente o texto que
+          explica a regra do campo. O 400 leva a ~6,8:1 e preserva a hierarquia:
+          segue mais apagada que o rotulo, que e slate-300. */}
       {hint && (
-        <p className="text-slate-600 text-xs ml-0.5">{hint}</p>
+        <p className="text-slate-400 text-xs ml-0.5">{hint}</p>
       )}
     </div>
   );
