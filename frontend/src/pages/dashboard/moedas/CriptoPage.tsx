@@ -159,7 +159,7 @@ export default function CriptoPage() {
       <motion.div 
         variants={item} 
         // Retiramos o p-6 daqui e usamos flex-col/row direto na raiz para as "metades" ocuparem tudo
-        className="relative overflow-hidden rounded-card border-3 border-blue-500 flex flex-col @3xl/page:flex-row min-h-50 float-card border-b-3 group"
+        className="relative overflow-hidden rounded-panel border border-white/10 flex flex-col @3xl/page:flex-row min-h-50 float-card group"
       >
         {/* Fundo da imagem global */}
         {bannerImage ? (
@@ -172,7 +172,7 @@ export default function CriptoPage() {
             <div className="absolute inset-0 bg-linear-to-r from-slate-950/95 via-slate-900/80 to-slate-900/30" />
           </div>
         ) : (
-          <div className="absolute inset-0 z-0 bg-slate-900 pointer-events-none" />
+          <div className="absolute inset-0 z-0 bg-surface-3 pointer-events-none" />
         )}
 
         {/* Metade Esquerda: Títulos (com padding interno próprio) */}
@@ -188,7 +188,7 @@ export default function CriptoPage() {
             <div
               role="group"
               aria-label="Fonte de dados"
-              className="inline-flex rounded-lg border border-slate-600/70 bg-slate-950/70 p-1 backdrop-blur-sm"
+              className="inline-flex rounded-control border border-white/10 bg-inset p-1 backdrop-blur-sm"
             >
               {(Object.keys(SOURCE_LABEL) as CryptoSource[]).map((key) => {
                 const active = source === key;
@@ -202,7 +202,7 @@ export default function CriptoPage() {
                       focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400
                       ${active
                         ? 'bg-yellow-400 text-slate-900 shadow-sm'
-                        : 'text-slate-300 hover:text-white hover:bg-slate-800/70'}`}
+                        : 'text-slate-300 hover:text-white hover:bg-white/10'}`}
                   >
                     {SOURCE_LABEL[key]}
                   </button>
@@ -219,8 +219,8 @@ export default function CriptoPage() {
         </div>
 
         {/* Metade Direita: Card de Busca (Colado no topo, base e direita) */}
-        <div className="relative z-10 w-full @3xl/page:w-80 @5xl/page:w-96 bg-slate-950/60 backdrop-blur-sm border-t @3xl/page:border-t-0 @3xl/page:border-l
-                         border-slate-500/30 p-card flex flex-col justify-center gap-3 shrink-0 ">
+        <div className="relative z-10 w-full @3xl/page:w-80 @5xl/page:w-96 bg-inset backdrop-blur-sm border-t @3xl/page:border-t-0 @3xl/page:border-l
+                         border-white/10 p-card flex flex-col justify-center gap-3 shrink-0 ">
           <h2 className="text-yellow-400 font-semibold text-xs uppercase tracking-wider">Buscar por Nome</h2>
           <div className="relative">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white" />
@@ -256,7 +256,7 @@ export default function CriptoPage() {
             <motion.div
               initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="flex justify-between items-center bg-cyan-950 rounded-md px-3 py-2 border border-slate-500 mt-1"
+              className="flex justify-between items-center bg-surface-2 rounded-md px-3 py-2 border border-white/10 mt-1"
             >
               <span className="text-white font-medium text-xs uppercase tracking-wider">{searchResult.label}</span>
               <span className="text-green-400 font-mono font-bold text-sm">
@@ -288,7 +288,7 @@ export default function CriptoPage() {
           <h2 className="text-yellow-500 font-semibold text-sm uppercase tracking-wider">
             Top 100 por Market Cap
           </h2>
-          <span className="text-[11px] font-medium text-slate-400 border border-slate-700 rounded-full px-2.5 py-1">
+          <span className="text-[11px] font-medium text-slate-400 border border-white/10 rounded-full px-2.5 py-1">
             fonte: {SOURCE_LABEL[source]}
           </span>
         </div>
