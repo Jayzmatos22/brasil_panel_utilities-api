@@ -223,17 +223,23 @@ export default function CriptoPage() {
                          border-slate-500/30 p-card flex flex-col justify-center gap-3 shrink-0 ">
           <h2 className="text-yellow-400 font-semibold text-xs uppercase tracking-wider">Buscar por Nome</h2>
           <div className="relative">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-900" />
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white" />
             <input
               value={search}
               onChange={(e: ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
               placeholder="Ex: bitcoin, ethereum..."
-              /* `bg-slate-900/80` estava aqui junto com `bg-white`: duas utilities de
-                 background na mesma classe. O branco vencia, então o slate era código
-                 morto — removido sem mudança visual. O campo continua claro de
-                 propósito? É o único input claro do painel; ver nota na revisão. */
-              className="w-full h-9 coarse:min-h-11 pl-9 pr-3 rounded-md bg-white text-black border border-slate-700
-                         placeholder-slate-500 outline-none focus:ring-2 focus:ring-yellow-500 transition-all text-sm"
+              /* `bg-black`, e nao `bg-black-950`: a paleta `black` do Tailwind e
+                 cor unica, sem escala numerica, entao `black-950` nao gera regra
+                 nenhuma. Sem regra, vale o preflight do Tailwind v4
+                 (`input { background-color: transparent }`) e o campo virava uma
+                 janela para o card de busca — dai o aspecto suavizado, que era o
+                 `bg-slate-950/60` + `backdrop-blur-sm` do pai aparecendo, e nao
+                 um preto lavado.
+
+                 placeholder-slate-400 e nao -500: sobre preto o 500 da 4,0:1 e
+                 reprova o AA; o 400 da 7,3:1. */
+              className="w-full h-9 coarse:min-h-11 pl-9 pr-3 bg-black rounded-md text-white border border-slate-700
+                         placeholder-slate-400 outline-none focus:ring-2 focus:ring-yellow-500 transition-all text-sm"
             />
           </div>
           
@@ -266,7 +272,18 @@ export default function CriptoPage() {
       </motion.div>
 
       {/* Top 100 */}
-      <motion.div variants={item} whileHover={{ y: -4 }} className="bg-slate-900 border border-slate-700 rounded-xl p-5">
+      {/* bg-surface-2 no lugar de bg-slate-900: o slate-900 (#0f172a) era mais
+          CLARO que a propria pagina (#020202 do .bg-smoke-abyss) e puxava para o
+          azul, entao o card flutuava como uma lamina azulada em vez de assentar.
+          O overlay branco a 3% compoe sobre o fundo real e da ~#0a0a0a — mais
+          escuro, neutro, e ainda assim uma superficie distinta. E o material que
+          ChartPanel e IbgePage ja usam. */}
+      <motion.div
+        variants={item}
+        whileHover={{ y: -4 }}
+        className="bg-surface-2 border border-hairline-strong backdrop-blur-md
+                   rounded-panel p-card shadow-panel"
+      >
         <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
           <h2 className="text-yellow-500 font-semibold text-sm uppercase tracking-wider">
             Top 100 por Market Cap
@@ -295,8 +312,14 @@ export default function CriptoPage() {
           <ScrollHint label="Arraste para o lado para ver todas as colunas">
             <table className="w-full min-w-3xl text-sm ">
               <thead>
-                <tr className="border-b-2 border-white/20 rounded-lg bg-slate-950">
-                  <th className="text-left py-2 px-3 text-slate-500 font-medium">#</th>
+                {/* bg-inset (preto a 20%) em vez de bg-slate-950: o cabecalho
+                    recua em relacao ao card, e preto translucido escurece seja
+                    qual for o fundo — o slate-950 fixava um azul que so casava
+                    com a superficie antiga. */}
+                <tr className="border-b-2 border-hairline-strong bg-inset">
+                  {/* slate-400 e nao -500: medido em 4,23:1 sobre o bg-inset do
+                      cabecalho, abaixo dos 4,5 do AA. O 400 leva a 7,6:1. */}
+                  <th className="text-left py-2 px-3 text-slate-400 font-medium">#</th>
                   <th className="text-left py-2 px-3 text-blue-500 font-medium">Moeda</th>
                   <th className="text-right py-2 px-3 text-green-500 font-medium">Preço (BRL)</th>
                   <th className="text-right py-2 px-3 text-red-500 font-medium">Market Cap</th>
@@ -311,13 +334,13 @@ export default function CriptoPage() {
                   const up = hasPriceChange && coin.priceChange24h >= 0;
 
                   return (
-                    <tr key={coin.key} className="border-b border-slate-800 hover:bg-slate-800 transition-colors">
-                      <td className="py-2 px-3 text-slate-500">{i + 1}</td>
+                    <tr key={coin.key} className="border-b border-hairline hover:bg-surface-3 transition-colors">
+                      <td className="py-2 px-3 text-slate-400">{i + 1}</td>
                       <td className="py-2 px-3">
                         <div className="flex items-center gap-2">
                           <img src={coin.imageUrl} alt={coin.name} className="w-5 h-5 rounded-full" />
                           <span className="text-white font-medium">{coin.name}</span>
-                          <span className="text-slate-500 uppercase tracking-wider">{coin.symbol}</span>
+                          <span className="text-slate-400 uppercase tracking-wider">{coin.symbol}</span>
                         </div>
                       </td>
                       <td className="py-2 px-3 text-right font-mono text-white">{brl(coin.currentPrice)}</td>
@@ -369,57 +392,88 @@ export default function CriptoPage() {
         )}
       </motion.div>
 
-      {/* Comparativos (24h) */}
+      {/* Comparativos (24h)
+
+          Os tres cards abaixo eram bg-white. Nao era so questao de tema: o
+          chartTheme do projeto ja e escuro (rotulo #94a3b8, grade #1e293b), e
+          sobre branco isso da 2,9:1 — reprova o AA. Os graficos estavam
+          ilegiveis, e escurecer o card e o que os conserta.
+
+          Por consequencia as cores de barra sobem de tom. O 600 (#16a34a,
+          #dc2626, #2563eb) foi escolhido para fundo claro e some no escuro; o
+          500 e o que a pagina ja usa como acento e o que IbgePage passa aqui.
+
+          O grafico fica num poco `bg-inset` dentro do card, como em
+          IbgePage.tsx:438 — o recuo separa o desenho da moldura. */}
       <motion.div variants={item} className="grid-auto-cards gap-4 [--card-min:20rem]">
         {/* Card: Maiores Altas */}
-        <motion.div whileHover={{ y: -4 }} className="bg-white/85 border border-slate-200 shadow-sm rounded-xl p-5 flex flex-col gap-4">
+        <motion.div
+          whileHover={{ y: -4 }}
+          className="bg-surface-2 border border-hairline-strong backdrop-blur-md shadow-panel
+                     rounded-panel p-card flex flex-col gap-4"
+        >
           <div className="flex items-center gap-2">
-            <span className="text-green-600"><TrendingUp size={15} /></span>
-            <h2 className="text-green-600 font-semibold text-sm uppercase tracking-wider">Maiores altas (24h)</h2>
+            <span className="text-green-400"><TrendingUp size={15} /></span>
+            <h2 className="text-green-400 font-semibold text-sm uppercase tracking-wider">Maiores altas (24h)</h2>
           </div>
           {loadingMarket ? (
-            <div className="flex items-center gap-2 text-slate-500 text-sm">
+            <div className="flex items-center gap-2 text-slate-400 text-sm">
               <LoaderCircle size={16} className="animate-spin" /> Carregando...
             </div>
           ) : gainers.length ? (
-            <BarChartEcharts items={gainers} color="#16a34a" valueFormatter={pct} />
+            <div className="rounded-card overflow-hidden border border-hairline bg-inset p-2">
+              <BarChartEcharts items={gainers} color="#22c55e" valueFormatter={pct} />
+            </div>
           ) : (
-            <p className="text-slate-500 text-sm">Sem dados.</p>
+            <p className="text-slate-400 text-sm">Sem dados.</p>
           )}
         </motion.div>
 
         {/* Card: Maiores Quedas */}
-        <motion.div whileHover={{ y: -4 }} className="bg-white/85 border border-slate-200 shadow-sm rounded-xl p-5 flex flex-col gap-4">
+        <motion.div
+          whileHover={{ y: -4 }}
+          className="bg-surface-2 border border-hairline-strong backdrop-blur-md shadow-panel
+                     rounded-panel p-card flex flex-col gap-4"
+        >
           <div className="flex items-center gap-2">
-            <span className="text-red-600"><TrendingDown size={15} /></span>
-            <h2 className="text-red-700 font-semibold text-sm uppercase tracking-wider">Maiores quedas (24h)</h2>
+            <span className="text-red-400"><TrendingDown size={15} /></span>
+            <h2 className="text-red-400 font-semibold text-sm uppercase tracking-wider">Maiores quedas (24h)</h2>
           </div>
           {loadingMarket ? (
-            <div className="flex items-center gap-2 text-slate-500 text-sm">
+            <div className="flex items-center gap-2 text-slate-400 text-sm">
               <LoaderCircle size={16} className="animate-spin" /> Carregando...
             </div>
           ) : losers.length ? (
-            <BarChartEcharts items={losers} color="#dc2626" valueFormatter={pct} />
+            <div className="rounded-card overflow-hidden border border-hairline bg-inset p-2">
+              <BarChartEcharts items={losers} color="#ef4444" valueFormatter={pct} />
+            </div>
           ) : (
-            <p className="text-slate-500 text-sm">Sem dados.</p>
+            <p className="text-slate-400 text-sm">Sem dados.</p>
           )}
         </motion.div>
       </motion.div>
 
       {/* Card: Top 10 por market cap */}
-      <motion.div variants={item} whileHover={{ y: -4 }} className="bg-white border border-slate-200 shadow-sm rounded-xl p-5 flex flex-col gap-4 mt-2">
+      <motion.div
+        variants={item}
+        whileHover={{ y: -4 }}
+        className="bg-surface-2 border border-hairline-strong backdrop-blur-md shadow-panel
+                   rounded-panel p-card flex flex-col gap-4 mt-2"
+      >
         <div className="flex items-center gap-2">
-          <span className="text-blue-600"><BarChart3 size={15} /></span>
-          <h2 className="text-blue-700 font-semibold text-sm uppercase tracking-wider">Top 10 por market cap</h2>
+          <span className="text-blue-400"><BarChart3 size={15} /></span>
+          <h2 className="text-blue-400 font-semibold text-sm uppercase tracking-wider">Top 10 por market cap</h2>
         </div>
         {loadingMarket ? (
-          <div className="flex items-center gap-2 text-slate-500 text-sm">
+          <div className="flex items-center gap-2 text-slate-400 text-sm">
             <LoaderCircle size={16} className="animate-spin" /> Carregando...
           </div>
         ) : topCap.length ? (
-          <BarChartEcharts items={topCap} color="#2563eb" valueFormatter={compact} />
+          <div className="rounded-card overflow-hidden border border-hairline bg-inset p-2">
+            <BarChartEcharts items={topCap} color="#3b82f6" valueFormatter={compact} />
+          </div>
         ) : (
-          <p className="text-slate-500 text-sm">Sem dados.</p>
+          <p className="text-slate-400 text-sm">Sem dados.</p>
         )}
       </motion.div>
     </motion.div>
