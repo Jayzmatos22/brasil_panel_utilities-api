@@ -131,6 +131,10 @@ AuthServiceTest {
             AuthResponseDTO resposta = authService.verifyEmail(new VerifyEmailRequestDTO(EMAIL, "123456"));
 
             assertThat(resposta.token()).isEqualTo("jwt-gerado");
+            // O nome viaja na resposta: é dele que o cabeçalho do painel vive.
+            // Sem isto o frontend só teria o e-mail e voltaria a exibir o trecho
+            // antes do "@" no lugar do nome.
+            assertThat(resposta.name()).isEqualTo("Usuário Teste");
             assertThat(resposta.email()).isEqualTo(EMAIL);
             assertThat(resposta.role()).isEqualTo("USER");
             assertThat(resposta.expiresInMs()).isEqualTo(EXPIRACAO_MS);
@@ -251,6 +255,7 @@ AuthServiceTest {
             AuthResponseDTO resposta = authService.loginUser(dto);
 
             assertThat(resposta.token()).isEqualTo("jwt-gerado");
+            assertThat(resposta.name()).isEqualTo("Usuário Teste");
             assertThat(resposta.email()).isEqualTo(EMAIL);
             verify(loginAttemptLimiter).reset(EMAIL);
             verify(loginAttemptLimiter, never()).recordFailure(anyString());

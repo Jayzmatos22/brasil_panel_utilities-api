@@ -40,7 +40,7 @@ export default function VerifyEmailPage() {
     mutationFn: () => authService.verifyEmail({ email, code: digits.join('') }),
     onSuccess: (res: AuthResponse) => {
       // O JWT já veio em cookie httpOnly; aqui guardamos só o hint de exibição.
-      saveSession(res.email, res.role, res.expiresInMs);
+      saveSession(res.email, res.role, res.expiresInMs, res.name);
       toast.success('E-mail verificado! Bem-vindo ao Brasil Panel.');
       // Novo usuário verificado vai ao onboarding de perfil (profissão e
       // formação). É pulável — a própria PerfilPage segue para o painel.

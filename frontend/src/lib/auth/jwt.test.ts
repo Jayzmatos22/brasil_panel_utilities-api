@@ -2,10 +2,12 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   clearSession,
   getTokenEmail,
+  getTokenName,
   getTokenRole,
   isAdmin,
   isAuthenticated,
   saveSession,
+  updateSessionName,
 } from './jwt';
 
 /**
@@ -97,6 +99,59 @@ describe('sessão do cliente', () => {
   describe('getTokenEmail', () => {
     it('devolve um rótulo genérico sem sessão', () => {
       expect(getTokenEmail()).toBe('Usuário');
+    });
+  });
+
+  /**
+   * O nome alimenta o cabeçalho do painel. A degradação em três degraus é o que
+   * permite ligar isto sem deslogar ninguém: quem já estava logado tem um hint
+   * gravado antes de o campo existir.
+   */
+  describe('getTokenName', () => {
+    it('devolve o nome quando a sessão o tem', () => {
+      saveSession('usuario@exemplo.com', 'USER', UM_DIA_MS, 'Fulano de Tal');
+
+      expect(getTokenName()).toBe('Fulano de Tal');
+      // O e-mail continua disponível para quem precisa da identidade real —
+      // AdminUsersPage compara por ele.
+      expect(getTokenEmail()).toBe('usuario@exemplo.com');
+    });
+
+    it('cai para o trecho antes do @ em sessão gravada sem nome', () => {
+      saveSession('usuario@exemplo.com', 'USER', UM_DIA_MS);
+
+      expect(getTokenName()).toBe('usuario');
+    });
+
+    it('ignora nome só de espaços e usa o e-mail', () => {
+      saveSession('usuario@exemplo.com', 'USER', UM_DIA_MS, '   ');
+
+      expect(getTokenName()).toBe('usuario');
+    });
+
+    it('devolve um rótulo genérico sem sessão', () => {
+      expect(getTokenName()).toBe('Usuário');
+    });
+  });
+
+  describe('updateSessionName', () => {
+    it('troca o nome preservando e-mail, role e expiração', () => {
+      saveSession('usuario@exemplo.com', 'ADMIN', UM_DIA_MS, 'Nome Antigo');
+      const { exp } = JSON.parse(localStorage.getItem('session')!);
+
+      updateSessionName('Nome Novo');
+
+      expect(getTokenName()).toBe('Nome Novo');
+      expect(getTokenEmail()).toBe('usuario@exemplo.com');
+      expect(getTokenRole()).toBe('ADMIN');
+      expect(JSON.parse(localStorage.getItem('session')!).exp).toBe(exp);
+    });
+
+    it('não inventa sessão quando não há nenhuma', () => {
+      updateSessionName('Nome Novo');
+
+      expect(localStorage.getItem('session')).toBeNull();
+      expect(isAuthenticated()).toBe(false);
     });
   });
 });

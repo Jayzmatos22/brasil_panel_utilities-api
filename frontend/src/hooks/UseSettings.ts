@@ -2,13 +2,18 @@
 import { useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { authService } from '../api/services/Auth';
-import { clearSession } from '../lib/auth/jwt';
+import { clearSession, updateSessionName } from '../lib/auth/jwt';
 import type { UpdateNameRequest, UpdatePasswordRequest, DeleteAccountRequest } from '../types/UserType';
 
 export function useUpdateName(onSuccess?: () => void) {
   return useMutation({
     mutationFn: (data: UpdateNameRequest) => authService.updateName(data),
-    onSuccess: () => {
+    // O hint da sessão passou a guardar o nome, porque é dele que o cabeçalho
+    // do painel vive. Sem sincronizar aqui, o cabeçalho exibiria o nome antigo
+    // até o próximo login — o toast diria "atualizado com sucesso" e a tela ao
+    // lado desmentiria.
+    onSuccess: (_res, variables) => {
+      updateSessionName(variables.name);
       toast.success('Nome atualizado com sucesso!');
       onSuccess?.();
     },

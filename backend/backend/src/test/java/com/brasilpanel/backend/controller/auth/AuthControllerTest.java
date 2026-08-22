@@ -97,7 +97,7 @@ class AuthControllerTest {
     @DisplayName("login bem-sucedido emite cookie httpOnly e não devolve o token no corpo")
     void successfulLoginEmitsHttpOnlyCookieAndHidesToken() throws Exception {
         when(authService.loginUser(any()))
-                .thenReturn(new AuthResponseDTO("jwt-secreto", EMAIL, "USER", 86_400_000L));
+                .thenReturn(new AuthResponseDTO("jwt-secreto", "Fulano de Tal", EMAIL, "USER", 86_400_000L));
 
         var resultado = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -121,7 +121,7 @@ class AuthControllerTest {
     @DisplayName("corpo da resposta não contém o JWT em lugar nenhum")
     void responseBodyNeverLeaksTheToken() throws Exception {
         when(authService.loginUser(any()))
-                .thenReturn(new AuthResponseDTO("jwt-secreto", EMAIL, "USER", 86_400_000L));
+                .thenReturn(new AuthResponseDTO("jwt-secreto", "Fulano de Tal", EMAIL, "USER", 86_400_000L));
 
         var resultado = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
