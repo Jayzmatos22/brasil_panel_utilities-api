@@ -4,6 +4,7 @@ import com.brasilpanel.backend.service.email.EmailOutboxService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -17,6 +18,11 @@ import org.springframework.stereotype.Component;
  * fila vazia — o caso normal — a rodada é uma consulta indexada que não devolve nada.
  */
 @Component
+@Profile("!test")   // dispara a cada 10s — rodaria DURANTE os testes, ao contrário
+                    // dos demais schedulers, que usam cron em horário fixo. Além do
+                    // ruído, tornava a cobertura não-determinística: em execução
+                    // lenta a rodada acontecia e contava, em execução rápida não.
+                    // A lógica é coberta diretamente por EmailOutboxSchedulerTest.
 @RequiredArgsConstructor
 @Slf4j
 public class EmailOutboxScheduler {
