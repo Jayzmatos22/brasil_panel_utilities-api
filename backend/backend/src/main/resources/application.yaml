@@ -87,7 +87,12 @@ app:
     enabled: ${RATE_LIMIT_ENABLED:true}
     requests-per-minute: ${RATE_LIMIT_RPM:120}
     emails-per-hour: ${RATE_LIMIT_EMAILS_PER_HOUR:5}
-    emails-per-hour-global: ${RATE_LIMIT_EMAILS_GLOBAL:60}
+    # Janela DIÁRIA, não horária: é assim que a cota do provedor é expressa. O plano
+    # gratuito do Resend permite 3.000 e-mails/mês com teto de 100/DIA, e é o diário
+    # que morde primeiro. O valor anterior (60/hora) admitia 1.440/dia — 14x o teto
+    # do provedor, ou seja, um pico estouraria a cota e os envios passariam a ser
+    # recusados. 80/dia deixa margem e segue ordens de grandeza acima do uso real.
+    emails-per-day-global: ${RATE_LIMIT_EMAILS_GLOBAL:80}
 
   # ── Cookie de sessão ───────────────────────────────────────────────────────
   # secure=true exige HTTPS. Deve ser true em produção e false em dev (localhost).
@@ -118,8 +123,22 @@ app:
 
   # Remetente dos e-mails — sobrescrito em application-dev.yml / env vars
   mail:
+    # ATENÇÃO: o default é o remetente de sandbox do Resend, que só entrega para o
+    # e-mail da própria conta. Em produção, com ele, nenhum usuário real recebe o
+    # código. Defina MAIL_FROM_ADDRESS com um endereço do domínio verificado.
     from-address: ${MAIL_FROM_ADDRESS:onboarding@resend.dev}
     from-name:    ${MAIL_FROM_NAME:Brasil Panel}
+
+    # ── Fila de envio (outbox) ─────────────────────────────────────────────
+    # O envio sai da thread da requisição e passa por uma tabela, drenada pelo
+    # EmailOutboxScheduler. Ver V4__email_outbox.sql para o porquê.
+    outbox:
+      drain-interval-ms: ${MAIL_OUTBOX_DRAIN_MS:10000}
+      max-attempts:      ${MAIL_OUTBOX_MAX_ATTEMPTS:5}
+      retry-backoff:     ${MAIL_OUTBOX_BACKOFF:PT1M}
+      retention:
+        sent-days:   ${MAIL_OUTBOX_RETENTION_SENT:3}
+        failed-days: ${MAIL_OUTBOX_RETENTION_FAILED:30}
 
 # ── Springdoc — desabilitado por padrão; ativado apenas no perfil dev ────────
 springdoc:

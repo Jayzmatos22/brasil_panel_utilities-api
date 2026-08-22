@@ -32,6 +32,13 @@ spring:
           starttls:
             enable: true
             required: true
+          # Os três timeouts do JavaMail são INFINITOS por padrão, e o Spring Boot
+          # não os preenche. Um SMTP que aceita a conexão e não responde prendia a
+          # thread do scheduler para sempre — o mesmo risco que o WebConfig já cobre
+          # para as APIs externas, e que o caminho de e-mail não tinha.
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
 
 alpha-vantage:
   keys: ${ALPHA_KEYS}

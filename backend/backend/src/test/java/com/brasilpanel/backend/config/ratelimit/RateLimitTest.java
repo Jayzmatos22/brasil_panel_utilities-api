@@ -23,6 +23,7 @@ class RateLimitTest {
         return new ApiRateLimiter(new RateLimitProperties(enabled, rpm, 10_000, 1_000, 1_000));
     }
 
+    /** @param global teto DIÁRIO da instância; @param porCliente teto horário por cliente */
     private static ApiRateLimiter emailLimiter(int porCliente, int global) {
         return new ApiRateLimiter(new RateLimitProperties(true, 10_000, 10_000, porCliente, global));
     }
@@ -253,10 +254,12 @@ class RateLimitTest {
         /**
          * O X-Forwarded-For é forjável nesta topologia, então o teto por cliente sozinho
          * não segura quem varia o header a cada requisição — e é a cota do provedor de
-         * e-mail que está em jogo. O teto global não depende de identidade nenhuma.
+         * e-mail que está em jogo. O teto global não depende de identidade nenhuma, e
+         * usa janela DIÁRIA porque é assim que a cota do provedor é expressa (o plano
+         * gratuito do Resend limita a 100 e-mails/dia).
          */
         @Test
-        @DisplayName("teto global segura quem troca de X-Forwarded-For a cada requisição")
+        @DisplayName("teto global diário segura quem troca de X-Forwarded-For a cada requisição")
         void tetoGlobal_naoDependeDeIdentidade() throws Exception {
             RateLimitFilter filter = new RateLimitFilter(emailLimiter(1_000, 3));
             FilterChain chain = mock(FilterChain.class);

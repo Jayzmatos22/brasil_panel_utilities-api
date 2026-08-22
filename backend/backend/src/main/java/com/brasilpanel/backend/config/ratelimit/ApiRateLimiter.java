@@ -33,6 +33,13 @@ public class ApiRateLimiter {
     private static final Duration WINDOW = Duration.ofMinutes(1);
     private static final Duration EMAIL_WINDOW = Duration.ofHours(1);
 
+    /**
+     * O teto global usa janela de um DIA, e não a mesma hora do teto por cliente,
+     * porque ele existe para não estourar a cota do provedor de e-mail — e cota de
+     * provedor é diária. Ver RateLimitProperties#emailsPerDayGlobal.
+     */
+    private static final Duration EMAIL_GLOBAL_WINDOW = Duration.ofDays(1);
+
     /** Chave única do contador global: não é um cliente, é a instância inteira. */
     private static final String GLOBAL_KEY = "__global__";
 
@@ -58,7 +65,7 @@ public class ApiRateLimiter {
                 .maximumSize(properties.maxTrackedClients())
                 .build();
         this.emailHitsGlobal = Caffeine.newBuilder()
-                .expireAfterWrite(EMAIL_WINDOW)
+                .expireAfterWrite(EMAIL_GLOBAL_WINDOW)
                 .maximumSize(1)
                 .build();
     }
@@ -94,7 +101,7 @@ public class ApiRateLimiter {
         }
         // Global primeiro: uma vez estourado, nem vale sujar o contador por cliente.
         int global = emailHitsGlobal.get(GLOBAL_KEY, k -> new AtomicInteger()).incrementAndGet();
-        if (global > properties.emailsPerHourGlobal()) {
+        if (global > properties.emailsPerDayGlobal()) {
             return false;
         }
         int hits = emailHitsByClient.asMap().merge(key(clientId), 1, Integer::sum);

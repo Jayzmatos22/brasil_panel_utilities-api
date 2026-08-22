@@ -7,7 +7,7 @@ import com.brasilpanel.backend.mappers.UserMapper;
 import com.brasilpanel.backend.model.Role;
 import com.brasilpanel.backend.model.UserEntity;
 import com.brasilpanel.backend.repository.user.UserRepository;
-import com.brasilpanel.backend.service.email.EmailService;
+import com.brasilpanel.backend.service.email.EmailOutboxService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -45,7 +45,7 @@ AuthServiceTest {
     @Mock private JwtService jwtService;
     @Mock private AuthenticationManager authenticationManager;
     @Mock private UserMapper userMapper;
-    @Mock private EmailService emailService;
+    @Mock private EmailOutboxService emailOutbox;
     @Mock private LoginAttemptLimiter loginAttemptLimiter;
 
     @InjectMocks
@@ -81,7 +81,7 @@ AuthServiceTest {
                     .hasMessageNotContainingAny("já cadastrado", "já existe");
 
             verify(userRepository, never()).save(any());
-            verify(emailService, never()).sendVerificationCode(anyString(), anyString());
+            verify(emailOutbox, never()).enqueueVerificationCode(anyString());
         }
 
         @Test
@@ -95,9 +95,43 @@ AuthServiceTest {
 
             assertThat(resposta.message()).contains(EMAIL);
             verify(userRepository).save(any(UserEntity.class));
-            verify(emailService).sendVerificationCode(eq(EMAIL), anyString());
+            verify(emailOutbox).enqueueVerificationCode(EMAIL);
             // A senha nunca é persistida em texto puro.
             verify(passwordEncoder).encode(SENHA);
+        }
+
+        /**
+         * Regressão do trava-cadastro: o usuário é salvo ANTES do e-mail sair, então
+         * uma falha de envio deixava a conta criada e não verificada. A tentativa
+         * seguinte batia na recusa por e-mail duplicado, e a tela de verificação só é
+         * alcançável pela navegação de um cadastro bem-sucedido — a pessoa ficava sem
+         * caminho nenhum pela interface.
+         */
+        @Test
+        @DisplayName("cadastro pendente com o mesmo e-mail reemite o código em vez de recusar")
+        void pendingRegistrationIsReissued() {
+            var pendente = UserEntity.builder()
+                    .name("Nome Antigo").email(EMAIL).password("hash-antigo")
+                    .role(Role.USER).verified(false)
+                    .verificationCode("111111")
+                    .build();
+            var dto = new UserRequestDTO("Nome Novo", EMAIL, SENHA);
+            when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(pendente));
+            when(passwordEncoder.encode(SENHA)).thenReturn("hash-novo");
+
+            RegisterResponseDTO resposta = authService.registerUser(dto);
+
+            assertThat(resposta.message()).contains(EMAIL);
+            verify(userRepository).save(pendente);
+            verify(emailOutbox).enqueueVerificationCode(EMAIL);
+
+            assertThat(pendente.getVerificationCode())
+                    .as("código novo, não o anterior")
+                    .isNotEqualTo("111111");
+            assertThat(pendente.getName()).isEqualTo("Nome Novo");
+            assertThat(pendente.getPassword())
+                    .as("a senha informada agora substitui a da tentativa anterior")
+                    .isEqualTo("hash-novo");
         }
     }
 
@@ -210,7 +244,7 @@ AuthServiceTest {
 
             authService.resendCode(new ResendCodeRequestDTO(EMAIL));
 
-            verify(emailService).sendVerificationCode(eq(EMAIL), anyString());
+            verify(emailOutbox).enqueueVerificationCode(EMAIL);
             verify(userRepository).save(naoVerificado);
         }
 
@@ -223,7 +257,7 @@ AuthServiceTest {
 
             // Sem exceção e com a mesma mensagem: o endpoint não vira oráculo de cadastro.
             assertThat(resposta.message()).contains("Se houver um cadastro pendente");
-            verify(emailService, never()).sendVerificationCode(anyString(), anyString());
+            verify(emailOutbox, never()).enqueueVerificationCode(anyString());
         }
 
         @Test
@@ -234,7 +268,7 @@ AuthServiceTest {
             var resposta = authService.resendCode(new ResendCodeRequestDTO(EMAIL));
 
             assertThat(resposta.message()).contains("Se houver um cadastro pendente");
-            verify(emailService, never()).sendVerificationCode(anyString(), anyString());
+            verify(emailOutbox, never()).enqueueVerificationCode(anyString());
             verify(userRepository, never()).save(any());
         }
     }
