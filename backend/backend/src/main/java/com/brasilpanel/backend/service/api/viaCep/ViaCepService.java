@@ -5,6 +5,7 @@ import com.brasilpanel.backend.dto.api.viaCep.ViaCepRawDTO;
 import com.brasilpanel.backend.exception.customized.ViaCepException;
 import com.brasilpanel.backend.exception.customized.ViaCepNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
@@ -15,6 +16,7 @@ import java.util.List;
 import java.util.function.Supplier;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class ViaCepService {
 
@@ -108,7 +110,11 @@ public class ViaCepService {
         try {
             return call.get();
         } catch (RestClientException e) {
-            throw new ViaCepException("Falha na comunicação com o ViaCEP: " + e.getMessage());
+            // O detalhe fica no log do servidor; o cliente recebe mensagem genérica:
+            // e.getMessage() de uma falha de transporte traz a URL da fonte, e de um
+            // 5xx traz o corpo de erro dela.
+            log.error("Falha na comunicação com o ViaCEP", e);
+            throw new ViaCepException("Não foi possível consultar o ViaCEP.");
         }
     }
 
