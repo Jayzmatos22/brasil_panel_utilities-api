@@ -18,8 +18,13 @@ class RateLimitTest {
     private static final String IP_A = "203.0.113.7";
     private static final String IP_B = "198.51.100.4";
 
+    /** Tetos de e-mail folgados: os testes desta fábrica exercitam só as rotas de dados. */
     private static ApiRateLimiter limiter(int rpm, boolean enabled) {
-        return new ApiRateLimiter(new RateLimitProperties(enabled, rpm, 10_000));
+        return new ApiRateLimiter(new RateLimitProperties(enabled, rpm, 10_000, 1_000, 1_000));
+    }
+
+    private static ApiRateLimiter emailLimiter(int porCliente, int global) {
+        return new ApiRateLimiter(new RateLimitProperties(true, 10_000, 10_000, porCliente, global));
     }
 
     @Nested
@@ -77,9 +82,18 @@ class RateLimitTest {
         @DisplayName("configuração inválida é rejeitada na construção")
         void configuracaoInvalida_falhaRapido() {
             org.assertj.core.api.Assertions
-                    .assertThatThrownBy(() -> new RateLimitProperties(true, 0, 10))
+                    .assertThatThrownBy(() -> new RateLimitProperties(true, 0, 10, 5, 60))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("requests-per-minute");
+        }
+
+        @Test
+        @DisplayName("teto de e-mail inválido também é rejeitado na construção")
+        void tetoDeEmailInvalido_falhaRapido() {
+            org.assertj.core.api.Assertions
+                    .assertThatThrownBy(() -> new RateLimitProperties(true, 120, 10, 0, 60))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("emails-per-hour");
         }
     }
 
@@ -184,6 +198,111 @@ class RateLimitTest {
                     mock(FilterChain.class));
 
             assertThat(limiter.currentHits("10.0.0.1")).isEqualTo(1);
+        }
+    }
+
+    /**
+     * As rotas que disparam e-mail ficavam só sob o teto genérico de 120/min — 120
+     * mensagens por minuto para endereços de terceiros a partir de um cliente só.
+     */
+    @Nested
+    @DisplayName("Rotas que disparam e-mail")
+    class Email {
+
+        private MockHttpServletRequest post(String uri, String forwardedFor) {
+            MockHttpServletRequest req = new MockHttpServletRequest("POST", uri);
+            req.setRequestURI(uri);
+            req.setRemoteAddr("10.0.0.1");
+            req.addHeader("X-Forwarded-For", forwardedFor);
+            return req;
+        }
+
+        @Test
+        @DisplayName("/register estoura no teto por cliente, com Retry-After de uma hora")
+        void register_estouraNoTetoPorCliente() throws Exception {
+            RateLimitFilter filter = new RateLimitFilter(emailLimiter(2, 100));
+            FilterChain chain = mock(FilterChain.class);
+
+            filter.doFilter(post("/api/auth/register", IP_A), new MockHttpServletResponse(), chain);
+            filter.doFilter(post("/api/auth/register", IP_A), new MockHttpServletResponse(), chain);
+
+            MockHttpServletResponse bloqueada = new MockHttpServletResponse();
+            filter.doFilter(post("/api/auth/register", IP_A), bloqueada, chain);
+
+            assertThat(bloqueada.getStatus()).isEqualTo(429);
+            assertThat(bloqueada.getHeader("Retry-After")).isEqualTo("3600");
+            assertThat(bloqueada.getContentAsString()).contains("solicitações de e-mail");
+            verify(chain, times(2)).doFilter(any(), any());
+        }
+
+        @Test
+        @DisplayName("/resend-code compartilha o mesmo teto do /register")
+        void resendCode_temOMesmoTeto() throws Exception {
+            RateLimitFilter filter = new RateLimitFilter(emailLimiter(1, 100));
+            FilterChain chain = mock(FilterChain.class);
+
+            filter.doFilter(post("/api/auth/register", IP_A), new MockHttpServletResponse(), chain);
+
+            MockHttpServletResponse bloqueada = new MockHttpServletResponse();
+            filter.doFilter(post("/api/auth/resend-code", IP_A), bloqueada, chain);
+
+            assertThat(bloqueada.getStatus()).isEqualTo(429);
+            verify(chain, times(1)).doFilter(any(), any());
+        }
+
+        /**
+         * O X-Forwarded-For é forjável nesta topologia, então o teto por cliente sozinho
+         * não segura quem varia o header a cada requisição — e é a cota do provedor de
+         * e-mail que está em jogo. O teto global não depende de identidade nenhuma.
+         */
+        @Test
+        @DisplayName("teto global segura quem troca de X-Forwarded-For a cada requisição")
+        void tetoGlobal_naoDependeDeIdentidade() throws Exception {
+            RateLimitFilter filter = new RateLimitFilter(emailLimiter(1_000, 3));
+            FilterChain chain = mock(FilterChain.class);
+
+            for (int i = 0; i < 3; i++) {
+                filter.doFilter(post("/api/auth/register", "203.0.113." + i),
+                        new MockHttpServletResponse(), chain);
+            }
+
+            MockHttpServletResponse bloqueada = new MockHttpServletResponse();
+            filter.doFilter(post("/api/auth/register", "203.0.113.99"), bloqueada, chain);
+
+            assertThat(bloqueada.getStatus())
+                    .as("IP novo, mas o teto global da instância já estourou")
+                    .isEqualTo(429);
+            verify(chain, times(3)).doFilter(any(), any());
+        }
+
+        @Test
+        @DisplayName("/login não entra no teto de e-mail — não envia nada")
+        void login_ficaForaDoTetoDeEmail() throws Exception {
+            RateLimitFilter filter = new RateLimitFilter(emailLimiter(1, 1));
+            FilterChain chain = mock(FilterChain.class);
+
+            for (int i = 0; i < 5; i++) {
+                filter.doFilter(post("/api/auth/login", IP_A), new MockHttpServletResponse(), chain);
+            }
+
+            verify(chain, times(5)).doFilter(any(), any());
+        }
+
+        @Test
+        @DisplayName("GET no caminho de e-mail não consome o teto de envio")
+        void metodoDiferenteDePost_naoConsome() throws Exception {
+            ApiRateLimiter limiter = emailLimiter(1, 1);
+            RateLimitFilter filter = new RateLimitFilter(limiter);
+            FilterChain chain = mock(FilterChain.class);
+
+            MockHttpServletRequest get = new MockHttpServletRequest("GET", "/api/auth/register");
+            get.setRequestURI("/api/auth/register");
+            get.addHeader("X-Forwarded-For", IP_A);
+
+            filter.doFilter(get, new MockHttpServletResponse(), chain);
+            filter.doFilter(post("/api/auth/register", IP_A), new MockHttpServletResponse(), chain);
+
+            verify(chain, times(2)).doFilter(any(), any());
         }
     }
 }
