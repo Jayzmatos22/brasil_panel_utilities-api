@@ -61,6 +61,8 @@ Exemplo (`vercel.json` na raiz do frontend):
 | `MAIL_PORT` | Não | Default `587` |
 | `MAIL_FROM_ADDRESS` | Conforme uso | Remetente exibido |
 | `MAIL_FROM_NAME` | Conforme uso | |
+| `RATE_LIMIT_EMAILS_PER_HOUR` | Não | Default `5`. Teto por cliente em `/auth/register` e `/auth/resend-code`. |
+| `RATE_LIMIT_EMAILS_GLOBAL` | Não | Default `60`. Teto da instância inteira, por hora, nas mesmas rotas. |
 | `ADMIN_EMAIL` | Opcional | |
 | `ADMIN_PASSWORD` | Opcional | Se vazio, o admin **não** é criado no seed |
 
@@ -151,6 +153,7 @@ Todas concluídas:
 | D6 | `/actuator/health` | ✅ público; demais endpoints não expostos |
 | D7 | `artifactId` sem espaços | ✅ JAR sai como `backend-0.0.1-SNAPSHOT.jar` |
 | D8 | H2 em escopo `test` | ✅ fora do JAR de produção |
+| D9 | `POST /api/admin/ipea/refresh` | 🔒 exige ROLE_ADMIN — antes respondia em `/api/ipea/refresh`, sem autenticação |
 
 ---
 
@@ -170,6 +173,7 @@ Fazer a seção 5 antes do S12 gera retrabalho: a URL da API muda quando entra o
 ## 7. Verificação pós-deploy
 
 - [ ] `GET /actuator/health` responde `200` (após D6)
+- [ ] `POST /api/ipea/refresh` (sem sessão) responde `404` e `POST /api/admin/ipea/refresh` responde `401` (após D9)
 - [ ] Login com senha correta retorna `200`
 - [ ] Login com senha errada retorna **401**, não 500
 - [ ] 6 tentativas seguidas de senha errada retornam **429**

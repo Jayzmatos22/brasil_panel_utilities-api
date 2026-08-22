@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.apache.catalina.connector.ClientAbortException;
 import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
@@ -191,6 +192,21 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<String> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
         return ResponseEntity.badRequest().body("Parâmetro inválido: '" + ex.getValue() + "' não é um número válido");
+    }
+
+
+    /**
+     * Caminho que não casa com nenhum controller.
+     *
+     * <p>Sem este handler a NoResourceFoundException caía no genérico de Exception e
+     * uma URL inexistente respondia {@code 500 Erro interno do servidor} — o cliente
+     * não conseguia distinguir "essa rota não existe" de "a API quebrou", e todo 404
+     * de digitação virava ruído de erro no log.
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<String> handleNoResourceFound(NoResourceFoundException ex) {
+        log.debug("Rota inexistente: {}", ex.getResourcePath());
+        return ResponseEntity.status(404).body("Recurso não encontrado.");
     }
 
 
