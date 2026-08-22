@@ -20,7 +20,14 @@ public class CorsConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
+        // trim() não é cosmético: "https://a.com, https://b.com" — a grafia natural
+        // de uma env var — produzia " https://b.com" com espaço à esquerda, que nunca
+        // casa com o header Origin. A segunda origem simplesmente não funcionava, sem
+        // erro nenhum no boot.
+        config.setAllowedOrigins(Arrays.stream(allowedOrigins.split(","))
+                .map(String::trim)
+                .filter(origin -> !origin.isEmpty())
+                .toList());
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
