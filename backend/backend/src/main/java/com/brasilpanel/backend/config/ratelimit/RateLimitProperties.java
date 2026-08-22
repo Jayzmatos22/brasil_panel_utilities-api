@@ -11,7 +11,7 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
  * @param maxTrackedClients    teto de IPs rastreados — limita o consumo de memória
  *                             do próprio limitador, que senão viraria o alvo do abuso
  * @param emailsPerHour        teto por cliente, por hora, nas rotas que disparam e-mail
- * @param emailsPerHourGlobal  teto da instância inteira, por hora, nas rotas que disparam
+ * @param emailsPerDayGlobal   teto da instância inteira, por DIA, nas rotas que disparam
  *                             e-mail — ver {@link ApiRateLimiter#tryConsumeEmail}
  */
 @ConfigurationProperties("app.rate-limit")
@@ -29,15 +29,16 @@ public record RateLimitProperties(
         // folgado para alguém que errou o e-mail e tentou de novo.
         @DefaultValue("5") int emailsPerHour,
 
-        // Margem para o uso legítimo de uma instância inteira sem deixar a cota do
-        // provedor de e-mail exposta a um laço.
-        @DefaultValue("60") int emailsPerHourGlobal
+        // Janela diária porque é assim que a cota do provedor é expressa: o plano
+        // gratuito do Resend dá 3.000/mês com teto de 100/DIA, e é o diário que morde
+        // primeiro. 80 deixa margem sob esse teto e segue muito acima do uso real.
+        @DefaultValue("80") int emailsPerDayGlobal
 ) {
 
     public RateLimitProperties {
         requirePositive("requests-per-minute", requestsPerMinute);
         requirePositive("emails-per-hour", emailsPerHour);
-        requirePositive("emails-per-hour-global", emailsPerHourGlobal);
+        requirePositive("emails-per-day-global", emailsPerDayGlobal);
         if (maxTrackedClients <= 0) {
             throw new IllegalArgumentException(
                     "app.rate-limit.max-tracked-clients deve ser maior que zero (recebido: "
