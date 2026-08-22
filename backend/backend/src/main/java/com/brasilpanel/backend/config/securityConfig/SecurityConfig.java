@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -15,6 +16,8 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.AuthenticationEntryPoint;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -110,6 +113,14 @@ public class SecurityConfig {
 
                     auth.anyRequest().authenticated();
                 })
+                // Sem entry point explícito o Spring Security cai no
+                // Http403ForbiddenEntryPoint, e requisição anônima em rota protegida
+                // virava 403. O interceptor do frontend só redireciona para o login
+                // em 401 (Client.ts), então a sessão expirada travava numa mensagem
+                // de erro genérica em vez de mandar o usuário relogar.
+                .exceptionHandling(handling ->
+                        handling.authenticationEntryPoint(unauthorizedEntryPoint())
+                )
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
@@ -118,6 +129,17 @@ public class SecurityConfig {
         rateLimitFilter.ifAvailable(filter -> http.addFilterBefore(filter, JwtFilter.class));
 
         return http.build();
+    }
+
+
+    /**
+     * 401 para quem não está autenticado. O 403 continua valendo para quem ESTÁ
+     * autenticado mas não tem o papel exigido (ex: USER em /api/admin/**) — essa
+     * distinção é do AccessDeniedHandler, que segue no padrão.
+     */
+    @Bean
+    public AuthenticationEntryPoint unauthorizedEntryPoint() {
+        return new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED);
     }
 
 

@@ -195,7 +195,11 @@ public class BcbService implements BcbImplementations{
         } catch (BcbApiException e) {
             throw e;
         } catch (Exception e) {
-            throw new BcbApiException("Erro ao buscar IPCA: " + e.getMessage());
+            // O detalhe fica no log do servidor; o cliente recebe mensagem genérica:
+            // e.getMessage() de uma falha de transporte traz a URL da fonte, e de um
+            // 5xx traz o corpo de erro dela.
+            log.error("Falha ao buscar o IPCA na API do BCB", e);
+            throw new BcbApiException("Não foi possível obter os dados do IPCA.");
         }
     }
 
@@ -289,7 +293,11 @@ public class BcbService implements BcbImplementations{
         } catch (BcbApiException e) {
             throw e;
         } catch (Exception e) {
-            throw new BcbApiException("Erro ao buscar taxa CDI: " + e.getMessage());
+            // O detalhe fica no log do servidor; o cliente recebe mensagem genérica:
+            // e.getMessage() de uma falha de transporte traz a URL da fonte, e de um
+            // 5xx traz o corpo de erro dela.
+            log.error("Falha ao buscar o CDI na API do BCB", e);
+            throw new BcbApiException("Não foi possível obter os dados do CDI.");
         }
     }
 
@@ -326,7 +334,11 @@ public class BcbService implements BcbImplementations{
         } catch (BcbApiException e) {
             throw e;
         } catch (Exception e) {
-            throw new BcbApiException("Erro ao comunicar com a API do Banco Central: Histórico Selic " + e.getMessage());
+            // O detalhe fica no log do servidor; o cliente recebe mensagem genérica:
+            // e.getMessage() de uma falha de transporte traz a URL da fonte, e de um
+            // 5xx traz o corpo de erro dela.
+            log.error("Falha ao buscar o histórico da Selic na API do BCB", e);
+            throw new BcbApiException("Não foi possível obter o histórico da Selic.");
         }
     }
 
@@ -430,7 +442,11 @@ public class BcbService implements BcbImplementations{
         } catch (BcbApiException e) {
             throw e;
         } catch (Exception e) {
-            throw new BcbApiException("Erro ao buscar Selic: " + e.getMessage());
+            // O detalhe fica no log do servidor; o cliente recebe mensagem genérica:
+            // e.getMessage() de uma falha de transporte traz a URL da fonte, e de um
+            // 5xx traz o corpo de erro dela.
+            log.error("Falha ao buscar a Selic na API do BCB", e);
+            throw new BcbApiException("Não foi possível obter os dados da Selic.");
         }
     }
 
@@ -449,7 +465,11 @@ public class BcbService implements BcbImplementations{
         } catch (BcbApiException e) {
             throw e;
         } catch (Exception e) {
-            throw new BcbApiException("Erro ao buscar IPCA: " + e.getMessage());
+            // O detalhe fica no log do servidor; o cliente recebe mensagem genérica:
+            // e.getMessage() de uma falha de transporte traz a URL da fonte, e de um
+            // 5xx traz o corpo de erro dela.
+            log.error("Falha ao buscar o IPCA na API do BCB", e);
+            throw new BcbApiException("Não foi possível obter os dados do IPCA.");
         }
     }
 

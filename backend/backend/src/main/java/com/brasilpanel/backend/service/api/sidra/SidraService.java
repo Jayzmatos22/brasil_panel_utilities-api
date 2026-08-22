@@ -118,7 +118,11 @@ public class SidraService {
         } catch (IbgeException e) {
             throw e;
         } catch (Exception e) {
-            throw new IbgeException("Erro ao buscar PIB estadual no SIDRA: " + e.getMessage(), 502);
+            // O detalhe fica no log do servidor; o cliente recebe mensagem genérica:
+            // e.getMessage() de uma falha de transporte traz a URL da fonte, e de um
+            // 5xx traz o corpo de erro dela.
+            log.error("Falha ao buscar o PIB estadual no SIDRA", e);
+            throw new IbgeException("Não foi possível obter o PIB estadual.", 502);
         }
     }
 

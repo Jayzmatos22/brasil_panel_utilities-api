@@ -8,6 +8,7 @@ import com.brasilpanel.backend.model.CryptoSnapshot;
 import com.brasilpanel.backend.service.financial.SnapshotService;
 import com.brasilpanel.backend.validators.api.CryptoCoinGecko;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,7 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CoinGeckoService {
     private final RestClient restClient;
     private final CryptoCoinGecko cryptoCoinGecko;
@@ -63,7 +65,11 @@ public class CoinGeckoService {
         } catch (CryptoCoinGeckoException e){
             throw e;
         } catch (Exception e){
-            throw new CryptoCoinGeckoException("Nenhuma moeda cripto encontrada: "+ e.getMessage());
+            // O detalhe fica no log do servidor; o cliente recebe mensagem genérica:
+            // e.getMessage() de uma falha de transporte traz a URL da fonte, e de um
+            // 5xx traz o corpo de erro dela.
+            log.error("Falha ao buscar a lista de criptomoedas na CoinGecko", e);
+            throw new CryptoCoinGeckoException("Não foi possível obter a lista de criptomoedas.");
         }
     }
 
@@ -102,7 +108,11 @@ public class CoinGeckoService {
         } catch (CoinGeckoException e) {
             throw e;
         } catch (Exception e) {
-            throw new CoinGeckoException("Erro ao buscar crypto: " + e.getMessage());
+            // O detalhe fica no log do servidor; o cliente recebe mensagem genérica:
+            // e.getMessage() de uma falha de transporte traz a URL da fonte, e de um
+            // 5xx traz o corpo de erro dela.
+            log.error("Falha ao buscar a criptomoeda '{}' na CoinGecko", cryptoName, e);
+            throw new CoinGeckoException("Não foi possível obter a cotação da criptomoeda.");
         }
     }
 

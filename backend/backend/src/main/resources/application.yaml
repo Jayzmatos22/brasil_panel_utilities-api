@@ -77,9 +77,17 @@ app:
   # laço trivial esgota o orçamento do mês.
   # 120/min é folgado para uso real (uma tela do painel dispara dezenas de
   # chamadas) e ainda assim contém abuso sustentado.
+  #
+  # As rotas que disparam e-mail (/api/auth/register e /api/auth/resend-code) têm
+  # teto próprio, muito mais apertado: cadastrar-se é ação rara, e 120/min ali
+  # significaria 120 mensagens por minuto para endereços de terceiros.
+  # O teto global existe porque o X-Forwarded-For é forjável nesta topologia
+  # (ver RateLimitFilter#clientId) — é o piso que não depende de identidade.
   rate-limit:
     enabled: ${RATE_LIMIT_ENABLED:true}
     requests-per-minute: ${RATE_LIMIT_RPM:120}
+    emails-per-hour: ${RATE_LIMIT_EMAILS_PER_HOUR:5}
+    emails-per-hour-global: ${RATE_LIMIT_EMAILS_GLOBAL:60}
 
   # ── Cookie de sessão ───────────────────────────────────────────────────────
   # secure=true exige HTTPS. Deve ser true em produção e false em dev (localhost).

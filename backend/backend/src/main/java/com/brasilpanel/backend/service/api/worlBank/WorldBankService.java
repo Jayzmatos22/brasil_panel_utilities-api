@@ -13,6 +13,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -132,16 +133,7 @@ public class WorldBankService {
     }
 
     private PibBrasilDTO fetchPib(String url) {
-        List<Object> response = restClient.get()
-                .uri(url)
-                .retrieve()
-                .body(new ParameterizedTypeReference<List<Object>>() {});
-
-        List<Map<String, Object>> data = (List<Map<String, Object>>) response.get(1);
-
-        if (data == null || data.isEmpty()) {
-            throw new WorldBankException("Dados do PIB indisponíveis", 502);
-        }
+        List<Map<String, Object>> data = fetchIndicator(url);
 
         Map<String, Object> entry = data.getFirst();
         if (entry.get(VALUE) == null) {
@@ -157,16 +149,7 @@ public class WorldBankService {
 
     /** Busca a série completa na API do World Bank, ignora anos sem valor e devolve em ordem cronológica. */
     private List<PibBrasilDTO> fetchPibSeries(String url) {
-        List<Object> response = restClient.get()
-                .uri(url)
-                .retrieve()
-                .body(new ParameterizedTypeReference<List<Object>>() {});
-
-        List<Map<String, Object>> data = (List<Map<String, Object>>) response.get(1);
-
-        if (data == null || data.isEmpty()) {
-            throw new WorldBankException("Dados do PIB indisponíveis", 502);
-        }
+        List<Map<String, Object>> data = fetchIndicator(url);
 
         List<PibBrasilDTO> series = new ArrayList<>(data.size());
         for (Map<String, Object> entry : data) {
@@ -178,6 +161,46 @@ public class WorldBankService {
         }
         series.sort(Comparator.comparing(PibBrasilDTO::year));
         return series;
+    }
+
+    /**
+     * Chama a API do World Bank e devolve o segundo elemento do envelope — a lista de
+     * pontos. O primeiro elemento é a paginação, que não usamos.
+     *
+     * <p>Existe para dar às duas chamadas o tratamento de erro que elas não tinham:
+     * um 500, um 429 ou um timeout do World Bank subia como RestClientException crua
+     * até o handler genérico e virava {@code 500 Erro interno do servidor}, indistinguível
+     * de um defeito nosso — apesar de todo o resto do serviço prometer 502 para falha da
+     * fonte. Um envelope fora do formato esperado tinha o mesmo destino, via
+     * IndexOutOfBounds no {@code response.get(1)}.
+     */
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> fetchIndicator(String url) {
+        List<Object> response;
+        try {
+            response = restClient.get()
+                    .uri(url)
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<List<Object>>() {});
+        } catch (RestClientException e) {
+            // O detalhe fica no log do servidor; o cliente recebe mensagem genérica:
+            // e.getMessage() de uma falha de transporte traz a URL da fonte, e de um
+            // 5xx traz o corpo de erro dela.
+            log.error("Falha na comunicação com a API do World Bank", e);
+            throw new WorldBankException("Não foi possível consultar a fonte do PIB.", 502);
+        }
+
+        // O envelope do World Bank é [paginação, dados]. Fora desse formato não há o
+        // que interpretar — é falha da fonte, não do cliente.
+        if (response == null || response.size() < 2 || !(response.get(1) instanceof List<?> raw)) {
+            log.error("World Bank devolveu envelope fora do formato esperado");
+            throw new WorldBankException("Dados do PIB indisponíveis", 502);
+        }
+
+        if (raw.isEmpty()) {
+            throw new WorldBankException("Dados do PIB indisponíveis", 502);
+        }
+        return (List<Map<String, Object>>) raw;
     }
 
     private PibBrasilDTO toDTO(PibSnapshot snapshot) {

@@ -8,6 +8,7 @@ import com.brasilpanel.backend.exception.customized.FrankfurterNotFoundException
 import com.brasilpanel.backend.exception.customized.FrankfurterRateException;
 import com.brasilpanel.backend.validators.api.FrankfurterValidator;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class FrankFurterService {
     private final RestClient restClient;
     private final FrankfurterValidator frankfurterValidator;
@@ -45,7 +47,11 @@ public class FrankFurterService {
         } catch (FrankfurterRateException e) {
             throw e;
         } catch (Exception e) {
-            throw new FrankfurterRateException("Erro ao buscar moedas suportadas: " + e.getMessage(), 502);
+            // O detalhe fica no log do servidor; o cliente recebe mensagem genérica:
+            // e.getMessage() de uma falha de transporte traz a URL da fonte, e de um
+            // 5xx traz o corpo de erro dela.
+            log.error("Falha ao buscar as moedas suportadas na Frankfurter", e);
+            throw new FrankfurterRateException("Não foi possível obter a lista de moedas.", 502);
         }
     }
 
@@ -72,7 +78,11 @@ public class FrankFurterService {
         } catch (FrankfurterRateException e){
             throw e;
         } catch (Exception e){
-            throw new FrankfurterRateException("Erro ao buscar câmbio de moedas " + e.getMessage(), 502);
+            // O detalhe fica no log do servidor; o cliente recebe mensagem genérica:
+            // e.getMessage() de uma falha de transporte traz a URL da fonte, e de um
+            // 5xx traz o corpo de erro dela.
+            log.error("Falha ao buscar o câmbio {} para {} na Frankfurter", from, to, e);
+            throw new FrankfurterRateException("Não foi possível obter a cotação.", 502);
         }
     }
 
@@ -106,7 +116,11 @@ public class FrankFurterService {
         } catch (FrankfurterRateException e) {
             throw e;
         } catch (Exception e) {
-            throw new FrankfurterRateException("Erro ao buscar histórico : " + e.getMessage(), 502);
+            // O detalhe fica no log do servidor; o cliente recebe mensagem genérica:
+            // e.getMessage() de uma falha de transporte traz a URL da fonte, e de um
+            // 5xx traz o corpo de erro dela.
+            log.error("Falha ao buscar o histórico de câmbio na Frankfurter", e);
+            throw new FrankfurterRateException("Não foi possível obter o histórico de câmbio.", 502);
         }
     }
 
