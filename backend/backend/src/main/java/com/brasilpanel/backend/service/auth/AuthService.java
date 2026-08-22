@@ -5,7 +5,7 @@ import com.brasilpanel.backend.dto.user.*;
 import com.brasilpanel.backend.mappers.UserMapper;
 import com.brasilpanel.backend.model.UserEntity;
 import com.brasilpanel.backend.repository.user.UserRepository;
-import com.brasilpanel.backend.service.email.EmailService;
+import com.brasilpanel.backend.service.email.EmailOutboxService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -27,7 +27,7 @@ public class AuthService {
     private final JwtService          jwtService;
     private final AuthenticationManager authenticationManager;
     private final UserMapper          userMapper;
-    private final EmailService        emailService;
+    private final EmailOutboxService  emailOutbox;
     private final LoginAttemptLimiter loginAttemptLimiter;
 
     private static final SecureRandom RANDOM = new SecureRandom();
@@ -42,28 +42,53 @@ public class AuthService {
     // ── Registro ──────────────────────────────────────────────────────────────
 
     public RegisterResponseDTO registerUser(UserRequestDTO dto) {
-        // Não confirmamos se o e-mail existe para evitar user enumeration
-        if (userRepository.findByEmail(dto.email()).isPresent()) {
+        Optional<UserEntity> existente = userRepository.findByEmail(dto.email());
+
+        // Conta já verificada: recusa genérica, para não virar oráculo de cadastro.
+        if (existente.isPresent() && existente.get().isVerified()) {
             throw new IllegalArgumentException("Dados de cadastro inválidos");
         }
 
-        String code = generateCode();
+        // Cadastro pendente com o mesmo e-mail: reemite o código em vez de recusar.
+        //
+        // Antes, QUALQUER e-mail existente era recusado. Como o usuário é salvo antes
+        // do envio, uma falha de e-mail deixava a conta criada e não verificada — e a
+        // tentativa seguinte batia nessa recusa. Como a tela de verificação só é
+        // alcançável pela navegação de um cadastro bem-sucedido (VerifyEmailPage lê o
+        // e-mail do state da rota), a pessoa ficava sem caminho nenhum pela interface.
+        //
+        // Reemitir é seguro: quem não tem acesso à caixa de entrada não conclui nada,
+        // e a senha da conta pendente é reescrita pela informada agora — cadastro não
+        // confirmado não é credencial que mereça proteção.
+        UserEntity usuario = existente
+                .map(pendente -> reemitir(pendente, dto))
+                .orElseGet(() -> novoUsuario(dto));
 
-        UserEntity newUser = UserEntity.builder()
-                .name(dto.name())
-                .email(dto.email())
-                .password(passwordEncoder.encode(dto.password()))
-                .verified(false)
-                .verificationCode(code)
-                .verificationCodeExpiresAt(LocalDateTime.now().plusMinutes(15))
-                .build();
-
-        userRepository.save(newUser);
-        emailService.sendVerificationCode(dto.email(), code);
+        userRepository.save(usuario);
+        emailOutbox.enqueueVerificationCode(dto.email());
 
         return new RegisterResponseDTO(
                 "Código de verificação enviado para " + dto.email() + ". Válido por 15 minutos."
         );
+    }
+
+    private UserEntity novoUsuario(UserRequestDTO dto) {
+        return UserEntity.builder()
+                .name(dto.name())
+                .email(dto.email())
+                .password(passwordEncoder.encode(dto.password()))
+                .verified(false)
+                .verificationCode(generateCode())
+                .verificationCodeExpiresAt(LocalDateTime.now().plusMinutes(15))
+                .build();
+    }
+
+    private UserEntity reemitir(UserEntity pendente, UserRequestDTO dto) {
+        pendente.setName(dto.name());
+        pendente.setPassword(passwordEncoder.encode(dto.password()));
+        pendente.setVerificationCode(generateCode());
+        pendente.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(15));
+        return pendente;
     }
 
 
@@ -122,7 +147,7 @@ public class AuthService {
         user.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(15));
         userRepository.save(user);
 
-        emailService.sendVerificationCode(dto.email(), code);
+        emailOutbox.enqueueVerificationCode(dto.email());
 
         return new RegisterResponseDTO("Novo código enviado para " + dto.email() + ".");
     }
