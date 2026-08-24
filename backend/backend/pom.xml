@@ -283,7 +283,8 @@
 					     valor ir aumentando commit a commit.
 
 					     Histórico: 0,35 (medição inicial) → 0,48 (testes dos seeders)
-					     → 0,49 (rate limiting) → 0,55 (correções de pré-deploy). -->
+					     → 0,49 (rate limiting) → 0,55 (correções de pré-deploy)
+					     → 0,56 (fila de e-mail). -->
 					<execution>
 						<id>check</id>
 						<phase>verify</phase>
@@ -298,7 +299,7 @@
 										<limit>
 											<counter>INSTRUCTION</counter>
 											<value>COVEREDRATIO</value>
-											<minimum>0.55</minimum>
+											<minimum>0.56</minimum>
 										</limit>
 									</limits>
 								</rule>

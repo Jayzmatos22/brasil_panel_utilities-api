@@ -59,10 +59,10 @@ Exemplo (`vercel.json` na raiz do frontend):
 | `MAIL_USERNAME` | **Sim** | Conta SMTP |
 | `MAIL_PASSWORD` | **Sim** | Senha de app (não a senha de login da conta) |
 | `MAIL_PORT` | Não | Default `587` |
-| `MAIL_FROM_ADDRESS` | Conforme uso | Remetente exibido |
+| `MAIL_FROM_ADDRESS` | **Sim** | Endereço do **domínio verificado** no provedor. O default (`onboarding@resend.dev`) é o remetente de sandbox do Resend, que só entrega para o e-mail da própria conta — com ele, nenhum usuário real recebe o código. Ver seção 8. |
 | `MAIL_FROM_NAME` | Conforme uso | |
 | `RATE_LIMIT_EMAILS_PER_HOUR` | Não | Default `5`. Teto por cliente em `/auth/register` e `/auth/resend-code`. |
-| `RATE_LIMIT_EMAILS_GLOBAL` | Não | Default `60`. Teto da instância inteira, por hora, nas mesmas rotas. |
+| `RATE_LIMIT_EMAILS_GLOBAL` | Não | Default `80`. Teto da instância inteira, **por dia**, nas mesmas rotas. Dimensionado sob o limite de 100/dia do plano gratuito do Resend. |
 | `ADMIN_EMAIL` | Opcional | |
 | `ADMIN_PASSWORD` | Opcional | Se vazio, o admin **não** é criado no seed |
 
@@ -174,6 +174,8 @@ Fazer a seção 5 antes do S12 gera retrabalho: a URL da API muda quando entra o
 
 - [ ] `GET /actuator/health` responde `200` (após D6)
 - [ ] `POST /api/ipea/refresh` (sem sessão) responde `404` e `POST /api/admin/ipea/refresh` responde `401` (após D9)
+- [ ] Cadastro com e-mail de **outro** provedor entrega o código na caixa de entrada (após seção 8)
+- [ ] `select status, count(*) from email_outbox group by status` não mostra `FAILED`
 - [ ] Login com senha correta retorna `200`
 - [ ] Login com senha errada retorna **401**, não 500
 - [ ] 6 tentativas seguidas de senha errada retornam **429**
@@ -189,7 +191,102 @@ Fazer a seção 5 antes do S12 gera retrabalho: a URL da API muda quando entra o
 
 ---
 
-## 8. Rotação de credenciais
+## 8. E-mail: domínio e provedor
+
+O envio usa SMTP de terceiro — o Render não oferece serviço de e-mail. A configuração
+aponta para o Resend (`application.yaml`, `app.mail.from-address`), mas qualquer
+provedor com SMTP serve sem mudar código.
+
+### Por que o domínio próprio não é opcional
+
+O default `onboarding@resend.dev` é o remetente de **sandbox**: só entrega para o
+e-mail da conta que criou a chave. Em produção, com ele, o cadastro de qualquer
+visitante falha silenciosamente — a fila registra o envio, o Resend recusa o
+destinatário, e o usuário nunca recebe o código.
+
+Além disso, sem domínio verificado não há SPF nem DKIM alinhados, e e-mail
+transacional sem autenticação de domínio cai em spam com frequência alta no Gmail e
+no Outlook. Para um fluxo de confirmação de cadastro isso equivale a não funcionar.
+
+### Enviar não é o mesmo que ter caixa de entrada
+
+A aplicação **não precisa de caixa de e-mail nenhuma**, e essa é a confusão mais
+comum neste ponto. O provedor verifica o *domínio*, não um endereço: publicados SPF e
+DKIM no DNS, ele fica autorizado a enviar como qualquer endereço `@dominio`.
+`nao-responda@...` é só o cabeçalho `From` — não existe como caixa, não recebe nada, e
+não precisa receber. O template diz explicitamente "não responda"
+(`EmailService.buildPlainText`), e nenhum fluxo do projeto espera resposta.
+
+Ter um `contato@dominio` para receber é decisão separada, que não bloqueia o deploy.
+Gmail e Outlook **gratuitos não hospedam domínio próprio** — isso exige Google
+Workspace ou Microsoft 365, ambos pagos. As alternativas são encaminhar para uma caixa
+que já se usa (grátis) ou um serviço como o Zoho Mail.
+
+### Passos
+
+1. Registrar o domínio (registro.br, para `.com.br`).
+
+2. **Verificar o domínio.** No painel do Resend, adicionar o domínio e publicar no DNS
+   os registros que ele indicar — SPF, DKIM e, de preferência, DMARC. Copiar os
+   valores do painel: o DKIM é gerado por conta e não pode ser copiado de tutorial.
+   A propagação leva de minutos a horas; enquanto não estiver verificado, todo envio
+   com o domínio é recusado.
+
+3. **Criar a chave de API**, que é a senha do SMTP.
+
+4. No Render, definir as variáveis. O padrão do Resend é este — confira no painel:
+
+   | Variável | Valor |
+   |---|---|
+   | `MAIL_HOST` | `smtp.resend.com` |
+   | `MAIL_PORT` | `587` (pode omitir — é o default do código) |
+   | `MAIL_USERNAME` | a string literal `resend` — **não** o e-mail da conta |
+   | `MAIL_PASSWORD` | a chave de API |
+   | `MAIL_FROM_ADDRESS` | endereço do domínio verificado |
+
+   > **Porta 587, nunca 465.** `application-prod.yml` exige
+   > `starttls.enable` e `starttls.required`, que é o modo da 587. A 465 usa TLS
+   > implícito, um handshake diferente, e a conexão falha.
+
+5. Cadastrar-se com um e-mail de **outro** provedor — não o da conta que criou a chave.
+   Com o sandbox só a própria conta recebe, então testar consigo mesmo dá falso
+   positivo. O código tem que chegar na **caixa de entrada**, não no spam.
+
+### ⚠️ Só existe UM registro SPF por domínio
+
+Se depois for configurada uma caixa de entrada (Zoho, Workspace), o provedor dela vai
+pedir o próprio SPF. Publicar dois registros `v=spf1` separados coloca o domínio em
+`PermError` e **derruba os dois** — o e-mail transacional volta a cair em spam, dias
+depois, sem ligação óbvia com a causa.
+
+O certo é mesclar num único registro, com os dois `include:`. DKIM não tem esse
+problema (cada provedor usa um seletor próprio), e MX afeta só recebimento.
+
+### Cota do plano gratuito
+
+O plano gratuito do Resend é de 3.000 e-mails/mês com teto de **100 por dia** — e é o
+diário que morde primeiro. O teto global da aplicação
+(`RATE_LIMIT_EMAILS_GLOBAL`, default 80/dia) fica deliberadamente abaixo disso: sem
+ele, um pico estouraria a cota do provedor e os envios passariam a ser recusados.
+
+Ao mudar de plano, suba os dois juntos — o teto da aplicação não deve ficar acima do
+teto de quem cobra a conta.
+
+### A fila
+
+O envio não acontece na thread da requisição: o cadastro grava uma linha em
+`email_outbox` e responde na hora, e o `EmailOutboxScheduler` drena a cada 10
+segundos, com retry e backoff exponencial. Consequências operacionais:
+
+- **Falha de SMTP não derruba o cadastro.** A entrada fica `PENDING` e é retentada.
+- **Diagnóstico é uma consulta**: `select status, count(*) from email_outbox group by status`.
+  Entradas em `FAILED` são as que esgotaram as 5 tentativas e ficam 30 dias no banco.
+- **`OBSOLETE` não é erro** — é a fila descartando envio para conta que já se
+  verificou ou foi removida no meio do caminho.
+
+---
+
+## 9. Rotação de credenciais
 
 As credenciais de desenvolvimento vivem em `application-dev.yml` (gitignored,
 nunca versionado). Ainda assim, **não reutilize nenhuma delas em produção**: gere
