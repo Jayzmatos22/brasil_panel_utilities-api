@@ -208,18 +208,59 @@ Além disso, sem domínio verificado não há SPF nem DKIM alinhados, e e-mail
 transacional sem autenticação de domínio cai em spam com frequência alta no Gmail e
 no Outlook. Para um fluxo de confirmação de cadastro isso equivale a não funcionar.
 
+### Enviar não é o mesmo que ter caixa de entrada
+
+A aplicação **não precisa de caixa de e-mail nenhuma**, e essa é a confusão mais
+comum neste ponto. O provedor verifica o *domínio*, não um endereço: publicados SPF e
+DKIM no DNS, ele fica autorizado a enviar como qualquer endereço `@dominio`.
+`nao-responda@...` é só o cabeçalho `From` — não existe como caixa, não recebe nada, e
+não precisa receber. O template diz explicitamente "não responda"
+(`EmailService.buildPlainText`), e nenhum fluxo do projeto espera resposta.
+
+Ter um `contato@dominio` para receber é decisão separada, que não bloqueia o deploy.
+Gmail e Outlook **gratuitos não hospedam domínio próprio** — isso exige Google
+Workspace ou Microsoft 365, ambos pagos. As alternativas são encaminhar para uma caixa
+que já se usa (grátis) ou um serviço como o Zoho Mail.
+
 ### Passos
 
 1. Registrar o domínio (registro.br, para `.com.br`).
-2. No painel do Resend, adicionar o domínio e publicar os registros DNS que ele
-   indicar — SPF, DKIM e, de preferência, DMARC.
-3. Aguardar a verificação e criar a chave de API.
-4. No Render, definir:
-   - `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD` conforme o painel;
-   - `MAIL_FROM_ADDRESS` com um endereço do domínio verificado
-     (ex.: `nao-responda@brasilpanel.com.br`).
-5. Cadastrar-se com um e-mail de outro provedor (não o da conta do Resend) e
-   confirmar que o código chega **na caixa de entrada**, não no spam.
+
+2. **Verificar o domínio.** No painel do Resend, adicionar o domínio e publicar no DNS
+   os registros que ele indicar — SPF, DKIM e, de preferência, DMARC. Copiar os
+   valores do painel: o DKIM é gerado por conta e não pode ser copiado de tutorial.
+   A propagação leva de minutos a horas; enquanto não estiver verificado, todo envio
+   com o domínio é recusado.
+
+3. **Criar a chave de API**, que é a senha do SMTP.
+
+4. No Render, definir as variáveis. O padrão do Resend é este — confira no painel:
+
+   | Variável | Valor |
+   |---|---|
+   | `MAIL_HOST` | `smtp.resend.com` |
+   | `MAIL_PORT` | `587` (pode omitir — é o default do código) |
+   | `MAIL_USERNAME` | a string literal `resend` — **não** o e-mail da conta |
+   | `MAIL_PASSWORD` | a chave de API |
+   | `MAIL_FROM_ADDRESS` | endereço do domínio verificado |
+
+   > **Porta 587, nunca 465.** `application-prod.yml` exige
+   > `starttls.enable` e `starttls.required`, que é o modo da 587. A 465 usa TLS
+   > implícito, um handshake diferente, e a conexão falha.
+
+5. Cadastrar-se com um e-mail de **outro** provedor — não o da conta que criou a chave.
+   Com o sandbox só a própria conta recebe, então testar consigo mesmo dá falso
+   positivo. O código tem que chegar na **caixa de entrada**, não no spam.
+
+### ⚠️ Só existe UM registro SPF por domínio
+
+Se depois for configurada uma caixa de entrada (Zoho, Workspace), o provedor dela vai
+pedir o próprio SPF. Publicar dois registros `v=spf1` separados coloca o domínio em
+`PermError` e **derruba os dois** — o e-mail transacional volta a cair em spam, dias
+depois, sem ligação óbvia com a causa.
+
+O certo é mesclar num único registro, com os dois `include:`. DKIM não tem esse
+problema (cada provedor usa um seletor próprio), e MX afeta só recebimento.
 
 ### Cota do plano gratuito
 
