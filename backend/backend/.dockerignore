@@ -1,0 +1,20 @@
+# O contexto de build sobe inteiro para o daemon antes do primeiro passo rodar.
+# Sem isto, target/ (centenas de MB depois de um build local) viaja junto a cada
+# deploy, sem ser usado — o Dockerfile copia apenas pom.xml e src/.
+target/
+!.mvn/wrapper/maven-wrapper.properties
+
+# IDE e sistema operacional
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.DS_Store
+
+# Nunca deve entrar na imagem: credenciais de desenvolvimento (gitignored, mas
+# presente na máquina de quem builda localmente).
+src/main/resources/application-dev.yml
+src/main/resources/application-dev.yaml
+
+HELP.md
