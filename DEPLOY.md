@@ -10,7 +10,7 @@ a ordem correta das etapas e como verificar que subiu de verdade.
 | Camada | Onde | Hiberna? |
 |---|---|---|
 | Frontend (build Vite estático) | Vercel ou Cloudflare Pages | Não — arquivos em CDN |
-| Backend (JAR Spring Boot) | Render | Free hiberna após ~15 min; **Starter (~US$ 7/mês) não hiberna** |
+| Backend (imagem Docker) | Render | Free hiberna após ~15 min; **Starter (~US$ 7/mês) não hiberna** |
 | Banco | Neon (PostgreSQL) | Free suspende, mas acorda em ~1s |
 
 > O Postgres do plano free do Render é removido após um período. Por isso o banco
@@ -42,12 +42,49 @@ Exemplo (`vercel.json` na raiz do frontend):
 
 ---
 
-## 2. Variáveis de ambiente — backend (Render)
+## 2. Criar o serviço no Render
+
+O Render **não tem runtime Java nativo**, então o serviço é publicado como container.
+O `Dockerfile` na raiz de `backend/backend/` cobre isso — build multi-estágio (Maven
+para compilar, JRE 21 para executar).
+
+Ao criar o Web Service:
+
+| Campo | Valor |
+|---|---|
+| Source | Git provider → este repositório |
+| **Root Directory** | `backend/backend` |
+| Runtime / Language | **Docker** |
+| Dockerfile Path | `./Dockerfile` (relativo ao Root Directory) |
+| **Health Check Path** | `/actuator/health` |
+
+O **Root Directory** é o campo que mais causa erro: o `pom.xml` não está na raiz do
+repositório, e sem apontar para `backend/backend` o build não encontra nada para
+construir.
+
+Não é preciso definir Build Command nem Start Command — o Dockerfile os contém.
+
+### Porta
+
+O Render injeta `PORT` e faz o health check contra ela. O `application.yaml` usa
+`${PORT:8080}`, então isso funciona sem configuração. Se a porta fosse fixa, o
+serviço subiria normalmente, o Render não encontraria nada escutando onde espera, e o
+deploy falharia por health check — **sem nenhum erro nos logs da aplicação**, que é o
+que torna esse diagnóstico demorado.
+
+### O banco vem antes
+
+`DATABASE_URL` é obrigatória para o boot, e o Flyway roda as migrations na primeira
+subida. Provisione o Neon **antes** de criar o serviço no Render.
+
+---
+
+## 3. Variáveis de ambiente — backend (Render)
 
 | Variável | Obrigatória | Observação |
 |---|---|---|
 | `SPRING_PROFILES_ACTIVE` | **Sim** | Valor: `prod`. Ver armadilha #1 abaixo. |
-| `JWT_SECRET` | **Sim** | A aplicação **não sobe** sem ela. Ver seção 3. |
+| `JWT_SECRET` | **Sim** | A aplicação **não sobe** sem ela. Ver seção 4. |
 | `DATABASE_URL` | **Sim** | Connection string do Neon |
 | `DATABASE_USERNAME` | **Sim** | |
 | `DATABASE_PASSWORD` | **Sim** | |
@@ -59,7 +96,7 @@ Exemplo (`vercel.json` na raiz do frontend):
 | `MAIL_USERNAME` | **Sim** | Conta SMTP |
 | `MAIL_PASSWORD` | **Sim** | Senha de app (não a senha de login da conta) |
 | `MAIL_PORT` | Não | Default `587` |
-| `MAIL_FROM_ADDRESS` | **Sim** | Endereço do **domínio verificado** no provedor. O default (`onboarding@resend.dev`) é o remetente de sandbox do Resend, que só entrega para o e-mail da própria conta — com ele, nenhum usuário real recebe o código. Ver seção 8. |
+| `MAIL_FROM_ADDRESS` | **Sim** | Endereço do **domínio verificado** no provedor. O default (`onboarding@resend.dev`) é o remetente de sandbox do Resend, que só entrega para o e-mail da própria conta — com ele, nenhum usuário real recebe o código. Ver seção 9. |
 | `MAIL_FROM_NAME` | Conforme uso | |
 | `RATE_LIMIT_EMAILS_PER_HOUR` | Não | Default `5`. Teto por cliente em `/auth/register` e `/auth/resend-code`. |
 | `RATE_LIMIT_EMAILS_GLOBAL` | Não | Default `80`. Teto da instância inteira, **por dia**, nas mesmas rotas. Dimensionado sob o limite de 100/dia do plano gratuito do Resend. |
@@ -77,7 +114,7 @@ Sem essa variável, o build de produção usa o fallback `http://localhost:8080/
 
 ---
 
-## 3. JWT_SECRET
+## 4. JWT_SECRET
 
 Gere com um RNG criptográfico. **Não** use `Get-Random`: ele é um PRNG semeado pelo
 relógio, e toda a saída fica determinada por uma semente de 32 bits.
@@ -98,7 +135,7 @@ O valor de desenvolvimento fica em `application-dev.yml`, que é gitignored.
 
 ---
 
-## 4. Armadilhas que impedem o boot
+## 5. Armadilhas que impedem o boot
 
 ### #1 — O perfil ativo está fixo em `dev`
 
@@ -139,7 +176,7 @@ não no deploy.
 
 ---
 
-## 5. Pendências de código antes do primeiro deploy
+## 6. Pendências de código antes do primeiro deploy
 
 Todas concluídas:
 
@@ -157,24 +194,24 @@ Todas concluídas:
 
 ---
 
-## 6. Ordem de execução
+## 7. Ordem de execução
 
 1. **S12 + rewrite** — define a topologia; `VITE_API_URL` depende dela
-2. **Pendências da seção 5** — CI verde, CD confiável, health check
+2. **Pendências da seção 6** — CI verde, CD confiável, health check
 3. **Provisionar** — banco no Neon, variáveis no Render
 4. **Primeiro boot** — o Flyway cria o schema sozinho; nada a fazer
 5. **Upgrade do plano** no Render, se/quando quiser eliminar a hibernação (é só um
    toggle no dashboard — não muda código)
 
-Fazer a seção 5 antes do S12 gera retrabalho: a URL da API muda quando entra o rewrite.
+Fazer a seção 6 antes do S12 gera retrabalho: a URL da API muda quando entra o rewrite.
 
 ---
 
-## 7. Verificação pós-deploy
+## 8. Verificação pós-deploy
 
 - [ ] `GET /actuator/health` responde `200` (após D6)
 - [ ] `POST /api/ipea/refresh` (sem sessão) responde `404` e `POST /api/admin/ipea/refresh` responde `401` (após D9)
-- [ ] Cadastro com e-mail de **outro** provedor entrega o código na caixa de entrada (após seção 8)
+- [ ] Cadastro com e-mail de **outro** provedor entrega o código na caixa de entrada (após seção 9)
 - [ ] `select status, count(*) from email_outbox group by status` não mostra `FAILED`
 - [ ] Login com senha correta retorna `200`
 - [ ] Login com senha errada retorna **401**, não 500
@@ -191,7 +228,7 @@ Fazer a seção 5 antes do S12 gera retrabalho: a URL da API muda quando entra o
 
 ---
 
-## 8. E-mail: domínio e provedor
+## 9. E-mail: domínio e provedor
 
 O envio usa SMTP de terceiro — o Render não oferece serviço de e-mail. A configuração
 aponta para o Resend (`application.yaml`, `app.mail.from-address`), mas qualquer
@@ -286,7 +323,7 @@ segundos, com retry e backoff exponencial. Consequências operacionais:
 
 ---
 
-## 9. Rotação de credenciais
+## 10. Rotação de credenciais
 
 As credenciais de desenvolvimento vivem em `application-dev.yml` (gitignored,
 nunca versionado). Ainda assim, **não reutilize nenhuma delas em produção**: gere
