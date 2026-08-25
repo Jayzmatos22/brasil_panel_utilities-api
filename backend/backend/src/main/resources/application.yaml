@@ -26,7 +26,12 @@ spring:
     baseline-description: "baseline do schema pre-Flyway"
 
 server:
-  port: 8080
+  # ${PORT:8080} e não 8080 fixo: o Render injeta PORT e faz o health check
+  # contra ela. Com a porta fixa o serviço sobe, o Render não encontra nada
+  # escutando onde espera, e o deploy falha por health check — sem nenhum erro
+  # nos logs da aplicação, que é o que torna o diagnóstico demorado.
+  # Fora do Render a variável não existe e o default de 8080 vale.
+  port: ${PORT:8080}
 
 # ── Actuator ─────────────────────────────────────────────────────────────────
 # Só o health é exposto. Os demais endpoints (env, beans, mappings, heapdump)
