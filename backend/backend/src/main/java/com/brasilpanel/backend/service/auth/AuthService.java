@@ -220,6 +220,10 @@ public class AuthService {
         }
 
         user.setPassword(passwordEncoder.encode(dto.newPassword()));
+        // Derruba as sessões abertas: o JwtService recusa todo token emitido antes
+        // deste instante. Sem esta linha, quem tivesse acesso indevido à conta
+        // continuaria dentro apesar da troca de senha.
+        user.setPasswordChangedAt(LocalDateTime.now());
         userRepository.save(user);
     }
 
