@@ -50,6 +50,17 @@ public class UserEntity implements UserDetails {
 
     private LocalDateTime verificationCodeExpiresAt;
 
+    /**
+     * Instante da última troca de senha, ou {@code null} se nunca trocou.
+     *
+     * <p>Substitui o store de sessão que o JWT stateless não tem: o
+     * {@link com.brasilpanel.backend.config.jwt.JwtService} recusa todo token
+     * emitido antes deste instante. Sem isso, trocar a senha não derrubava as
+     * sessões abertas — o token anterior valia até expirar, e quem tivesse acesso
+     * indevido continuava dentro apesar da troca.
+     */
+    private LocalDateTime passwordChangedAt;
+
     @Column(nullable = false, updatable = false)
     @CreationTimestamp
     private LocalDateTime createdAt;
@@ -89,6 +100,10 @@ public class UserEntity implements UserDetails {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public void setPasswordChangedAt(LocalDateTime passwordChangedAt) {
+        this.passwordChangedAt = passwordChangedAt;
     }
 
     public void setPassword(String password) {

@@ -10,6 +10,9 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -98,5 +101,74 @@ class JwtServiceTest {
     @DisplayName("expiração exposta corresponde à configurada")
     void expirationMatchesConfiguration() {
         assertThat(jwtService.getExpirationMs()).isEqualTo(ONE_DAY_MS);
+    }
+
+    // ── Invalidação por troca de senha ───────────────────────────────────────
+
+    /**
+     * O JWT é stateless: não há store de sessão para limpar. Sem esta regra,
+     * trocar a senha não derrubava as sessões abertas — o token anterior valia
+     * até expirar, e quem tivesse acesso indevido continuava dentro apesar da
+     * troca, que é justamente a ação tomada para expulsá-lo.
+     */
+    @Test
+    @DisplayName("token emitido ANTES da troca de senha é recusado")
+    void tokenIssuedBeforePasswordChangeIsRejected() {
+        String token = jwtService.generateToken(user);
+        assertThat(jwtService.isTokenValid(token, user))
+                .as("antes da troca, o token vale")
+                .isTrue();
+
+        user.setPasswordChangedAt(LocalDateTime.now().plusSeconds(5));
+
+        assertThat(jwtService.isTokenValid(token, user)).isFalse();
+    }
+
+    @Test
+    @DisplayName("token emitido DEPOIS da troca de senha continua válido")
+    void tokenIssuedAfterPasswordChangeStaysValid() {
+        user.setPasswordChangedAt(LocalDateTime.now().minusMinutes(10));
+
+        String token = jwtService.generateToken(user);
+
+        assertThat(jwtService.isTokenValid(token, user)).isTrue();
+    }
+
+    @Test
+    @DisplayName("sem troca registrada, nada é invalidado")
+    void nullPasswordChangedAtInvalidatesNothing() {
+        String token = jwtService.generateToken(user);
+
+        assertThat(user.getPasswordChangedAt()).isNull();
+        assertThat(jwtService.isTokenValid(token, user)).isTrue();
+    }
+
+    /**
+     * O caso de borda que quebraria a implementação ingênua. O `iat` do JWT tem
+     * precisão de SEGUNDO; o timestamp do banco, de microssegundo. Comparando sem
+     * truncar, o token emitido logo após a troca pareceria anterior a ela — o
+     * usuário trocaria a senha, logaria e cairia para fora na requisição seguinte.
+     */
+    @Test
+    @DisplayName("token emitido no mesmo segundo da troca sobrevive")
+    void tokenIssuedInTheSameSecondSurvives() {
+        String token = jwtService.generateToken(user);
+
+        // Mesmo segundo do iat, mas com microssegundos à frente.
+        user.setPasswordChangedAt(LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS).plusNanos(900_000_000));
+
+        assertThat(jwtService.isTokenValid(token, user))
+                .as("truncar para segundos evita expulsar quem acabou de logar")
+                .isTrue();
+    }
+
+    @Test
+    @DisplayName("a regra não se aplica a UserDetails que não seja UserEntity")
+    void nonUserEntityIsUnaffected() {
+        String token = jwtService.generateToken(user);
+        UserDetails outro = User.withUsername(user.getUsername())
+                .password("irrelevante").authorities("ROLE_USER").build();
+
+        assertThat(jwtService.isTokenValid(token, outro)).isTrue();
     }
 }

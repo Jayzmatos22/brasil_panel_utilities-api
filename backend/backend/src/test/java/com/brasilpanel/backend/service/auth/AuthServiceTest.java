@@ -344,4 +344,75 @@ AuthServiceTest {
                     .hasMessageContaining("não verificado");
         }
     }
+
+    // ── Troca de senha ───────────────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("Alteração de senha")
+    class AlteracaoDeSenha {
+
+        private UserEntity usuario;
+
+        @BeforeEach
+        void setUp() {
+            usuario = UserEntity.builder()
+                    .name("Usuário Teste").email(EMAIL).password("hash-antigo")
+                    .role(Role.USER).verified(true)
+                    .build();
+        }
+
+        /**
+         * O campo é o que derruba as sessões abertas: o JwtService recusa todo
+         * token emitido antes dele. Sem esta gravação, trocar a senha não expulsa
+         * quem já estava dentro — o token anterior segue valendo até expirar.
+         */
+        @Test
+        @DisplayName("troca bem-sucedida registra o instante que invalida os tokens antigos")
+        void successfulChangeStampsPasswordChangedAt() {
+            when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(usuario));
+            when(passwordEncoder.matches("SenhaAtual@123", "hash-antigo")).thenReturn(true);
+            when(passwordEncoder.matches("SenhaNova@123", "hash-antigo")).thenReturn(false);
+            when(passwordEncoder.encode("SenhaNova@123")).thenReturn("hash-novo");
+
+            LocalDateTime antes = LocalDateTime.now().minusSeconds(1);
+            authService.updatePassword(EMAIL, new UpdatePasswordRequestDTO("SenhaAtual@123", "SenhaNova@123"));
+
+            assertThat(usuario.getPasswordChangedAt())
+                    .as("carimbo gravado")
+                    .isNotNull()
+                    .isAfter(antes);
+            assertThat(usuario.getPassword()).isEqualTo("hash-novo");
+            verify(userRepository).save(usuario);
+        }
+
+        @Test
+        @DisplayName("senha atual errada não altera nada")
+        void wrongCurrentPasswordChangesNothing() {
+            when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(usuario));
+            when(passwordEncoder.matches("SenhaErrada", "hash-antigo")).thenReturn(false);
+
+            assertThatThrownBy(() -> authService.updatePassword(
+                    EMAIL, new UpdatePasswordRequestDTO("SenhaErrada", "SenhaNova@123")))
+                    .isInstanceOf(IllegalArgumentException.class);
+
+            assertThat(usuario.getPasswordChangedAt())
+                    .as("sessões abertas não podem cair por uma tentativa falha")
+                    .isNull();
+            verify(userRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("nova senha igual à atual é recusada")
+        void samePasswordIsRejected() {
+            when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(usuario));
+            when(passwordEncoder.matches("SenhaAtual@123", "hash-antigo")).thenReturn(true);
+
+            assertThatThrownBy(() -> authService.updatePassword(
+                    EMAIL, new UpdatePasswordRequestDTO("SenhaAtual@123", "SenhaAtual@123")))
+                    .isInstanceOf(IllegalArgumentException.class);
+
+            assertThat(usuario.getPasswordChangedAt()).isNull();
+            verify(userRepository, never()).save(any());
+        }
+    }
 }

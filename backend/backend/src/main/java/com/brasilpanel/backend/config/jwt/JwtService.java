@@ -10,6 +10,9 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.UUID;
 
@@ -84,6 +87,43 @@ public class JwtService {
                 .getPayload();
 
         return claims.getSubject().equals(userDetails.getUsername())
-                && claims.getExpiration().after(new Date());
+                && claims.getExpiration().after(new Date())
+                && emitidoAposUltimaTrocaDeSenha(claims, userDetails);
+    }
+
+
+    /**
+     * Recusa tokens emitidos antes da última troca de senha.
+     *
+     * <p>É o que faz "trocar a senha" derrubar as sessões abertas. Sem isto o JWT
+     * anterior seguia válido até expirar, e a troca de senha — a ação que a vítima
+     * toma justamente para expulsar quem invadiu — não expulsava ninguém.
+     *
+     * <p><b>Comparação em segundos.</b> O {@code iat} do JWT tem precisão de
+     * segundo (é o que a especificação define), enquanto o timestamp do banco tem
+     * microssegundos. Sem truncar, o token emitido no MESMO segundo da troca
+     * pareceria anterior a ela e seria recusado — o usuário trocaria a senha,
+     * logaria em seguida e cairia para fora na requisição seguinte.
+     *
+     * <p>O preço do truncamento é uma janela de um segundo: um token emitido no
+     * mesmo segundo da troca sobrevive. Para o atacante aproveitar, seria preciso
+     * obter um token exatamente no segundo em que a vítima troca a senha.
+     */
+    private static boolean emitidoAposUltimaTrocaDeSenha(Claims claims, UserDetails userDetails) {
+        if (!(userDetails instanceof UserEntity user) || user.getPasswordChangedAt() == null) {
+            // Sem troca registrada não há nada a invalidar.
+            return true;
+        }
+
+        Date issuedAt = claims.getIssuedAt();
+        if (issuedAt == null) {
+            // Token sem iat não é comprovadamente posterior à troca: recusa.
+            return false;
+        }
+
+        LocalDateTime emitidoEm = LocalDateTime.ofInstant(issuedAt.toInstant(), ZoneId.systemDefault());
+        LocalDateTime trocadaEm = user.getPasswordChangedAt().truncatedTo(ChronoUnit.SECONDS);
+
+        return !emitidoEm.isBefore(trocadaEm);
     }
 }
