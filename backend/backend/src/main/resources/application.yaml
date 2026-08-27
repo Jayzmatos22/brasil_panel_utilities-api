@@ -44,6 +44,15 @@ management:
   endpoint:
     health:
       show-details: never
+  health:
+    # O MailHealthIndicator abre uma conexão SMTP real a cada checagem de health.
+    # Como o health é o que a plataforma usa para decidir se o serviço está vivo,
+    # um SMTP lento ou bloqueado deixava /actuator/health em DOWN e derrubava a
+    # aplicação inteira — com banco, cache e endpoints funcionando. O envio de
+    # e-mail aqui é assíncrono (vai para o outbox e é drenado pelo scheduler),
+    # então a indisponibilidade do provedor não impede a API de atender.
+    mail:
+      enabled: false
 
 # ── JWT ──────────────────────────────────────────────────────────────────────
 # Em produção, sobrescreva via variável de ambiente: JWT_SECRET=<sua-chave-256-bits>
