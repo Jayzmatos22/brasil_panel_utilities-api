@@ -36,6 +36,7 @@ Indicadores oficiais, cotações ao vivo, séries históricas e dados geográfic
 - [Cache](#-cache)
 - [Estrutura do Projeto](#-estrutura-do-projeto)
 - [Como Executar](#-como-executar)
+- [Produção](#-produção)
 - [Segurança e Credenciais](#-segurança-e-credenciais)
 
 ---
@@ -47,8 +48,12 @@ O **Brasil Panel** é um monorepo full-stack que agrega dados de 10 APIs públic
 ```
 frontend (React 19 + Vite)  ──►  backend (Spring Boot 3.5)  ──►  APIs externas
                                            │
-                                    PostgreSQL 18 (Docker)
+                                    PostgreSQL 18
+                        dev: Docker local · prod: Neon (serverless)
 ```
+
+Em produção o backend roda como container no Render e o banco fica no Neon —
+ver [DEPLOY.md](DEPLOY.md).
 
 ---
 
@@ -113,7 +118,8 @@ frontend (React 19 + Vite)  ──►  backend (Spring Boot 3.5)  ──►  API
            ▼                                ▼
 ┌──────────────────────┐     ┌──────────────────────────────────────┐
 │  PostgreSQL 18        │     │  APIs Externas                       │
-│  (Docker)             │     │                                      │
+│  Docker (dev)         │     │                                      │
+│  Neon    (prod)       │     │                                      │
 │                       │     │  🏦 BCB      📊 IPEA                │
 │  financial_series     │     │  📈 Alpha Vantage                   │
 │  financial_data_points│     │  🥇 Metals Dev                      │
@@ -148,7 +154,10 @@ frontend (React 19 + Vite)  ──►  backend (Spring Boot 3.5)  ──►  API
 
 ## 📡 Endpoints do Backend
 
-> Documentação interativa: `http://localhost:8080/swagger-ui.html`
+> Documentação interativa: `http://localhost:8080/swagger-ui.html` — **só no perfil
+> `dev`**. Em produção o Swagger é desabilitado, e as únicas rotas que respondem são
+> `/api/**` e `/actuator/health`. `GET /` devolve `404` por design: este serviço é a
+> API, não o site.
 
 ### 🔐 Autenticação — `/api/auth`
 | Método | Rota | Descrição |
@@ -161,6 +170,27 @@ frontend (React 19 + Vite)  ──►  backend (Spring Boot 3.5)  ──►  API
 | `PATCH` | `/api/auth/update-name` | Altera o nome — requer sessão |
 | `PATCH` | `/api/auth/update-password` | Altera a senha — requer sessão |
 | `DELETE` | `/api/auth/delete-account` | Exclui a conta — requer sessão |
+
+> Trocar a senha **invalida todas as sessões abertas**, inclusive em outros
+> dispositivos — ver [Fluxo de Autenticação](#-fluxo-de-autenticação).
+> Não há fluxo de recuperação de senha por e-mail.
+
+### 👤 Perfil — `/api/profile`
+| Método | Rota | Descrição |
+|---|---|---|
+| `GET` | `/api/profile/options` | Catálogos de preenchimento (áreas, níveis, profissões) |
+| `GET` | `/api/profile/me` | Perfil do usuário autenticado |
+| `PUT` | `/api/profile/me` | Atualiza o perfil |
+
+### 🛡️ Administração — `/api/admin` · requer `ROLE_ADMIN`
+| Método | Rota | Descrição |
+|---|---|---|
+| `GET` | `/api/admin/users` | Lista os usuários |
+| `PUT` | `/api/admin/users/{id}/promote` | Promove a ADMIN |
+| `PUT` | `/api/admin/users/{id}/demote` | Rebaixa a USER |
+| `POST` | `/api/admin/ipea/refresh` | Recarrega as séries do IPEA |
+
+> Um admin não consegue revogar o próprio acesso.
 
 > Login e verificação respondem com `Set-Cookie` (`HttpOnly`). O corpo traz apenas
 > `email`, `role` e `expiresInMs` — **o JWT nunca aparece na resposta**.
@@ -194,6 +224,16 @@ frontend (React 19 + Vite)  ──►  backend (Spring Boot 3.5)  ──►  API
 | `GET` | `/api/coingecko` | Top 100 criptomoedas por market cap em BRL |
 | `GET` | `/api/coingecko/{name}` | Preço de cripto específica em BRL — ex: `bitcoin` |
 
+### ₿ Criptomoedas — `/api/coinmarketcap`
+| Método | Rota | Descrição |
+|---|---|---|
+| `GET` | `/api/coinmarketcap` | Listagem por market cap (top 100) |
+| `GET` | `/api/coinmarketcap/global` | Métricas globais do mercado |
+| `GET` | `/api/coinmarketcap/{term}` | Busca por símbolo ou nome |
+
+> Fonte opcional: sem `CMC_API_KEY` ela fica desligada e o painel roda só com o
+> CoinGecko — de propósito, para a aplicação subir sem a chave.
+
 ### 💱 Câmbio — `/api/frankfurter`
 | Método | Rota | Descrição |
 |---|---|---|
@@ -217,6 +257,11 @@ frontend (React 19 + Vite)  ──►  backend (Spring Boot 3.5)  ──►  API
 | `GET` | `/api/ipea/macro` | PIB, investimento, Selic, reservas, arrecadação |
 | `GET` | `/api/ipea/precos` | INPC e IGP-M |
 | `GET` | `/api/ipea/populacao` | População total e projeções até 2070 |
+
+### 📉 SIDRA — `/api/sidra`
+| Método | Rota | Descrição |
+|---|---|---|
+| `GET` | `/api/sidra/pib-estados` | PIB por unidade da federação |
 
 ### 🌍 World Bank — `/api/worldbank`
 | Método | Rota | Descrição |
@@ -270,11 +315,39 @@ code (unique)                 sigla / nome                 nome
 name / full_name              regiao_id / sigla / nome     state_id (FK)
 ispb / synced_at              synced_at                    synced_at
 
-users
-─────
-id (UUID, PK)
-name / email (unique) / password / created_at
+users                         user_profiles                email_outbox
+─────                         ─────────────                ────────────
+id (UUID, PK)                 id (PK)                      id (UUID, PK)
+name                          user_id (FK → users)         recipient
+email (unique)                área / subárea               email_type
+password (BCrypt)             nível de educação            status
+role  (USER | ADMIN)          nível profissional           attempts
+verified                                                   next_attempt_at
+verification_code                                          last_error
+verification_code_expires_at                               created_at
+password_changed_at  ← V5                                  completed_at
+created_at
+
+knowledge_areas · knowledge_subareas · education_levels · profession_levels
+──────────────────────────────────────────────────────────────────────────
+Catálogos do perfil — populados por migration, servidos em /api/profile/options
+
+cmc_crypto_snapshots · cmc_credit_usage · lbma_fixings
+metal_history · pib_snapshots · pib_estadual_snapshots
+─────────────────────────────────────────────────────
+Séries e snapshots das fontes adicionais
 ```
+
+**21 tabelas ao todo**, todas criadas pelo Flyway. As migrations vivem em
+`backend/backend/src/main/resources/db/migration/`:
+
+| Migration | O que faz |
+|---|---|
+| `V1__baseline.sql` | Schema inicial — 15 tabelas e 17 índices |
+| `V2__bank_ispb.sql` | Coluna `ispb` em `banks` |
+| `V3__user_profile.sql` | `user_profiles` + os quatro catálogos |
+| `V4__email_outbox.sql` | Fila de e-mail com índices de drenagem |
+| `V5__user_password_changed_at.sql` | `users.password_changed_at` |
 
 ### Estratégia de persistência
 
@@ -287,6 +360,27 @@ name / email (unique) / password / created_at
 | `banks` | Startup — se tabela vazia | Idempotente por `code` |
 | `ibge_states` | Startup — se tabela vazia | Idempotente por `id` IBGE |
 | `ibge_cities` | Primeira consulta por estado (lazy) | Idempotente por estado |
+| `email_outbox` | No cadastro/reenvio, antes de responder | — (uma linha por envio) |
+
+### Fila de e-mail
+
+O envio **não acontece na thread da requisição**. O cadastro grava uma linha em
+`email_outbox` e responde na hora; o `EmailOutboxScheduler` drena a cada 10 segundos,
+com retry e backoff exponencial. Falha de SMTP não derruba o cadastro — a entrada
+fica `PENDING` e é retentada.
+
+| Status | Significado |
+|---|---|
+| `PENDING` | aguardando envio, ou a próxima tentativa após falha |
+| `SENT` | entregue ao servidor SMTP sem erro |
+| `FAILED` | esgotou as tentativas; fica no banco para diagnóstico |
+| `OBSOLETE` | descartado — a conta já se verificou ou foi removida no meio do caminho |
+
+Diagnóstico é uma consulta:
+
+```sql
+select status, count(*) from email_outbox group by status;
+```
 
 ---
 
@@ -348,6 +442,23 @@ guarda síncronas. Toda autorização real acontece no servidor.
 
 O header `Authorization: Bearer` continua aceito pelo `JwtFilter`, para Swagger,
 `curl` e testes de integração.
+
+### Invalidação de sessão ao trocar a senha
+
+JWT é stateless — não há store de sessão para limpar, então o token anterior seguiria
+válido até expirar, mesmo depois de a vítima trocar a senha justamente para expulsar
+quem invadiu.
+
+`users.password_changed_at` resolve isso: o `JwtService` recusa todo token cujo `iat`
+seja anterior a esse instante. **Uma coluna substitui o store de sessão que o JWT não
+tem.** A coluna é anulável de propósito — `NULL` significa "senha nunca trocada", e aí
+não há nada a invalidar.
+
+A comparação trunca para segundos, porque o `iat` do JWT tem precisão de segundo (é o
+que a especificação define) e o timestamp do banco tem microssegundos. Sem truncar, o
+token emitido logo **depois** da troca pareceria anterior a ela, e o usuário cairia
+para fora ao logar em seguida. O preço é uma janela de um segundo, documentada no
+javadoc e coberta por teste.
 
 ---
 
@@ -411,7 +522,11 @@ brasil_panel/
         │   │                        # CacheTtlProperties
         │   ├── cors/                # CorsConfig
         │   ├── jwt/                 # JwtFilter · JwtService
-        │   ├── seed/                # FinancialSeriesSeeder · StaticDataSeeder
+        │   ├── ratelimit/           # ApiRateLimiter · RateLimitFilter
+        │   │                        # RateLimitProperties
+        │   ├── scheduler/           # EmailOutboxScheduler
+        │   ├── seed/                # AdminSeeder · FinancialSeriesSeeder
+        │   │                        # StaticDataSeeder
         │   ├── securityConfig/      # SecurityConfig
         │   └── webConfig/           # WebConfig (RestClient, HTTP/1.1 forçado)
         ├── controller/
@@ -420,7 +535,10 @@ brasil_panel/
         │   │                        # FrankfurterController · IbgeController
         │   │                        # IpeaController · WorldBankController
         │   │                        # BrasilApiController · ViaCepController
-        │   └── auth/                # AuthController
+        │   │                        # SidraController · CryptoCoinMarketCapController
+        │   │                        # AdminController · IpeaAdminController
+        │   ├── auth/                # AuthController
+        │   └── profile/             # ProfileController
         ├── dto/                     # Records de transferência por API
         ├── exception/               # Exceptions customizadas + GlobalExceptionHandler
         ├── model/                   # UserEntity · FinancialSeries · FinancialDataPoint
@@ -435,11 +553,16 @@ brasil_panel/
         ├── service/
         │   ├── api/                 # Um service por API externa (10 services)
         │   ├── auth/                # AuthService · LoginAttemptLimiter
+        │   ├── email/               # EmailService · EmailOutboxService
+        │   │                        # EmailOutboxDispatcher
         │   ├── financial/           # FinancialDataService · SnapshotService
         │   ├── static_data/         # StaticDataService
         │   └── userDetails/         # UserDetailsServiceImpl
         ├── validators/              # Validadores por domínio + @ValidCep
         └── mappers/                 # UserMapper
+
+    src/main/resources/db/migration/  # V1 … V5 — o schema é versionado aqui
+    Dockerfile                        # build multi-estágio (Maven → JRE 21)
 ```
 
 ---
@@ -517,10 +640,14 @@ cd backend/backend
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
-Na primeira inicialização o Hibernate cria todas as tabelas e os seeders executam automaticamente:
+Na primeira inicialização o **Flyway** cria todo o schema (o Hibernate roda com
+`ddl-auto: validate` e nunca altera nada), e em seguida os seeders executam
+automaticamente:
 - ✅ 9 séries financeiras do BCB inseridas em `financial_series`
 - ✅ ~260 bancos da BrasilAPI inseridos em `banks`
 - ✅ 27 estados do IBGE inseridos em `ibge_states`
+- ✅ admin criado — **apenas se `ADMIN_PASSWORD` estiver definida**; sem ela o seeder
+  registra um aviso e não cria nada
 
 > 📖 Swagger UI: `http://localhost:8080/swagger-ui.html`
 
@@ -536,6 +663,38 @@ npm run dev
 
 ---
 
+## 🌐 Produção
+
+| Camada | Onde | Observação |
+|---|---|---|
+| Backend | **Render** — container Docker | Free hiberna após ~15 min sem requisição |
+| Banco | **Neon** — PostgreSQL 18.6 | Serverless; suspende e acorda em ~1s |
+| E-mail | **Resend** — SMTP, domínio verificado | Fila assíncrona via `email_outbox` |
+| Frontend | Vercel / Cloudflare Pages | Reescreve `/api/*` para o backend |
+
+```
+API     https://brasil-panel-utilities-api.onrender.com
+Health  /actuator/health
+```
+
+O Render não tem runtime Java nativo, por isso o backend é publicado como imagem —
+`backend/backend/Dockerfile`, build multi-estágio (Maven compila, JRE 21 executa,
+processo roda como usuário não-root).
+
+**Duas características do plano gratuito que afetam o comportamento observável:**
+
+- **Cold start de ~150 segundos.** A instância hiberna após ~15 min ociosa, e o boot
+  completo do Spring Boot na CPU compartilhada do Free leva esse tempo. O primeiro
+  acesso depois da hibernação é lento — o frontend precisa tolerar isso, com timeout
+  compatível e um estado de carregamento, em vez de tratar como erro.
+- **SMTP na porta 587 é bloqueado na saída.** Por isso `MAIL_PORT=2587`, a porta
+  alternativa do Resend.
+
+> 📘 Runbook completo — variáveis de ambiente, armadilhas de boot, verificação
+> pós-deploy e semântica de rollback com migrations: **[DEPLOY.md](DEPLOY.md)**
+
+---
+
 ## 🔒 Segurança e Credenciais
 
 - Autenticação via **JWT em cookie `HttpOnly`** — inacessível ao JavaScript. `SameSite=Lax`
@@ -543,6 +702,8 @@ npm run dev
 - `JwtFilter` lê o cookie e, se ausente, o header `Authorization` — o header segue
   disponível para Swagger, `curl` e testes
 - Senhas armazenadas com **BCrypt**
+- **Trocar a senha invalida todas as sessões abertas** — `users.password_changed_at`
+  faz o `JwtService` recusar tokens emitidos antes da troca
 - **Rate limiting** no login: 5 tentativas por e-mail a cada 15 minutos, depois `429`.
   O contador é por instância (Caffeine em memória) — com múltiplas réplicas o limite
   efetivo é multiplicado
@@ -551,6 +712,14 @@ npm run dev
 - Rotas públicas: dados econômicos, `register`, `verify-email`, `resend-code`, `login`
   e `logout`. As demais exigem sessão; `/api/admin/**` exige `ROLE_ADMIN`
 - **Swagger só no perfil `dev`** — desabilitado em produção
+- **Rate limit de e-mail**: teto por cliente em `/auth/register` e `/auth/resend-code`,
+  mais um teto global diário da instância, dimensionado abaixo da cota do provedor —
+  sem ele um pico estouraria a cota e os envios passariam a ser recusados
+- **O health check não depende de serviço externo.** O `MailHealthIndicator` do Spring
+  Boot é desligado de propósito: ele abre uma conexão SMTP a cada checagem, e como a
+  plataforma usa `/actuator/health` para decidir se a instância está viva, um provedor
+  de e-mail fora do ar derrubava a API inteira. O health só deve refletir o que impede
+  a aplicação de servir requisição
 - **O schema é versionado pelo Flyway** (`src/main/resources/db/migration/`). Os três
   perfis usam `ddl-auto: validate` — o Hibernate nunca altera schema em lugar nenhum.
   Alterar entidade exige a migration `V2__`, `V3__`… no mesmo commit; o CI roda as
