@@ -4,9 +4,18 @@ import { clearSession } from '../../lib/auth/jwt';
 
 
 
+// O backend hiberna no plano gratuito do Render e o boot completo leva ~150s.
+// Com um teto de 15s, a primeira visita depois da hibernação falha sempre — o
+// usuário vê "Erro de conexão" num sistema que está apenas acordando. O valor
+// fica configurável para que produção possa tolerar o cold start sem que o
+// desenvolvimento (onde a API responde na hora) espere por um servidor morto.
+const DEFAULT_TIMEOUT_MS = 15_000;
+
+const timeoutMs = Number(import.meta.env.VITE_API_TIMEOUT_MS) || DEFAULT_TIMEOUT_MS;
+
 export const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api',
-  timeout: 15000,
+  timeout: timeoutMs,
   // O JWT vai num cookie httpOnly: o navegador o anexa sozinho.
   // Não há token em localStorage para injetar num header.
   withCredentials: true,
