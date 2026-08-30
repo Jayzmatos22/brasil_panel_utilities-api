@@ -6,9 +6,18 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Disparo manual do refresh das séries do IPEA.
@@ -40,5 +49,59 @@ public class IpeaAdminController {
     public ResponseEntity<String> refreshAll() {
         ipeaService.refreshAll();
         return ResponseEntity.ok("Refresh concluído");
+    }
+
+    /**
+     * Diagnóstico TEMPORÁRIO de conectividade com o ipeadata.gov.br.
+     *
+     * <p>As séries do IPEA falham com {@code connect timed out} a partir do datacenter do
+     * Render (EUA). Este endpoint distingue as duas causas possíveis a partir da própria
+     * rede do Render: resolve o host e tenta um connect TCP cru em cada IP com timeout
+     * generoso (10s), medindo o tempo. Latência alta que completa em, digamos, 4s indica
+     * que só faltava timeout; falha mesmo com 10s indica bloqueio/rota inexistente.
+     *
+     * <p>Remover assim que a causa estiver determinada.
+     */
+    @Operation(summary = "[TEMP] Diagnóstico de conectividade com o IPEA")
+    @GetMapping("/_diag")
+    public ResponseEntity<Map<String, Object>> diag() {
+        String host = "ipeadata.gov.br";
+        int port = 80;
+        int timeoutMs = 10_000;
+
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("host", host);
+        out.put("port", port);
+        out.put("connectTimeoutMs", timeoutMs);
+
+        InetAddress[] addresses;
+        try {
+            addresses = InetAddress.getAllByName(host);
+        } catch (Exception e) {
+            out.put("dns", "FALHOU: " + e.getClass().getSimpleName() + ": " + e.getMessage());
+            return ResponseEntity.ok(out);
+        }
+
+        List<Map<String, Object>> results = new ArrayList<>();
+        for (InetAddress addr : addresses) {
+            Map<String, Object> r = new LinkedHashMap<>();
+            r.put("ip", addr.getHostAddress());
+            long start = System.nanoTime();
+            try (Socket socket = new Socket()) {
+                socket.connect(new InetSocketAddress(addr, port), timeoutMs);
+                long ms = (System.nanoTime() - start) / 1_000_000;
+                r.put("resultado", "CONECTOU");
+                r.put("tempoMs", ms);
+            } catch (Exception e) {
+                long ms = (System.nanoTime() - start) / 1_000_000;
+                r.put("resultado", "FALHOU");
+                r.put("tempoMs", ms);
+                r.put("erro", e.getClass().getSimpleName() + ": " + e.getMessage());
+            }
+            results.add(r);
+        }
+        out.put("dns", addresses.length + " endereço(s) resolvido(s)");
+        out.put("tentativas", results);
+        return ResponseEntity.ok(out);
     }
 }
