@@ -107,6 +107,104 @@
     radial-gradient(at 10% 90%, rgba(2, 6, 23, 0.8) 0px, transparent 60%);
 }
 
+/* ─── Base do documento ─────────────────────────────────────────────────── */
+
+/* O escuro deste app nasce inteiro de camadas que NÃO são o documento: o
+   ::before fixo de .bg-smoke-abyss logo acima, e o fundo próprio de cada card.
+   O documento em si nunca teve fundo — o Tailwind zera a margem do body e nada
+   mais —, então o canvas do navegador continuava BRANCO por baixo de tudo.
+
+   Isso é invisível enquanto todo pixel da tela está pintado, e era exatamente o
+   que aparecia no mobile ao rolar rápido. Três manifestações, uma só causa:
+
+   1. Checkerboarding. Rolagem em toque é assíncrona: o compositor desloca a
+      camada antes de a região recém-revelada ter sido rasterizada, e preenche
+      os ladrilhos que faltam com a cor-base do documento — branco. Daí a faixa
+      retangular na BORDA DE ATAQUE do gesto (embaixo, ao descer) que some
+      sozinha quando o dedo para e a rasterização alcança. Rolagem lenta não
+      reproduz porque a rasterização nunca fica para trás.
+   2. Conteúdo "quase apagado" na faixa. É o mesmo branco por baixo de pixels
+      ainda parcialmente compostos — não é opacidade, é fundo aparecendo.
+   3. Barra de endereço retrátil. Ao colapsar/expandir, o iOS reposiciona os
+      elementos `position: fixed` com um quadro de atraso, e o que aparece na
+      folga é, de novo, o canvas.
+
+   Pintar o canvas de #020202 (a mesma base dos halos) neutraliza as três: o
+   pior caso passa a ser um retângulo da cor do fundo, ou seja, nada visível.
+   Nenhum pixel do estado estável muda — a camada de halos continua por cima,
+   porque z-index negativo pinta ACIMA do fundo do canvas, não abaixo.
+
+   `color-scheme: dark` fecha o cerco nas superfícies que nenhum seletor
+   alcança: a área de overscroll (o "rubber band" do iOS), o fundo antes do
+   primeiro paint e os controles nativos passam a nascer escuros. */
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  background-color: #020202;
+}
+
+/* Casco do DashboardLayout. As duas linhas de `min-height` são fallback, não
+   duplicação: quem não conhece `svh` fica com `vh`.
+
+   `svh` e não `vh`: `100vh` mede a janela com a barra de endereço RECOLHIDA.
+   Numa página curta — o 404, uma tela que ainda está carregando — o casco então
+   nasce mais alto que a área visível e o documento ganha uma rolagem fantasma
+   do tamanho exato da barra. A faixa que sobra embaixo não é coberta por
+   nenhuma camada pintada, e é justamente a parte de baixo da tela onde o
+   problema aparecia. `100svh` cabe sempre.
+
+   Também não `dvh`: ele acerta a altura, mas muda de valor durante a rolagem, e
+   redimensionar o casco a cada quadro é o oposto do que se quer aqui. `svh` é o
+   único dos três que é estável E cabe sempre. É a mesma escolha que a
+   PerfilPage já tinha feito, pelo mesmo motivo. */
+.app-shell {
+  min-height: 100vh;
+  min-height: 100svh;
+}
+
+/* ─── Custo de composição na rolagem tátil ──────────────────────────────── */
+
+/* `backdrop-filter` aparece em 71 elementos do projeto, a maioria cards com
+   `bg-white/5 backdrop-blur-md`, e o header sticky por cima de todos eles. Cada
+   um obriga o compositor a recortar o que está atrás, desfocar e recompor a cada
+   quadro enquanto a página desliza — e o header, que fica parado sobre conteúdo
+   em movimento, refaz esse recorte na largura inteira da tela sem parar. No desktop sobra GPU para isso; num celular ou
+   tablet a rasterização não acompanha um gesto rápido — e o que se vê na região
+   que ficou para trás é o checkerboarding descrito acima. Este bloco ataca a
+   causa da lentidão; o bloco anterior, a cor que ela expunha.
+
+   O corte é por LARGURA e não por `pointer: coarse` porque o sintoma foi
+   relatado em celular e tablet, que é onde a conta não fecha. Acima de lg o
+   desktop fica pixel a pixel idêntico.
+
+   Perder o desfoque abaixo de lg quase não custa aparência: atrás de todo
+   elemento com blur está o fundo quase liso (#020202 mais halos de alfa baixo),
+   e desfocar isso devolve praticamente a mesma cor. Cada elemento mantém o
+   próprio `bg-*` translúcido, que é quem de fato faz a superfície.
+
+   O seletor por atributo alcança as utilities do Tailwind sem editar 30
+   arquivos. Regra sem `@layer` vence qualquer utility, que vive em
+   `@layer utilities` — a especificidade nem entra na conta. */
+@media (max-width: 63.9375rem) {
+  [class*="backdrop-blur"] {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  /* O header é a única superfície cuja legibilidade dependia mesmo do desfoque:
+     #1456f237 são 22% de opacidade sobre o conteúdo que corre por baixo (ele é
+     `fixed` no HeaderApp do onboarding). Opaco no lugar — o valor é esses mesmos
+     22% de #1456f2 já resolvidos sobre a base #020202, então parado no topo o
+     header continua idêntico. Os três halos radiais seguem por cima, intactos. */
+  .principal-header {
+    background-color: #061436;
+  }
+}
+
 /* Tracking de corpo. O Linear aplica −0.011em já no texto de 15px, e é parte
    grande do porquê de o texto dele parecer mais assentado que o padrão.
 

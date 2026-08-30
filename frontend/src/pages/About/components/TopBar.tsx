@@ -20,7 +20,7 @@ export function TopBar() {
   const isLoggedIn = isAuthenticated();
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/5 bg-ink/80 backdrop-blur-md">
+    <header className="sticky top-0 z-50 border-b border-white/5 bg-ink/80 max-lg:bg-ink backdrop-blur-md">
       <div
         className={`${CONTAINER} flex h-16 items-center justify-between gap-4`}
       >
