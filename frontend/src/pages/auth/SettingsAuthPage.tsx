@@ -421,7 +421,7 @@ export default function SettingsAuthPage() {
         // e 16rem da duas colunas cheias. Truncar o rotulo de um controle de
         // navegacao custa mais que uma linha a mais, e um 2x2 le como decisao,
         // enquanto 3+1 le como sobra.
-        className="sticky top-4 z-20 grid-auto-cards gap-3 bg-inset backdrop-blur-xl border border-hairline rounded-card p-3 [--card-min:16rem]"
+        className="sticky top-4 z-20 grid-auto-cards gap-3 bg-inset max-lg:bg-ink backdrop-blur-xl border border-hairline rounded-card p-3 [--card-min:16rem]"
       >
         {quickNavItems.map((navItem) => (
           <button

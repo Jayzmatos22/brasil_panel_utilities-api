@@ -229,7 +229,13 @@ export default function DashboardLayout() {
     // de economia e admin enquanto o .bg-smoke-abyss era avaliado. Com a
     // aprovação para todas, o condicional saiu inteiro em vez de virar uma
     // expressão sempre verdadeira — o que sobra é a classe direta.
-    <div className="min-h-screen flex flex-col bg-smoke-abyss">
+    //
+    // `app-shell` (App.css) no lugar de `min-h-screen`. Só troca a unidade de
+    // altura: `100vh` mede a janela com a barra de endereço RECOLHIDA, então numa
+    // página curta o casco nasce mais alto que a área visível e o documento ganha
+    // uma rolagem fantasma do tamanho exato da barra — a faixa que sobra embaixo
+    // fica fora de qualquer camada pintada. `100svh` cabe sempre.
+    <div className="app-shell flex flex-col bg-smoke-abyss">
       {/* ── Header ───────────────────────────────────────────────────────── */}
       {/* px-gutter (era px-5) alinha o padding do header ao do <main>, de modo
           que a logo passa a ficar na mesma coluna do conteúdo. */}

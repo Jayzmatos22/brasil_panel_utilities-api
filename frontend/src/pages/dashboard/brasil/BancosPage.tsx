@@ -242,7 +242,7 @@ export default function BancosPage() {
           // é `scrollbar-thin`, definida em App.css.
           <div className="overflow-x-auto overscroll-x-contain max-h-125 overflow-y-auto scrollbar-thin">
             <table className="w-full min-w-md text-sm">
-              <thead className="sticky top-0 bg-slate-950/90 backdrop-blur-sm z-10">
+              <thead className="sticky top-0 bg-slate-950/90 max-lg:bg-slate-950 backdrop-blur-sm z-10">
                 <tr className="border-b border-white/10">
                   <th className="text-left py-3 px-4 text-slate-500 font-medium w-24 text-xs uppercase tracking-wider">
                     Código
