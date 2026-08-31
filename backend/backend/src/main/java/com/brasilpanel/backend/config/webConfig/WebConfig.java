@@ -19,14 +19,12 @@ public class WebConfig {
     private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(5);
 
     /**
-     * O DNS do ipeadata.gov.br devolve dois endereços e um deles nunca completa o
-     * handshake TCP — medido: 45.171.102.13 conecta em 27ms e entrega a série em
-     * 384ms, enquanto 177.15.137.13 fica pendurado além de 12s sem conectar.
-     * Como o IpeaService percorre os endereços em sequência, cada candidato morto
-     * custa um connect timeout inteiro, e é esse valor — não o read timeout — que
-     * domina a latência da página. 2s é folgado para um host que conecta em 27ms.
+     * O IpeaService fala com {@code www.ipeadata.gov.br} pelo nome, numa tentativa
+     * só — sem a antiga engenharia de conectar por IP. Um connect timeout mais
+     * generoso que o padrão cobre a latência de fora do Brasil (o Render está nos
+     * EUA) sem prender a thread: o read timeout separado corta a resposta pendurada.
      */
-    private static final Duration IPEA_CONNECT_TIMEOUT = Duration.ofSeconds(2);
+    private static final Duration IPEA_CONNECT_TIMEOUT = Duration.ofSeconds(8);
 
     private static final Duration READ_TIMEOUT = Duration.ofSeconds(10);
 
