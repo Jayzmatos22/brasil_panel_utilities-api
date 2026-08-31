@@ -16,23 +16,15 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
-import java.net.Inet6Address;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.time.Duration;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -49,29 +41,18 @@ public class IpeaService {
     private final FinancialDataService financialDataService;
     private static final String SOURCE = "IPEA";
     private static final ZoneOffset BRT = ZoneOffset.of("-03:00");
-    private static final String HOST = "ipeadata.gov.br";
+
+    /**
+     * Host oficial da API, {@code www} incluso. O apex {@code ipeadata.gov.br}
+     * resolvia para endereços que não completam o handshake TCP a partir de fora
+     * da rede local — a página falhava com {@code connect timed out} tanto no
+     * Render quanto, quando a fonte oscila, no próprio Brasil. O {@code www}
+     * resolve para a infraestrutura correta e responde de imediato. Usar o nome
+     * (e não um IP) deixa o cliente HTTP fazer o DNS e enviar o cabeçalho
+     * {@code Host} certo — o roteamento por nome do IPEA depende disso.
+     */
+    private static final String HOST = "www.ipeadata.gov.br";
     private static final String PATH = "/api/odata4/Metadados('%s')/Valores";
-
-    /**
-     * Por quanto tempo um endereço que falhou fica no fim da fila de candidatos.
-     * Não é banimento: passado o prazo ele volta a ser tentado, porque um IP pode
-     * voltar. Curto o bastante para acompanhar manutenção do lado do IPEA.
-     */
-    private static final Duration FAILURE_MEMORY = Duration.ofMinutes(10);
-
-    /**
-     * Último IP do IPEA que respondeu. Evita pagar o connect timeout do endereço
-     * defeituoso em cada série — o refresh percorre dezenas delas em sequência.
-     */
-    private volatile String lastHealthyAddress;
-
-    /**
-     * Quando cada endereço falhou pela última vez. Sem isto o endereço morto era
-     * tentado de novo em toda série, e o {@code lastHealthyAddress} nunca era
-     * limpo ao parar de funcionar — as duas coisas cobravam um connect timeout
-     * inteiro por série, repetidamente.
-     */
-    private final Map<String, Instant> recentFailures = new ConcurrentHashMap<>();
 
     /**
      * Construtor explícito, e não {@code @RequiredArgsConstructor}: o
@@ -704,7 +685,7 @@ public class IpeaService {
     // Requisição feita à API baseada no código.
     // As requisições abaixo reutilizam essa função, só o código de série muda.
     private List<IpeaItemDTO> fetchSerie(String codigo) {
-        IpeaResponseDTO response = getComFallbackDeEndereco(codigo);
+        IpeaResponseDTO response = buscarSerie(codigo);
 
         if (response == null || response.value() == null) {
             throw new IpeaException("Série não encontrada: " + codigo, 404);
@@ -717,103 +698,28 @@ public class IpeaService {
     }
 
     /**
-     * O DNS de ipeadata.gov.br devolve dois endereços e um deles não completa o
-     * handshake TCP — a conexão fica pendurada até estourar o connect timeout. O
-     * HttpClient do JDK tenta apenas o primeiro endereço resolvido, e é justamente o
-     * defeituoso que costuma vir primeiro, então percorremos a lista na mão.
-     * Como a API só atende em HTTP puro (não há TLS), conectar pelo IP dispensa o
-     * cabeçalho Host — que o JDK bloqueia por ser restrito.
+     * Busca uma série na API do IPEA pelo nome do host ({@link #HOST}), deixando o
+     * cliente HTTP resolver o DNS e enviar o cabeçalho {@code Host} — o roteamento
+     * por nome do servidor depende disso, e é por isto que não conectamos por IP.
+     * O connect e o read timeout do {@code ipeaRestClient} cobrem host lento e
+     * resposta pendurada; aqui só registramos o tempo gasto quando falha.
      */
-    private IpeaResponseDTO getComFallbackDeEndereco(String codigo) {
-        String path = PATH.formatted(codigo);
-        Exception ultimaFalha = null;
-
-        for (String endereco : enderecosCandidatos(codigo)) {
-            long inicio = System.nanoTime();
-            try {
-                IpeaResponseDTO response = restClient.get()
-                        .uri("http://" + endereco + path)
-                        .retrieve()
-                        .body(IpeaResponseDTO.class);
-                lastHealthyAddress = endereco;
-                recentFailures.remove(endereco);
-                log.debug("Série {} obtida de {} em {} ms", codigo, endereco, millisDesde(inicio));
-                return response;
-            } catch (Exception e) {
-                ultimaFalha = e;
-                registrarFalha(endereco);
-                // Em nível warn e com o tempo gasto: é este numero que revela se a
-                // latencia da pagina vem do connect timeout ou da resposta em si.
-                log.warn("Endereço {} falhou para a série {} após {} ms: {}",
-                        endereco, codigo, millisDesde(inicio), e.toString());
-            }
+    private IpeaResponseDTO buscarSerie(String codigo) {
+        long inicio = System.nanoTime();
+        try {
+            return restClient.get()
+                    .uri("http://" + HOST + PATH.formatted(codigo))
+                    .retrieve()
+                    .body(IpeaResponseDTO.class);
+        } catch (Exception e) {
+            log.warn("Falha ao buscar a série {} após {} ms: {}",
+                    codigo, millisDesde(inicio), e.toString());
+            throw new IpeaException("Erro ao buscar série: " + codigo, 502, e);
         }
-
-        throw new IpeaException("Erro ao buscar série: " + codigo, 502, ultimaFalha);
     }
 
     private static long millisDesde(long inicioNanos) {
         return (System.nanoTime() - inicioNanos) / 1_000_000;
-    }
-
-    /** Marca o endereço como suspeito e o descarta como "último saudável" se for ele. */
-    private void registrarFalha(String endereco) {
-        recentFailures.put(endereco, Instant.now());
-        if (endereco.equals(lastHealthyAddress)) {
-            lastHealthyAddress = null;
-        }
-    }
-
-    private boolean falhouRecentemente(String endereco) {
-        Instant falha = recentFailures.get(endereco);
-        return falha != null && falha.isAfter(Instant.now().minus(FAILURE_MEMORY));
-    }
-
-    /**
-     * Ordem de tentativa: último endereço que funcionou, depois os que não falharam
-     * recentemente e, por último, os que falharam. Nenhum candidato é descartado — um
-     * IP pode voltar —, mas o que está morto deixa de ser o primeiro a cobrar timeout.
-     */
-    private List<String> enderecosCandidatos(String codigo) {
-        List<String> resolvidos = new ArrayList<>();
-
-        try {
-            for (InetAddress address : InetAddress.getAllByName(HOST)) {
-                String ip = address instanceof Inet6Address
-                        ? "[" + address.getHostAddress() + "]"
-                        : address.getHostAddress();
-                if (!resolvidos.contains(ip)) {
-                    resolvidos.add(ip);
-                }
-            }
-        } catch (UnknownHostException e) {
-            log.warn("Falha ao resolver {} para a série {}: {}", HOST, codigo, e.getMessage());
-        }
-
-        List<String> saudaveis = new ArrayList<>();
-        List<String> suspeitos = new ArrayList<>();
-        for (String ip : resolvidos) {
-            (falhouRecentemente(ip) ? suspeitos : saudaveis).add(ip);
-        }
-
-        List<String> candidatos = new ArrayList<>();
-        String healthy = lastHealthyAddress;
-        if (healthy != null) {
-            candidatos.add(healthy);
-        }
-        for (String ip : saudaveis) {
-            if (!candidatos.contains(ip)) candidatos.add(ip);
-        }
-        for (String ip : suspeitos) {
-            if (!candidatos.contains(ip)) candidatos.add(ip);
-        }
-
-        // Sem resolução e sem histórico, resta deixar o RestClient tentar pelo nome.
-        if (candidatos.isEmpty()) {
-            candidatos.add(HOST);
-        }
-
-        return candidatos;
     }
 
 }
