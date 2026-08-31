@@ -23,6 +23,7 @@ jobs:
   seed:
     name: Buscar IPEA e gravar no Neon
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     env:
       # Conexao real com o Neon (os unicos segredos de verdade)
       DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
@@ -96,7 +97,7 @@ jobs:
           "
           ok=0; fail=0
           for p in $PATHS; do
-            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 120 "$BASE/$p")
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 "$BASE/$p")
             if [ "$code" = "200" ]; then ok=$((ok+1)); else fail=$((fail+1)); echo "  ! $p -> HTTP $code"; fi
           done
           echo "IPEA: $ok ok, $fail com erro."
