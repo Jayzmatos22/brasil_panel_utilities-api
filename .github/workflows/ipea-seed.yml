@@ -23,7 +23,7 @@ jobs:
   seed:
     name: Buscar IPEA e gravar no Neon
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     env:
       # Conexao real com o Neon (os unicos segredos de verdade)
       DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
@@ -74,6 +74,9 @@ jobs:
 
       - name: Disparar as rotas do IPEA (busca + grava no Neon)
         run: |
+          # Sem errexit: uma rota lenta (curl exit 28 no timeout) NAO pode
+          # abortar o loop inteiro — o objetivo e tolerar falhas individuais.
+          set +e
           BASE=http://localhost:8080/api/ipea
           PATHS="
             emprego renda desigualdade macro precos populacao
@@ -97,8 +100,16 @@ jobs:
           "
           ok=0; fail=0
           for p in $PATHS; do
-            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 "$BASE/$p")
+            code=000
+            # ate 3 tentativas por rota: a fonte do IPEA oscila e estrangula sob rajada
+            for attempt in 1 2 3; do
+              code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 "$BASE/$p")
+              [ "$code" = "200" ] && break
+              sleep 5
+            done
             if [ "$code" = "200" ]; then ok=$((ok+1)); else fail=$((fail+1)); echo "  ! $p -> HTTP $code"; fi
+            # espacamento entre rotas: reduz a chance de bloqueio por rajada
+            sleep 3
           done
           echo "IPEA: $ok ok, $fail com erro."
           # Nao falha o job por algumas series indisponiveis na fonte; falha so
