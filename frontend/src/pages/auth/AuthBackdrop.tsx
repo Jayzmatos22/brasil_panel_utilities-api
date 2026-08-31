@@ -21,7 +21,7 @@ const authBg = findAuthImage('registro-login0');
 /**
  * Camada de arte das telas de autenticação.
  *
- * Renderiza `null` quando não há arquivo em `assets/auth/` — as telas ficam com
+ * Renderiza `null` quando não há arquivo em `assets/app/` — as telas ficam com
  * o `.bg-smoke-abyss` puro, sem ícone de imagem quebrada. É o contrato que
  * `findAuthImage()` documenta.
  */

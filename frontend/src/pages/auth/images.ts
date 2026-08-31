@@ -2,16 +2,24 @@
 //
 // Mesma assinatura de `pages/About/data/images.ts` e `pages/onboarding/images.ts`:
 // glob eager, que resolve as URLs em tempo de build. Trocar a arte é soltar o
-// arquivo em assets/auth/ com o prefixo certo — nenhum import muda.
+// arquivo em assets/app/ com o prefixo certo — nenhum import muda.
 //
 // Não reaproveita os outros dois módulos porque o padrão do glob precisa ser um
-// literal para o Vite estatizar a lista, e lá ele aponta para `assets/app/`.
-// Alargar aquele padrão faria a landing empacotar também a arte desta tela, e
-// vice-versa — exatamente o que assets/app/originais/LEIA-ME.md documenta como
-// a causa dos 3,4 MB de imagem inútil que já saíram num `dist`.
+// literal para o Vite estatizar a lista, e cada um filtra por um prefixo
+// diferente dentro da MESMA pasta: `sobre*` na landing, `universidade*` no
+// onboarding, `registro-login*` aqui. Alargar qualquer um deles para `*` faria
+// cada tela empacotar a arte das outras — exatamente o que
+// assets/app/originais/LEIA-ME.md documenta como a causa dos 3,4 MB de imagem
+// inútil que já saíram num `dist`.
+//
+// ATENÇÃO ao lugar do arquivo: ele vai em `assets/app/`, e NÃO em
+// `assets/app/originais/`. A pasta `originais/` guarda os fontes pesados e é
+// deliberadamente inalcançável — o `*` do Vite não atravessa `/`, então um
+// arquivo lá dentro nunca entra no bundle e esta função devolveria undefined
+// para sempre. O original pesado é que mora lá; a versão otimizada, aqui.
 
 const AUTH_IMAGES = import.meta.glob(
-  '../../assets/auth/registro-login*.{avif,webp,jpeg,jpg,png}',
+  '../../assets/app/registro-login*.{avif,webp,jpeg,jpg,png}',
   { eager: true, import: 'default' },
 ) as Record<string, string>;
 
