@@ -15,8 +15,13 @@ const FEATURES = [
  */
 export function AuthBrandPanel() {
   return (
-    <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12
-                    bg-slate-900 border-r border-slate-800">
+    // `relative z-10` põe o painel acima da camada de arte (z-0), e
+    // `auth-brand-veil` (App.css) substitui o antigo `bg-slate-900`: opaco era
+    // o suficiente para esconder a ave inteira justamente no breakpoint em que
+    // ela deve aparecer. A borda direita sai junto — com a arte atravessando a
+    // emenda, uma linha sólida ali recriaria o corte que a máscara desfaz.
+    <div className="relative z-10 hidden lg:flex lg:w-1/2 flex-col justify-between p-12
+                    auth-brand-veil">
 
       <BrandLogo variant="framed" className="hv-tricolor-glow" />
 

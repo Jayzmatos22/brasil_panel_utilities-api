@@ -205,6 +205,165 @@ body,
   }
 }
 
+/* ─── Arte das telas de autenticação ────────────────────────────────────── */
+
+/* Camada de fundo de Registro e Login (pages/auth/AuthBackdrop.tsx).
+   Uma <img> só; o que muda entre mobile e desktop é enquadramento e máscara.
+
+   `fixed` e não `absolute`: as duas telas usam .app-shell, e um formulário com
+   erro de validação pode passar da altura da janela. Com `absolute` a arte
+   esticaria junto e o recorte mudaria conforme o formulário crescesse.
+
+   z-index 0, com os dois painéis de conteúdo em z-10 (ver LoginPage): põe a
+   arte ACIMA dos halos do .bg-smoke-abyss, que vivem em z-index -1, e abaixo de
+   tudo que se lê. A ordem final, da base para o topo, é
+   canvas #020202 → halos radiais → foto → véu → formulário. */
+.auth-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.auth-backdrop img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+
+  /* MOBILE — a foto é o fundo da página, ancorada no alto.
+     28% da altura da foto: num retrato de ave é por onde costuma passar a
+     cabeça, e é a faixa que sobrevive à dissolução abaixo. */
+  object-position: 50% 28%;
+
+  /* saturate 0.45 é a mesma decisão do hero da landing (`saturate-[.55]`, com o
+     porquê em About/sections/Hero.tsx): plumagem de ave brasileira é azul e
+     amarela saturada, e aqui ela competiria com o âmbar da marca — que nesta
+     tela é a cor do botão de submit, o único alvo da página.
+
+     brightness 0.75 é o que a põe na faixa de luminosidade do abyss (#020202)
+     sem apagá-la. A primeira calibragem usou 0.6 com opacidade 0.55 e o
+     resultado foi textura escura ilegível: a ave sumia, e o que restava não
+     lia como arte nem como fundo. */
+  filter: saturate(0.45) contrast(1.05) brightness(0.75);
+  opacity: 0.62;
+
+  /* A DISSOLUÇÃO. É aqui que a arte se funde com o abyss, e é máscara e não véu
+     por um motivo que se vê na tela: um véu retangular, por mais forte que
+     seja, ainda tem quatro bordas retas em algum nível de contraste. A máscara
+     não escurece a imagem — ela apaga o alfa, então a foto deixa de existir em
+     vez de ficar escura. Nenhuma borda, nenhum retângulo.
+
+     GEOMETRIA, que é onde isto erra fácil: o raio precisa ser menor que a
+     distância do centro até a borda que se quer dissolver, senão a última
+     parada do gradiente cai FORA do elemento e a imagem é cortada a faca.
+     Aqui o centro está em 6% e o raio vertical é 46%, então o alfa chega a zero
+     por volta de 6 + 46 = 52% da altura — acima dos campos, que no mobile ficam
+     no centro vertical. O raio horizontal (125%) é de propósito maior que a
+     folga: no eixo X a borda é a da própria tela, e ali corte reto é sangria de
+     página, não emenda. */
+  mask-image: radial-gradient(
+    125% 46% at 50% 6%,
+    rgb(0 0 0 / 1) 0%,
+    rgb(0 0 0 / 0.82) 42%,
+    rgb(0 0 0 / 0.3) 72%,
+    rgb(0 0 0 / 0) 100%
+  );
+}
+
+/* Véu de leitura. A máscara resolve a fusão, mas não garante contraste:
+   dependendo da foto, o trecho mais claro pode cair justo atrás de um rótulo.
+   Este gradiente devolve o piso de contraste sem tocar no recorte da arte.
+
+   Três funções, de cima para baixo: escurecer a borda superior, para o fundo
+   da foto derreter no abyss em vez de encostar na quina da tela; abrir a faixa
+   onde a ave aparece; e fechar em preto onde ficam os campos. */
+.auth-backdrop::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgb(2 2 2 / 0.6) 0%,
+    rgb(2 2 2 / 0.12) 16%,
+    rgb(2 2 2 / 0.44) 38%,
+    rgb(2 2 2 / 0.9) 62%,
+    rgb(2 2 2 / 1) 78%
+  );
+}
+
+@media (width >= 64rem) {
+  /* DESKTOP — a arte passa a morar na metade esquerda, que é o painel de marca.
+     56% e não 50%: a sobra atravessa a emenda do split-screen e é a máscara que
+     decide onde a imagem termina. Cortar em 50% cravado devolveria a borda reta
+     que a máscara existe para eliminar.
+
+     object-position no centro (50%) de propósito. O hero da landing pode
+     espelhar a arara porque conhece a composição daquela foto; aqui a arte é
+     trocável pelo glob, então o padrão precisa ser o recorte neutro. É este o
+     botão a girar quando a arte definitiva entrar: mova o X para longe do lado
+     onde a ave estiver. */
+  .auth-backdrop img {
+    width: 56%;
+    object-position: 50% 45%;
+    opacity: 0.6;
+    filter: saturate(0.45) contrast(1.05) brightness(0.85);
+
+    /* Linear e não radial neste breakpoint. Só UMA borda precisa dissolver — a
+       da emenda, à direita. As outras três são sangria de tela. Um radial que
+       morresse antes da emenda também comeria o topo e o rodapé, deixando a
+       arte como uma bolha flutuando no painel em vez de uma imagem de altura
+       cheia. O linear resolve a emenda e não mexe no resto.
+
+       A última parada é 100%, e a largura do elemento é 56%: o alfa chega a
+       zero exatamente na borda direita da camada, 6% de tela DEPOIS da divisa
+       de 50%. Quem olha não acha onde a foto acaba. */
+    mask-image: linear-gradient(
+      to right,
+      rgb(0 0 0 / 1) 0%,
+      rgb(0 0 0 / 1) 40%,
+      rgb(0 0 0 / 0.62) 66%,
+      rgb(0 0 0 / 0.16) 87%,
+      rgb(0 0 0 / 0) 100%
+    );
+  }
+
+  /* No desktop o véu gira de eixo. O de baixo protegia os campos empilhados do
+     mobile; aqui os campos estão à DIREITA, então quem precisa de piso de
+     contraste é a metade direita, e a coluna da arte pode ficar aberta. */
+  .auth-backdrop::after {
+    background: linear-gradient(
+      to right,
+      rgb(2 2 2 / 0) 42%,
+      rgb(2 2 2 / 0.5) 58%,
+      rgb(2 2 2 / 0.88) 74%,
+      rgb(2 2 2 / 0.96) 100%
+    );
+  }
+}
+
+/* Véu do painel de marca. Mora aqui e não numa utility porque é o par do
+   gradiente acima: os dois juntos é que reservam a faixa de texto.
+
+   Substitui o `bg-slate-900` que o painel tinha. Aquele era opaco e, com a arte
+   atrás, esconderia a ave inteira justamente no breakpoint em que ela deve
+   aparecer. Opaco à esquerda, onde estão o título e a lista de recursos, e
+   transparente à direita, onde a ave assume. Mesma lógica de dois eixos do hero
+   da landing.
+
+   O 0.88 da primeira parada é o piso de contraste do texto, não estética: o
+   título é branco em 48px, mas a lista é slate-300 em 14px, e é ela que decide
+   o quanto o véu pode abrir. */
+.auth-brand-veil {
+  background-image: linear-gradient(
+    to right,
+    rgb(2 2 2 / 0.88) 0%,
+    rgb(2 2 2 / 0.72) 34%,
+    rgb(2 2 2 / 0.34) 68%,
+    rgb(2 2 2 / 0) 100%
+  );
+}
+
 /* Tracking de corpo. O Linear aplica −0.011em já no texto de 15px, e é parte
    grande do porquê de o texto dele parecer mais assentado que o padrão.
 
