@@ -38,7 +38,8 @@ const rank = (filename: string): number => {
 
 /**
  * Resolve a arte pelo prefixo do arquivo:
- * 'registro-login0' → registro-login0-img.webp.
+ * 'registro-login0' → registro-login0-img.webp (celular),
+ * 'registro-login1' → registro-login1-img.webp (md e acima).
  *
  * Devolve undefined quando não há arquivo — diferente do import estático, o
  * glob não quebra o build se a arte sumir. Quem consome deve renderizar a

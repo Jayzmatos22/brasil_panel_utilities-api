@@ -1,11 +1,18 @@
 // Arte de fundo das telas de Registro e Login.
 //
-// Uma camada só, `position: fixed`, compartilhada pelas duas telas — e não uma
-// por tela, nem uma por breakpoint. O que muda entre mobile e desktop é o
-// enquadramento e a máscara, e isso é papel do CSS (App.css, seção "Arte das
-// telas de autenticação"), não de duas <img> alternadas por classe: duas
-// <img> fariam o navegador baixar a mesma foto duas vezes e a que estivesse
-// escondida ainda contaria para o LCP.
+// DUAS artes, uma por faixa de viewport, porque a composição que funciona nas
+// duas é diferente: no celular a tela é um retrato alto e a arte vira o fundo
+// da página inteira; de md para cima ela é paisagem e divide espaço com o
+// painel de marca. Uma foto só não serve aos dois — recortar um retrato em
+// paisagem sobra fundo e falta assunto.
+//
+//   registro-login0  → abaixo de md (< 768px)
+//   registro-login1  → md e acima
+//
+// <picture> e não duas <img> alternadas por CSS: com `display: none` o
+// navegador ainda baixa a imagem escondida, e seriam dois downloads para
+// mostrar um. O <source media> faz a escolha ANTES do fetch, então cada
+// aparelho baixa exatamente a arte que vai usar.
 //
 // Fica FORA do AuthBrandPanel de propósito, mesmo o desktop desenhando a arte
 // dentro dele. O painel é `hidden lg:flex` — se a imagem morasse lá dentro, ela
@@ -13,33 +20,51 @@
 // ela virasse o fundo da página.
 import { findAuthImage } from './images';
 
-// Resolvido no módulo, não no render: o glob é estático e o valor nunca muda
+// Resolvidas no módulo, não no render: o glob é estático e o valor nunca muda
 // entre renders. Ler no corpo do componente só repetiria o trabalho a cada
 // digitação do formulário.
-const authBg = findAuthImage('registro-login0');
+const artMobile = findAuthImage('registro-login0');
+const artWide = findAuthImage('registro-login1');
 
 /**
  * Camada de arte das telas de autenticação.
  *
- * Renderiza `null` quando não há arquivo em `assets/app/` — as telas ficam com
- * o `.bg-smoke-abyss` puro, sem ícone de imagem quebrada. É o contrato que
- * `findAuthImage()` documenta.
+ * Renderiza `null` quando não há nenhuma das duas artes em `assets/app/` — as
+ * telas ficam com o `.bg-smoke-abyss` puro, sem ícone de imagem quebrada. É o
+ * contrato que `findAuthImage()` documenta.
+ *
+ * Com apenas UMA das duas presentes, ela é usada só na faixa a que pertence, e
+ * a outra faixa fica sem arte. `data-art` diz ao CSS qual é o caso; sem isso, a
+ * arte de celular vazaria para o desktop, que é onde ela justamente não
+ * funciona.
  */
 export function AuthBackdrop() {
-  if (authBg === undefined) return null;
+  if (artMobile === undefined && artWide === undefined) return null;
+
+  const faixa =
+    artMobile !== undefined && artWide !== undefined
+      ? 'ambas'
+      : artWide !== undefined
+        ? 'wide'
+        : 'mobile';
 
   return (
     // aria-hidden e não um alt descritivo: a imagem é atmosfera, não conteúdo.
     // Nada nela é informação que o formulário ao lado já não dê, e anunciá-la
     // só atrasaria quem usa leitor de tela para chegar aos campos.
-    <div className="auth-backdrop" aria-hidden="true">
-      <img
-        src={authBg}
-        alt=""
-        // Sem loading="lazy": está acima da dobra e é o LCP destas telas.
-        fetchPriority="high"
-        decoding="async"
-      />
+    <div className="auth-backdrop" data-art={faixa} aria-hidden="true">
+      <picture>
+        {artWide !== undefined && (
+          <source media="(min-width: 48rem)" srcSet={artWide} />
+        )}
+        <img
+          src={artMobile ?? artWide}
+          alt=""
+          // Sem loading="lazy": está acima da dobra e é o LCP destas telas.
+          fetchPriority="high"
+          decoding="async"
+        />
+      </picture>
     </div>
   );
 }
