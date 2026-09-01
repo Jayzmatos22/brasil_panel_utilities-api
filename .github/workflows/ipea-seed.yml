@@ -1,0 +1,121 @@
+name: Seed IPEA no Neon
+
+# Por que este workflow existe:
+# O backend roda no Render (datacenter nos EUA), que NAO tem rota ate o
+# ipeadata.gov.br — toda busca do IPEA falha com "connect timed out". Ja o
+# runner do GitHub Actions (tambem nos EUA, mas em outra rede) ALCANCA o IPEA
+# na hora (medido: HTTP 200 em 0,77s no host www). Como o app e DB-first, basta
+# gravar os dados do IPEA no Neon a partir daqui: o Render passa a servir do
+# banco e nunca precisa alcancar a fonte.
+#
+# Este job sobe o backend apontando para o Neon, espera ficar de pe e chama as
+# rotas publicas do IPEA. Cada uma busca a serie no IPEA e persiste no Neon
+# (o proprio caminho DB-first faz o write-back). Sem passo manual.
+
+on:
+  schedule:
+    # Todo dia 1, 06:00 UTC (03:00 BRT). O dado do IPEA muda por mes/ano, entao
+    # mensal e de sobra. Ajuste a vontade.
+    - cron: '0 6 1 * *'
+  workflow_dispatch: {}
+
+jobs:
+  seed:
+    name: Buscar IPEA e gravar no Neon
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      # Conexao real com o Neon (os unicos segredos de verdade)
+      DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+      DATABASE_USERNAME: ${{ secrets.NEON_DATABASE_USERNAME }}
+      DATABASE_PASSWORD: ${{ secrets.NEON_DATABASE_PASSWORD }}
+      # Valores descartaveis: o job so le do IPEA e grava no banco. Nao envia
+      # e-mail (mail dummy), nao emite JWT que va a lugar nenhum (secret dummy),
+      # nao consulta as APIs pagas (keys dummy). So precisam existir para o
+      # contexto do Spring subir.
+      SPRING_PROFILES_ACTIVE: prod
+      PORT: '8080'
+      JWT_SECRET: seed-job-dummy-secret-nao-usado-32-bytes-min
+      MAIL_HOST: localhost
+      MAIL_USERNAME: x
+      MAIL_PASSWORD: x
+      ALPHA_KEYS: x
+      METALS_KEY: x
+    steps:
+      - name: Baixar codigo
+        uses: actions/checkout@v4
+
+      - name: Configurar Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Compilar o jar
+        working-directory: backend/backend
+        run: ./mvnw -B -q clean package -DskipTests
+
+      - name: Subir o backend (apontado para o Neon) em segundo plano
+        working-directory: backend/backend
+        run: |
+          java -jar target/backend-*.jar > app.log 2>&1 &
+          echo $! > app.pid
+
+      - name: Esperar ficar de pe
+        run: |
+          for i in $(seq 1 60); do
+            if curl -sf --max-time 5 http://localhost:8080/actuator/health | grep -q '"status":"UP"'; then
+              echo "Backend no ar."; exit 0
+            fi
+            sleep 5
+          done
+          echo "Backend nao subiu a tempo. Log:"; tail -n 100 backend/backend/app.log; exit 1
+
+      - name: Disparar as rotas do IPEA (busca + grava no Neon)
+        run: |
+          # Sem errexit: uma rota lenta (curl exit 28 no timeout) NAO pode
+          # abortar o loop inteiro — o objetivo e tolerar falhas individuais.
+          set +e
+          BASE=http://localhost:8080/api/ipea
+          PATHS="
+            emprego renda desigualdade macro precos populacao
+            balanca/ativos-reservas balanca/transacoes-correntes balanca/comercial
+            balanca/servicos balanca/renda-primaria balanca/investimento-direto
+            balanca/conta-capital balanca/conta-financeira balanca/investimento-carteira
+            balanca/servicos-despesas balanca/investimento-direto-ingressos
+            balanca/transacoes-correntes-pib
+            exportacoes/total exportacoes/quantum exportacoes/produtos-basicos
+            exportacoes/quantum-agricultura-pecuaria exportacoes/bens-consumo
+            exportacoes/precos-bens-capital exportacoes/precos-bens-duraveis
+            exportacoes/precos-bens-nao-duraveis exportacoes/valor-bens-intermediarios
+            exportacoes/quantum-bens-intermediarios exportacoes/valor-combustiveis
+            mercado/ibovespa
+            impostos/importacao impostos/irpf impostos/irpj impostos/ir-total
+            impostos/iof impostos/ipi impostos/itr
+            cambio/comercial cambio/comercial/exportacao cambio/comercial/importacao
+            cambio/comercial-financeiro cambio/financeiro cambio/financeiro/compra
+            cambio/financeiro/venda
+            pib/mensal
+          "
+          ok=0; fail=0
+          for p in $PATHS; do
+            code=000
+            # ate 3 tentativas por rota: a fonte do IPEA oscila e estrangula sob rajada
+            for attempt in 1 2 3; do
+              code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 "$BASE/$p")
+              [ "$code" = "200" ] && break
+              sleep 5
+            done
+            if [ "$code" = "200" ]; then ok=$((ok+1)); else fail=$((fail+1)); echo "  ! $p -> HTTP $code"; fi
+            # espacamento entre rotas: reduz a chance de bloqueio por rajada
+            sleep 3
+          done
+          echo "IPEA: $ok ok, $fail com erro."
+          # Nao falha o job por algumas series indisponiveis na fonte; falha so
+          # se nada veio.
+          if [ "$ok" -eq 0 ]; then echo "Nenhuma serie gravada."; tail -n 100 backend/backend/app.log; exit 1; fi
+
+      - name: Encerrar o backend
+        if: always()
+        run: kill "$(cat backend/backend/app.pid)" 2>/dev/null || true
