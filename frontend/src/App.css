@@ -136,14 +136,34 @@
 
    `color-scheme: dark` fecha o cerco nas superfícies que nenhum seletor
    alcança: a área de overscroll (o "rubber band" do iOS), o fundo antes do
-   primeiro paint e os controles nativos passam a nascer escuros. */
+   primeiro paint e os controles nativos passam a nascer escuros.
+
+   SÓ o `html`. Não acrescente `body` nem `#root` a este seletor — a primeira
+   versão desta regra trazia os três, por excesso de zelo, e o efeito foi apagar
+   os halos do .bg-smoke-abyss: a tela inteira virou preto chapado.
+
+   O motivo está em duas regras que se cruzam. A primeira é a ordem de pintura
+   dentro de um contexto de empilhamento: descendentes de z-index NEGATIVO
+   pintam no passo 2, e os fundos de blocos no fluxo só no passo 3. O ::before
+   dos halos é `z-index: -1` e, como nem #root nem .bg-smoke-abyss criam
+   contexto próprio, ele sobe para o contexto raiz — onde um fundo opaco em
+   `body` ou em `#root` passa por cima dele.
+
+   A segunda é a propagação para o canvas: o fundo do elemento raiz não é
+   pintado por ele, e sim promovido ao CANVAS do documento, que vem antes de
+   qualquer descendente. É por isso que `html` resolve o branco do
+   checkerboarding sem esconder camada nenhuma — e por que `body` NÃO serve de
+   substituto: quando o `html` já tem fundo, o do `body` deixa de propagar e
+   passa a ser pintado como o de um bloco comum, de volta ao passo 3.
+
+   Medido: com a regra em `html` apenas, o centro do primeiro halo lê
+   rgb(11,15,23); com `body` junto, lê rgb(2,2,2) — o halo sumia inteiro. */
+
 :root {
   color-scheme: dark;
 }
 
-html,
-body,
-#root {
+html {
   background-color: #020202;
 }
 
