@@ -20,7 +20,13 @@ nenhuma tela chega a pedir.
 | `sobre02-panel2-img.jpg`  | `sobre02-panel2-img.webp`   | 1,98 MB → 177 kB  |
 
 `sobre01` é a bandeira, no card da seção "Quem somos" (retrato, 1200×1800).
-`sobre02` é a arara, fundo do hero (paisagem, 1920×1280).
+`sobre02` é a arara-canindé, fundo do hero (paisagem, 1920×1280).
+
+`registro-login0` é a arte de fundo de Registro e Login, resolvida por
+`src/pages/auth/images.ts`. Vale para ela a mesma regra da tabela: o original
+pesado aqui, a versão otimizada em `assets/app/registro-login0-img.webp`.
+Enquanto o arquivo otimizado não existir, as duas telas ficam só com o
+`.bg-smoke-abyss` — sem imagem quebrada e sem quebrar o build.
 
 ## Ao trocar uma arte
 

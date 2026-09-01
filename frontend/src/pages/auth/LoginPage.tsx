@@ -8,6 +8,7 @@ import { BrandLogo } from '../../components/brand/BrandLogo';
 import { FormField } from '../../components/forms/FormField';
 import { SubmitButton } from '../../components/forms/SubmitButton';
 import { AuthBrandPanel } from '../../components/forms/AuthBrandPanel';
+import { AuthBackdrop } from './AuthBackdrop';
 import { saveSession } from '../../lib/auth/jwt';
 import { resolveRedirect } from '../../lib/auth/redirect';
 
@@ -47,12 +48,21 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex bg-slate-950">
+    // `app-shell` (100svh com fallback) e não `min-h-screen`: esta tela é curta,
+    // e é nela que `100vh` mais custa — a janela medida com a barra de endereço
+    // recolhida dá ao documento uma rolagem fantasma do tamanho da barra.
+    //
+    // `bg-smoke-abyss` traz o fundo do resto do app para cá. Era `bg-slate-950`,
+    // uma cor sólida que não existe em nenhuma outra tela; agora Registro e
+    // Login respiram a mesma atmosfera do painel e da landing.
+    <div className="app-shell flex bg-smoke-abyss">
+
+      <AuthBackdrop />
 
       <AuthBrandPanel />
 
-      {/* Painel direito — formulário */}
-      <div className="flex-1 min-w-0 flex items-center justify-center px-gutter py-8">
+      {/* Painel direito — formulário. `relative z-10` o mantém acima da arte. */}
+      <div className="relative z-10 flex-1 min-w-0 flex items-center justify-center px-gutter py-8">
         <div className="w-full max-w-md flex flex-col gap-8">
 
           {/* Logo no mobile */}
@@ -62,7 +72,7 @@ export default function LoginPage() {
 
           <div className="flex flex-col gap-1">
             <h2 className="text-2xl font-bold text-white">Bem-vindo de volta</h2>
-            <p className="text-slate-500 text-sm">
+            <p className="text-slate-400 text-sm">
               Entre com suas credenciais para acessar o painel.
             </p>
           </div>

@@ -8,6 +8,7 @@ import { BrandLogo } from '../../components/brand/BrandLogo';
 import { FormField } from '../../components/forms/FormField';
 import { SubmitButton } from '../../components/forms/SubmitButton';
 import { AuthBrandPanel } from '../../components/forms/AuthBrandPanel';
+import { AuthBackdrop } from './AuthBackdrop';
 
 const VALID_EMAIL    = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 const VALID_NAME     = /^[a-zA-ZÀ-ÿ]{2,}(?:\s[a-zA-ZÀ-ÿ]+)+$/;
@@ -43,12 +44,15 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex bg-slate-950 ">
+    // Ver LoginPage para o porquê de `app-shell` e `bg-smoke-abyss`.
+    <div className="app-shell flex bg-smoke-abyss">
+
+      <AuthBackdrop />
 
       <AuthBrandPanel />
 
-      {/* Painel direito — formulário */}
-      <div className="flex-1 min-w-0 flex items-center justify-center px-gutter py-8">
+      {/* Painel direito — formulário. `relative z-10` o mantém acima da arte. */}
+      <div className="relative z-10 flex-1 min-w-0 flex items-center justify-center px-gutter py-8">
         <div className="w-full max-w-md flex flex-col gap-8">
 
           {/* Logo no mobile */}
@@ -58,7 +62,7 @@ export default function RegisterPage() {
 
           <div className="flex flex-col gap-1">
             <h2 className="text-2xl font-bold text-white">Crie sua conta</h2>
-            <p className="text-slate-500 text-sm">
+            <p className="text-slate-400 text-sm">
               Preencha os dados abaixo para começar gratuitamente.
             </p>
           </div>
