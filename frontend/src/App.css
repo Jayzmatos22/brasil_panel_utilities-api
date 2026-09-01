@@ -255,21 +255,13 @@ html {
   height: 100%;
 }
 
-/* Com só uma das duas artes no repositório, ela vale apenas na faixa a que
-   pertence. Sem estas duas regras a arte de celular — um retrato — vazaria
-   para o desktop recortada em paisagem, que é exatamente o que ter duas artes
-   existe para evitar. `data-art` vem do componente. */
-@media (width >= 48rem) {
-  .auth-backdrop[data-art="mobile"] {
-    display: none;
-  }
-}
+/* Com as duas artes presentes, cada uma serve a sua faixa e quem escolhe é o
+   <source media> do <picture>. Com só UMA, ela serve as duas faixas — é melhor
+   um retrato recortado em paisagem do que um lado da tela vazio.
 
-@media (width < 48rem) {
-  .auth-backdrop[data-art="wide"] {
-    display: none;
-  }
-}
+   `data-art` continua vindo do componente e diz qual é o caso; hoje nenhuma
+   regra o consome, mas ele é o gancho para reintroduzir o corte por faixa sem
+   ter de reabrir o componente. */
 
 /* ── Celular (< md) — a arte é o fundo da página ─────────────────────────── */
 
@@ -348,28 +340,21 @@ html {
   );
 }
 
-/* ── md e acima — outra arte, outra composição ───────────────────────────── */
+/* ── lg e acima — a arte divide a tela com o painel de marca ─────────────── */
 
-@media (width >= 48rem) {
-  /* Paisagem: o recorte volta ao neutro e o deslocamento vertical do celular
-     é desfeito. Estes valores são o padrão defensável para uma arte que ainda
-     não existe no repositório; quando `registro-login1` entrar, é aqui que se
-     ajusta o object-position para afastar o assunto do texto. */
-  .auth-backdrop img {
-    object-position: 50% 45%;
-    transform: none;
-    opacity: 0.6;
-    filter: saturate(0.45) contrast(1.05) brightness(0.85);
-    mask-image: radial-gradient(
-      130% 80% at 50% 38%,
-      rgb(0 0 0 / 1) 0%,
-      rgb(0 0 0 / 0.85) 45%,
-      rgb(0 0 0 / 0.3) 74%,
-      rgb(0 0 0 / 0) 100%
-    );
-  }
-}
+/* O corte é em lg, e não em md, porque é lg que muda o PROBLEMA: só a partir
+   dali existe o painel de marca e a tela vira split-screen. Entre md e lg o
+   formulário continua centralizado numa coluna única, exatamente como no
+   celular — então o tratamento de retrato acima continua valendo, e é ele que
+   mantém a ave acima dos campos.
 
+   Uma versão anterior cortava em md e aplicava aqui o tratamento de paisagem.
+   Em 900x1200 o resultado era a cabeça da ave escondida atrás dos campos e a
+   mancha estourada do bokeh exposta inteira — os dois problemas que o
+   enquadramento do celular já resolvia.
+
+   Quando `registro-login1` entrar, esta faixa é a que merece um olhar próprio:
+   uma paisagem entre md e lg vai querer números diferentes dos daqui. */
 @media (width >= 64rem) {
   /* Só a partir de lg existe o painel de marca, e é ele que muda o problema: a
      arte passa a ter um lado seu (a esquerda) e um lado do formulário.
@@ -377,12 +362,41 @@ html {
      56% e não 50%: a sobra atravessa a emenda do split-screen e é a máscara que
      decide onde a imagem termina. Cortar em 50% cravado devolveria a borda reta
      que a máscara existe para eliminar. */
-  .auth-backdrop picture,
-  .auth-backdrop img {
+  /* A largura vai SÓ no <picture>. A <img> fica nos 100% da regra base, que
+     agora são 100% do <picture>. Aplicar 56% nos dois multiplicava — a imagem
+     saía com 56% de 56%, pouco mais de um terço da tela, e o enquadramento
+     calculado para 56% não fechava com o que aparecia. */
+  .auth-backdrop picture {
     width: 56%;
   }
 
   .auth-backdrop img {
+    /* Empurra a arte para a faixa entre o texto e o formulário.
+
+       Sem isto a ave cai exatamente atrás do título: a foto é um retrato e, num
+       recorte de 56% de largura, o assunto fica no meio da camada — que é onde
+       mora a coluna de texto. O véu do painel precisa de 0,85 de alfa ali para
+       o texto passar no AA, e 0,85 sobre a ave é o que a apagava.
+
+       36% de 56% desloca a camada para 20%–76% da tela. A ave sai de trás do
+       texto e ocupa o vão que antes era espaço morto, atravessando a emenda do
+       split-screen — o mesmo papel de costura que a composição sempre quis. */
+    transform: translateX(36%);
+    opacity: 0.7;
+    filter: saturate(0.5) contrast(1.06) brightness(1);
+
+    /* Aqui o regime de recorte VIRA em relação ao celular. Lá a foto cabe em
+       altura e sobra em largura, então quem manda é o X e o Y não faz nada.
+       Nesta camada, mais larga em proporção, a foto cabe em LARGURA e sobra em
+       altura — o X perde o efeito e o Y assume. Não é inconsistência: é o mesmo
+       object-fit respondendo a duas proporções de caixa.
+
+       80% mostra a janela entre ~21% e ~96% da altura da foto: põe a cabeça da
+       ave por volta de 40% do painel e empurra a mancha estourada do bokeh
+       (y 27–42% da foto) para o quarto superior, onde a máscara e o véu desta
+       faixa já a abafam. */
+    object-position: 50% 80%;
+
     /* Linear e não radial neste breakpoint. Só UMA borda precisa dissolver — a
        da emenda, à direita. As outras três são sangria de tela. Um radial que
        morresse antes da emenda também comeria o topo e o rodapé, deixando a
@@ -394,10 +408,11 @@ html {
        de 50%. Quem olha não acha onde a foto acaba. */
     mask-image: linear-gradient(
       to right,
-      rgb(0 0 0 / 1) 0%,
-      rgb(0 0 0 / 1) 40%,
-      rgb(0 0 0 / 0.62) 66%,
-      rgb(0 0 0 / 0.16) 87%,
+      rgb(0 0 0 / 0) 0%,
+      rgb(0 0 0 / 0.45) 14%,
+      rgb(0 0 0 / 1) 36%,
+      rgb(0 0 0 / 1) 56%,
+      rgb(0 0 0 / 0.55) 80%,
       rgb(0 0 0 / 0) 100%
     );
   }
@@ -430,9 +445,9 @@ html {
 .auth-brand-veil {
   background-image: linear-gradient(
     to right,
-    rgb(2 2 2 / 0.88) 0%,
-    rgb(2 2 2 / 0.72) 34%,
-    rgb(2 2 2 / 0.34) 68%,
+    rgb(2 2 2 / 0.92) 0%,
+    rgb(2 2 2 / 0.85) 40%,
+    rgb(2 2 2 / 0.3) 78%,
     rgb(2 2 2 / 0) 100%
   );
 }

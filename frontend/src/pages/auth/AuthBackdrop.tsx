@@ -33,10 +33,9 @@ const artWide = findAuthImage('registro-login1');
  * telas ficam com o `.bg-smoke-abyss` puro, sem ícone de imagem quebrada. É o
  * contrato que `findAuthImage()` documenta.
  *
- * Com apenas UMA das duas presentes, ela é usada só na faixa a que pertence, e
- * a outra faixa fica sem arte. `data-art` diz ao CSS qual é o caso; sem isso, a
- * arte de celular vazaria para o desktop, que é onde ela justamente não
- * funciona.
+ * Com apenas UMA das duas presentes, ela serve as duas faixas: um retrato
+ * recortado em paisagem é melhor que meia tela vazia. `data-art` publica qual é
+ * o caso, para o CSS poder voltar a cortar por faixa sem reabrir este arquivo.
  */
 export function AuthBackdrop() {
   if (artMobile === undefined && artWide === undefined) return null;
