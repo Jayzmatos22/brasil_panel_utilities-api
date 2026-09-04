@@ -9,6 +9,7 @@ import { FormField } from '../../components/forms/FormField';
 import { SubmitButton } from '../../components/forms/SubmitButton';
 import { AuthBrandPanel } from '../../components/forms/AuthBrandPanel';
 import { AuthBackdrop } from './AuthBackdrop';
+import { AuthTestingNotice, AuthAboutLink } from './AuthNotices';
 
 const VALID_EMAIL    = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 const VALID_NAME     = /^[a-zA-ZÀ-ÿ]{2,}(?:\s[a-zA-ZÀ-ÿ]+)+$/;
@@ -67,6 +68,8 @@ export default function RegisterPage() {
             </p>
           </div>
 
+          <AuthTestingNotice />
+
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <FormField
               id="reg-name"
@@ -105,15 +108,29 @@ export default function RegisterPage() {
             />
           </form>
 
-          <div className="flex items-center justify-center gap-2 text-sm">
-            <span className="text-slate-500">Já tem conta?</span>
-            <button
-              type="button"
-              onClick={() => navigate('/login-usuario')}
-              className="text-amber-400 hover:text-amber-300 font-medium transition-colors cursor-pointer rounded-control px-2 coarse:min-h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60"
-            >
-              Entrar no painel
-            </button>
+          {/* Rodapé em pilha: a alternância entre as duas telas e o link
+              institucional. Juntos num só bloco com gap próprio — soltos na
+              coluna eles herdariam o gap-8 do pai, que é espaço de SEÇÃO e
+              deixaria os dois parecendo assuntos separados. */}
+          <div className="flex flex-col items-center gap-3">
+
+            <div className="flex items-center justify-center gap-2 text-sm">
+              {/* slate-400, e não o slate-500 que estava aqui: sobre qualquer
+                  fundo o slate-500 fica em ~4,2:1, abaixo do AA de 4,5 — a
+                  mesma falha já corrigida no subtítulo destas telas. E o link
+                  vizinho é slate-400, então os dois precisam bater. */}
+              <span className="text-slate-400">Já tem conta?</span>
+              <button
+                type="button"
+                onClick={() => navigate('/login-usuario')}
+                className="text-amber-400 hover:text-amber-300 font-medium transition-colors cursor-pointer rounded-control px-2 coarse:min-h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60"
+              >
+                Entrar no painel
+              </button>
+            </div>
+
+            <AuthAboutLink />
+
           </div>
 
         </div>
