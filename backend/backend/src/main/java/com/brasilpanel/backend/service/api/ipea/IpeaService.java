@@ -176,7 +176,6 @@ public class IpeaService {
     //private static final String TAXA_DESEMPREGO_FORCA_TRABALHO = "ECONMI12_USU12";
     private static final String TAXA_DESOCUPACAO14MAIS = "PNADC12_TDESOC12";
 
-    private static final String DESEMPREGO_FMI = "WEO_DESEMWEOBRA";
     private static final String SELIC = "PAN12_TJOVER12";
     private static final String RESERVAS = "BM12_RES12";
     private static final String ARRECADACAO = "SRF12_TOTGER12";
@@ -265,10 +264,18 @@ public class IpeaService {
 
 
 
+    /**
+     * Códigos que o {@link #refreshAll()} percorre. Todo código aqui precisa ter linha
+     * correspondente no {@code FinancialSeriesSeeder} com {@code source = "IPEA"}: o
+     * {@code FinancialDataService} resolve a série pelo par (code, source) antes de gravar
+     * o ponto, então um código sem cadastro é buscado no IPEA de graça e depois descartado
+     * com um WARN por ponto — foi o que o WEO_DESEMWEOBRA fazia, enchendo o log a cada
+     * refresh sem nunca chegar ao banco nem a nenhuma rota do painel.
+     */
     private static final List<String> ALL_CODES = List.of(
             DESOCUPACAO, OCUPACAO, EXPORTACOES_TOTAL_FOB, INDICE_QUANTUM_EXPORTACOES,
             SALARIO_MINIMO_REAL, SALARIO_MINIMO_PPC, RENDA_PER_CAPITA, AGRICULTURA_E_PECUARIA_QUANTUM,
-            GINI, POBREZA, DESEMPREGO_FMI, SELIC, RESERVAS, ARRECADACAO,
+            GINI, POBREZA, SELIC, RESERVAS, ARRECADACAO,
             INPC, IGPM,  POPULACAO, PROJECAO_TOTAL, PROJECAO_HOMENS, PROJECAO_MULHERES, TRANSACOES_CORRENTES_SALDO,
             BALANCA_COMERCIAL,  SERVICOS,  RENDA_PRIMARIA, INVESTIMENTO_DIRETO_INGRESSOS,
             INVESTIMENTO_DIRETO,  CONTA_CAPITAL,  CONTA_FINANCEIRA, EXPORTACOES_BENS_CONSUMO,
@@ -277,7 +284,7 @@ public class IpeaService {
             VALOR_FOB_BENS_INTERMEDIARIOS, INDICE_QUANTUM_BENS_INTERMEDIARIOS, VALOR_FOB_COMBUSTIVEIS, IBOVESPA_FECHAMENTO,
             IMPOSTO_II, IMPOSTO_IRPF, IMPOSTO_IRPJ, IMPOSTO_IR_TOTAL, IMPOSTO_IOF, IMPOSTO_IPI, PIB_MENSAL,
             CAMBIO_COMERCIAL, CAMBIO_COMERCIAL_EXP, CAMBIO_COMERCIAL_IMP, CAMBIO_COMERCIAL_FINANC, CAMBIO_FINANCEIRO,
-            CAMBIO_FINANCEIRO, CAMBIO_FINANCEIRO_COMPRA, CAMBIO_FINANCEIRO_VENDA, IMPOSTO_ITR,
+            CAMBIO_FINANCEIRO_COMPRA, CAMBIO_FINANCEIRO_VENDA, IMPOSTO_ITR,
             TAXA_DESOCUPACAO14MAIS
     );
 
