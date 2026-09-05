@@ -12,21 +12,27 @@ import java.util.List;
 /**
  * Re-alimenta as séries do IPEA no banco de dados.
  *
- * <p>Frequência: diária, às 05h BRT — fora do horário de uso do painel, porque
- * o {@code refreshAll()} percorre as 55 séries em sequência e segura uma thread
- * enquanto isso.
+ * <p>Frequência: diária, às 07h30 BRT. O horário não é estético — é medido. O IPEA
+ * republica num lote da manhã, por volta das 06h36, e o que esse lote traz é o dado do
+ * dia útil anterior. Rodar antes dele significa ler o estado que o lote da manhã
+ * <em>anterior</em> deixou, ou seja, um dia útil a menos de atualidade em todas as séries.
  *
- * <p>Quase todas essas séries são mensais ou anuais (o sufixo do código do IPEA dá a
+ * <p>Medido em 05/09/2026 na série do Ibovespa: {@code SERATUALIZACAO} de 04/09 às 06h36,
+ * e o ponto mais recente era o de 03/09 — o lote de sexta de manhã carregava o fechamento
+ * de quinta. O job rodava às 05h, 1h36 antes desse lote, e por isso pegava sempre a leva
+ * da véspera. Ao mexer neste cron, mantenha-o depois das 06h36 com folga; encostar no
+ * horário do lote traz o problema de volta se o IPEA atrasar.
+ *
+ * <p>Quase todas as séries são mensais ou anuais (o sufixo do código do IPEA dá a
  * frequência: 48 delas terminam em {@code 12}, de mensal), então a maioria das execuções
- * não encontra dado novo — a diária é folga deliberada, para que a fonte fora do ar num
- * dia não empurre a atualização para a semana seguinte.
+ * não encontra dado novo. A exceção é o Ibovespa ({@code GM366_IBVSP366} — o {@code 366}
+ * marca série diária), e é ela que torna o horário relevante.
  *
- * <p>A exceção é o Ibovespa ({@code GM366_IBVSP366} — o {@code 366} marca série diária),
- * a única de frequência diária do grupo. Ela é atualizada junto com as demais, às 05h, e o
- * fechamento da B3 sai por volta das 18h: na prática o painel serve o fechamento do pregão
- * anterior. É correto, só não é do mesmo dia. O {@code BcbScheduler} roda às 18h justamente
- * para não ter esse atraso — se um dia o Ibovespa precisar do mesmo tratamento, ele tem que
- * sair deste ciclo para um job próprio depois do fechamento.
+ * <p>Não adianta rodar depois do fechamento da B3 para ter a cotação do dia: o IPEA é
+ * intermediário, não a fonte, e só republica na manhã seguinte. O painel serve o
+ * fechamento do pregão anterior porque é isso que existe no IPEA — não por causa do
+ * agendamento. Quem precisa de dado no mesmo dia vem do {@code BcbScheduler}, que fala
+ * com o BCB direto e roda às 18h.
  *
  * <p>O refresh força a busca na API (ignora o atalho DB-first) e, em seguida, os
  * caches são limpos para a próxima leitura servir os dados novos.
@@ -104,7 +110,7 @@ public class IpeaScheduler {
     private final IpeaService ipeaService;
     private final CacheManager cacheManager;
 
-    @Scheduled(cron = "0 0 5 * * *", zone = "America/Sao_Paulo")
+    @Scheduled(cron = "0 30 7 * * *", zone = "America/Sao_Paulo")
     public void refreshIpea() {
         log.info("[IpeaScheduler] Iniciando refresh das séries IPEA...");
         try {
