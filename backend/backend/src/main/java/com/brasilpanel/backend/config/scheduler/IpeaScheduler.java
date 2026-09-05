@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * Re-alimenta as séries do IPEA no banco de dados.
  *
- * <p>Frequência: diária, às 07h30 BRT. O horário não é estético — é medido. O IPEA
+ * <p>Frequência: dias úteis, às 07h30 BRT. O horário não é estético — é medido. O IPEA
  * republica num lote da manhã, por volta das 06h36, e o que esse lote traz é o dado do
  * dia útil anterior. Rodar antes dele significa ler o estado que o lote da manhã
  * <em>anterior</em> deixou, ou seja, um dia útil a menos de atualidade em todas as séries.
@@ -22,6 +22,13 @@ import java.util.List;
  * de quinta. O job rodava às 05h, 1h36 antes desse lote, e por isso pegava sempre a leva
  * da véspera. Ao mexer neste cron, mantenha-o depois das 06h36 com folga; encostar no
  * horário do lote traz o problema de volta se o IPEA atrasar.
+ *
+ * <p>Sábado e domingo ficam de fora porque o lote do IPEA é de dia útil: em 05/09/2026,
+ * um sábado, às 15h44 o carimbo da série ainda era o de sexta 06h36 — nenhum lote de fim
+ * de semana havia rodado, e um job às 07h30 do sábado teria encontrado exatamente o que a
+ * execução de sexta já tinha trazido. Duas varreduras de 55 séries por semana, sem dado
+ * novo, contra uma fonte que estrangula sob rajada. O custo do recorte é teórico: se o
+ * IPEA publicasse uma série mensal num sábado, ela chegaria na segunda.
  *
  * <p>Quase todas as séries são mensais ou anuais (o sufixo do código do IPEA dá a
  * frequência: 48 delas terminam em {@code 12}, de mensal), então a maioria das execuções
@@ -110,7 +117,7 @@ public class IpeaScheduler {
     private final IpeaService ipeaService;
     private final CacheManager cacheManager;
 
-    @Scheduled(cron = "0 30 7 * * *", zone = "America/Sao_Paulo")
+    @Scheduled(cron = "0 30 7 * * MON-FRI", zone = "America/Sao_Paulo")
     public void refreshIpea() {
         log.info("[IpeaScheduler] Iniciando refresh das séries IPEA...");
         try {
