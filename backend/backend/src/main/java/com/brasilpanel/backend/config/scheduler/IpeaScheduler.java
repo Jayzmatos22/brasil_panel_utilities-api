@@ -12,10 +12,14 @@ import java.util.List;
 /**
  * Re-alimenta as séries do IPEA no banco de dados.
  *
- * Frequência: semanal (segunda-feira às 07h BRT). As séries do IPEA são
- * mensais/trimestrais/anuais — verificação semanal é mais que suficiente.
- * O refresh força a busca na API (ignora o atalho DB-first) e, em seguida,
- * os caches são limpos para a próxima leitura servir os dados novos.
+ * <p>Frequência: diária, às 05h BRT — fora do horário de uso do painel, porque
+ * o {@code refreshAll()} percorre as 55 séries em sequência e segura uma thread
+ * enquanto isso. As séries do IPEA são mensais/trimestrais/anuais, então a maioria
+ * das execuções não encontra dado novo; a diária é folga deliberada, para que uma
+ * fonte fora do ar num dia não atrase a atualização até a semana seguinte.
+ *
+ * <p>O refresh força a busca na API (ignora o atalho DB-first) e, em seguida, os
+ * caches são limpos para a próxima leitura servir os dados novos.
  */
 @Component
 @RequiredArgsConstructor
@@ -90,7 +94,6 @@ public class IpeaScheduler {
     private final IpeaService ipeaService;
     private final CacheManager cacheManager;
 
-    // Roda todo dia às 05h
     @Scheduled(cron = "0 0 5 * * *", zone = "America/Sao_Paulo")
     public void refreshIpea() {
         log.info("[IpeaScheduler] Iniciando refresh das séries IPEA...");
