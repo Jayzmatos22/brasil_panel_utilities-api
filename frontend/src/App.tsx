@@ -17,6 +17,7 @@ import VerifyEmailPage from './pages/auth/VerifyEmailPage';
 
 // Onboarding (com header)
 import PerfilPage from './pages/onboarding/PerfilPage';
+import { NotFoundVariants } from './pages/NotFoundVariants';
 
 // ─── Páginas do dashboard — carregadas sob demanda ───────────────────────────
 // Importadas com lazy() para não entrarem no bundle inicial: juntas passam de
@@ -92,7 +93,8 @@ function OnboardingLayout() {
           {/* Fora do onboarding, qualquer caminho desconhecido é um 404 de
               verdade. Antes o catch-all abaixo renderizava este layout vazio
               para qualquer URL inexistente. */}
-          <Route path="*" element={<NotFound />} />
+          <Route path="/previa-404" element={<NotFoundVariants />} />
+        <Route path="*" element={<NotFound />} />
         </Routes>
       </div>
     </div>
