@@ -14,9 +14,19 @@ import java.util.List;
  *
  * <p>Frequência: diária, às 05h BRT — fora do horário de uso do painel, porque
  * o {@code refreshAll()} percorre as 55 séries em sequência e segura uma thread
- * enquanto isso. As séries do IPEA são mensais/trimestrais/anuais, então a maioria
- * das execuções não encontra dado novo; a diária é folga deliberada, para que uma
- * fonte fora do ar num dia não atrase a atualização até a semana seguinte.
+ * enquanto isso.
+ *
+ * <p>Quase todas essas séries são mensais ou anuais (o sufixo do código do IPEA dá a
+ * frequência: 48 delas terminam em {@code 12}, de mensal), então a maioria das execuções
+ * não encontra dado novo — a diária é folga deliberada, para que a fonte fora do ar num
+ * dia não empurre a atualização para a semana seguinte.
+ *
+ * <p>A exceção é o Ibovespa ({@code GM366_IBVSP366} — o {@code 366} marca série diária),
+ * a única de frequência diária do grupo. Ela é atualizada junto com as demais, às 05h, e o
+ * fechamento da B3 sai por volta das 18h: na prática o painel serve o fechamento do pregão
+ * anterior. É correto, só não é do mesmo dia. O {@code BcbScheduler} roda às 18h justamente
+ * para não ter esse atraso — se um dia o Ibovespa precisar do mesmo tratamento, ele tem que
+ * sair deste ciclo para um job próprio depois do fechamento.
  *
  * <p>O refresh força a busca na API (ignora o atalho DB-first) e, em seguida, os
  * caches são limpos para a próxima leitura servir os dados novos.
