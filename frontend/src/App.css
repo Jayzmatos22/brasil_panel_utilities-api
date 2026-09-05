@@ -136,14 +136,34 @@
 
    `color-scheme: dark` fecha o cerco nas superfícies que nenhum seletor
    alcança: a área de overscroll (o "rubber band" do iOS), o fundo antes do
-   primeiro paint e os controles nativos passam a nascer escuros. */
+   primeiro paint e os controles nativos passam a nascer escuros.
+
+   SÓ o `html`. Não acrescente `body` nem `#root` a este seletor — a primeira
+   versão desta regra trazia os três, por excesso de zelo, e o efeito foi apagar
+   os halos do .bg-smoke-abyss: a tela inteira virou preto chapado.
+
+   O motivo está em duas regras que se cruzam. A primeira é a ordem de pintura
+   dentro de um contexto de empilhamento: descendentes de z-index NEGATIVO
+   pintam no passo 2, e os fundos de blocos no fluxo só no passo 3. O ::before
+   dos halos é `z-index: -1` e, como nem #root nem .bg-smoke-abyss criam
+   contexto próprio, ele sobe para o contexto raiz — onde um fundo opaco em
+   `body` ou em `#root` passa por cima dele.
+
+   A segunda é a propagação para o canvas: o fundo do elemento raiz não é
+   pintado por ele, e sim promovido ao CANVAS do documento, que vem antes de
+   qualquer descendente. É por isso que `html` resolve o branco do
+   checkerboarding sem esconder camada nenhuma — e por que `body` NÃO serve de
+   substituto: quando o `html` já tem fundo, o do `body` deixa de propagar e
+   passa a ser pintado como o de um bloco comum, de volta ao passo 3.
+
+   Medido: com a regra em `html` apenas, o centro do primeiro halo lê
+   rgb(11,15,23); com `body` junto, lê rgb(2,2,2) — o halo sumia inteiro. */
+
 :root {
   color-scheme: dark;
 }
 
-html,
-body,
-#root {
+html {
   background-color: #020202;
 }
 
@@ -203,6 +223,233 @@ body,
   .principal-header {
     background-color: #061436;
   }
+}
+
+/* ─── Arte das telas de autenticação ────────────────────────────────────── */
+
+/* Camada de fundo de Registro e Login (pages/auth/AuthBackdrop.tsx).
+   Duas artes, uma por faixa: `registro-login0` abaixo de md, `registro-login1`
+   de md para cima. Quem escolhe qual baixar é o <source media> do <picture>;
+   aqui só se trata o enquadramento e a dissolução de cada uma.
+
+   `fixed` e não `absolute`: as duas telas usam .app-shell, e um formulário com
+   erro de validação pode passar da altura da janela. Com `absolute` a arte
+   esticaria junto e o recorte mudaria conforme o formulário crescesse.
+
+   z-index 0, com os dois painéis de conteúdo em z-10 (ver LoginPage): põe a
+   arte ACIMA dos halos do .bg-smoke-abyss, que vivem em z-index -1, e abaixo de
+   tudo que se lê. A ordem final, da base para o topo, é
+   canvas #020202 → halos radiais → foto → véu → formulário. */
+.auth-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.auth-backdrop picture,
+.auth-backdrop img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Com as duas artes presentes, cada uma serve a sua faixa e quem escolhe é o
+   <source media> do <picture>. Com só UMA, ela serve as duas faixas — é melhor
+   um retrato recortado em paisagem do que um lado da tela vazio.
+
+   `data-art` continua vindo do componente e diz qual é o caso; hoje nenhuma
+   regra o consome, mas ele é o gancho para reintroduzir o corte por faixa sem
+   ter de reabrir o componente. */
+
+/* ── Celular (< md) — a arte é o fundo da página ─────────────────────────── */
+
+.auth-backdrop img {
+  object-fit: cover;
+
+  /* Num celular (390×844) a foto cabe em ALTURA e sobra 31% em largura, então o
+     recorte é horizontal e é o X que manda. 58% centraliza a ave, que na foto
+     ocupa x 30–72%: com o padrão 50% o bico encostava na borda direita e ficava
+     decepado. Valor maior empurra a janela para a direita, ou seja, move a ave
+     para a ESQUERDA na tela — o oposto do que a intuição sugere. */
+  object-position: 58% 50%;
+
+  /* Sobe a foto. Como o recorte é horizontal, nada acontece no eixo Y sozinho e
+     a ave ficaria com a cabeça em ~51% da tela, bem no meio dos campos. Os 33%
+     fazem dois trabalhos de uma vez: levam a cabeça para ~16% da altura, acima
+     do título, e empurram para FORA do quadro, por cima, a mancha estourada da
+     foto (bokeh de céu em y 27–42%, luminância 0,88) — o único trecho que não
+     se funde no abyss sozinho, porque é quase branco. */
+  transform: translateY(-33%);
+
+  /* saturate 0.45 é a mesma decisão do hero da landing (`saturate-[.55]`, com o
+     porquê em About/sections/Hero.tsx): plumagem de ave brasileira é verde e
+     azul saturados, e aqui competiria com o âmbar da marca — que nesta tela é a
+     cor do único botão de ação.
+
+     brightness 0.75 é o que a põe na faixa de luminosidade do abyss (#020202)
+     sem apagá-la. Uma calibragem anterior usou 0.6 com opacidade 0.55 e o
+     resultado foi textura escura ilegível: a ave sumia, e o que restava não
+     lia como arte nem como fundo. */
+  filter: saturate(0.45) contrast(1.05) brightness(0.75);
+  opacity: 0.62;
+
+  /* A DISSOLUÇÃO. É aqui que a arte se funde com o abyss, e é máscara e não véu
+     por um motivo que se vê na tela: um véu retangular, por mais forte que
+     seja, ainda tem quatro bordas retas em algum nível de contraste. A máscara
+     não escurece a imagem — ela apaga o alfa, então a foto deixa de existir em
+     vez de ficar escura. Nenhuma borda, nenhum retângulo.
+
+     GEOMETRIA, que é onde isto erra fácil: o raio precisa ser menor que a
+     distância do centro até a borda que se quer dissolver, senão a última
+     parada do gradiente cai FORA do elemento e a imagem é cortada a faca. Foi
+     o que aconteceu na primeira versão desta folha, e a emenda dura apareceu
+     na tela.
+
+     O centro acompanha a ave já deslocada pelo translateY. O raio vertical
+     (54%) leva o alfa a zero por volta de 84% da ALTURA DO ELEMENTO — que, com
+     o deslocamento, cai perto de 60% da tela, acima dos campos. */
+  mask-image: radial-gradient(
+    120% 52% at 50% 22%,
+    rgb(0 0 0 / 1) 0%,
+    rgb(0 0 0 / 0.88) 40%,
+    rgb(0 0 0 / 0.34) 70%,
+    rgb(0 0 0 / 0) 100%
+  );
+}
+
+/* Véu de leitura. A máscara resolve a fusão, mas não garante contraste:
+   dependendo da foto, o trecho mais claro pode cair justo atrás de um rótulo.
+   Este gradiente devolve o piso de contraste sem tocar no recorte da arte.
+
+   Três funções, de cima para baixo: escurecer a borda superior, para o fundo da
+   foto derreter no abyss em vez de encostar na quina da tela; abrir a faixa
+   onde a ave aparece; e fechar em preto onde ficam os campos. */
+.auth-backdrop::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgb(2 2 2 / 0.6) 0%,
+    rgb(2 2 2 / 0.12) 16%,
+    rgb(2 2 2 / 0.44) 38%,
+    rgb(2 2 2 / 0.9) 62%,
+    rgb(2 2 2 / 1) 78%
+  );
+}
+
+/* ── lg e acima — a arte divide a tela com o painel de marca ─────────────── */
+
+/* O corte é em lg, e não em md, porque é lg que muda o PROBLEMA: só a partir
+   dali existe o painel de marca e a tela vira split-screen. Entre md e lg o
+   formulário continua centralizado numa coluna única, exatamente como no
+   celular — então o tratamento de retrato acima continua valendo, e é ele que
+   mantém a ave acima dos campos.
+
+   Uma versão anterior cortava em md e aplicava aqui o tratamento de paisagem.
+   Em 900x1200 o resultado era a cabeça da ave escondida atrás dos campos e a
+   mancha estourada do bokeh exposta inteira — os dois problemas que o
+   enquadramento do celular já resolvia.
+
+   Quando `registro-login1` entrar, esta faixa é a que merece um olhar próprio:
+   uma paisagem entre md e lg vai querer números diferentes dos daqui. */
+@media (width >= 64rem) {
+  /* Só a partir de lg existe o painel de marca, e é ele que muda o problema: a
+     arte passa a ter um lado seu (a esquerda) e um lado do formulário.
+
+     56% e não 50%: a sobra atravessa a emenda do split-screen e é a máscara que
+     decide onde a imagem termina. Cortar em 50% cravado devolveria a borda reta
+     que a máscara existe para eliminar. */
+  /* A largura vai SÓ no <picture>. A <img> fica nos 100% da regra base, que
+     agora são 100% do <picture>. Aplicar 56% nos dois multiplicava — a imagem
+     saía com 56% de 56%, pouco mais de um terço da tela, e o enquadramento
+     calculado para 56% não fechava com o que aparecia. */
+  .auth-backdrop picture {
+    width: 56%;
+  }
+
+  .auth-backdrop img {
+    /* Empurra a arte para a faixa entre o texto e o formulário.
+
+       Sem isto a ave cai exatamente atrás do título: a foto é um retrato e, num
+       recorte de 56% de largura, o assunto fica no meio da camada — que é onde
+       mora a coluna de texto. O véu do painel precisa de 0,85 de alfa ali para
+       o texto passar no AA, e 0,85 sobre a ave é o que a apagava.
+
+       36% de 56% desloca a camada para 20%–76% da tela. A ave sai de trás do
+       texto e ocupa o vão que antes era espaço morto, atravessando a emenda do
+       split-screen — o mesmo papel de costura que a composição sempre quis. */
+    transform: translateX(36%);
+    opacity: 0.7;
+    filter: saturate(0.5) contrast(1.06) brightness(1);
+
+    /* Aqui o regime de recorte VIRA em relação ao celular. Lá a foto cabe em
+       altura e sobra em largura, então quem manda é o X e o Y não faz nada.
+       Nesta camada, mais larga em proporção, a foto cabe em LARGURA e sobra em
+       altura — o X perde o efeito e o Y assume. Não é inconsistência: é o mesmo
+       object-fit respondendo a duas proporções de caixa.
+
+       80% mostra a janela entre ~21% e ~96% da altura da foto: põe a cabeça da
+       ave por volta de 40% do painel e empurra a mancha estourada do bokeh
+       (y 27–42% da foto) para o quarto superior, onde a máscara e o véu desta
+       faixa já a abafam. */
+    object-position: 50% 80%;
+
+    /* Linear e não radial neste breakpoint. Só UMA borda precisa dissolver — a
+       da emenda, à direita. As outras três são sangria de tela. Um radial que
+       morresse antes da emenda também comeria o topo e o rodapé, deixando a
+       arte como uma bolha flutuando no painel em vez de uma imagem de altura
+       cheia.
+
+       A última parada é 100%, e a largura do elemento é 56%: o alfa chega a
+       zero exatamente na borda direita da camada, 6% de tela DEPOIS da divisa
+       de 50%. Quem olha não acha onde a foto acaba. */
+    mask-image: linear-gradient(
+      to right,
+      rgb(0 0 0 / 0) 0%,
+      rgb(0 0 0 / 0.45) 14%,
+      rgb(0 0 0 / 1) 36%,
+      rgb(0 0 0 / 1) 56%,
+      rgb(0 0 0 / 0.55) 80%,
+      rgb(0 0 0 / 0) 100%
+    );
+  }
+
+  /* Em lg o véu gira de eixo. O de baixo protegia os campos empilhados do
+     celular; aqui os campos estão à DIREITA, então quem precisa de piso de
+     contraste é a metade direita, e a coluna da arte pode ficar aberta. */
+  .auth-backdrop::after {
+    background: linear-gradient(
+      to right,
+      rgb(2 2 2 / 0) 42%,
+      rgb(2 2 2 / 0.5) 58%,
+      rgb(2 2 2 / 0.88) 74%,
+      rgb(2 2 2 / 0.96) 100%
+    );
+  }
+}
+
+/* Véu do painel de marca. Mora aqui e não numa utility porque é o par do
+   gradiente acima: os dois juntos é que reservam a faixa de texto.
+
+   Substitui o `bg-slate-900` que o painel tinha. Aquele era opaco e, com a arte
+   atrás, esconderia a ave inteira justamente no breakpoint em que ela deve
+   aparecer. Opaco à esquerda, onde estão o título e a lista de recursos, e
+   transparente à direita, onde a arte assume.
+
+   O 0.88 da primeira parada é o piso de contraste do texto, não estética: o
+   título é branco em 48px, mas a lista é slate-300 em 14px, e é ela que decide
+   o quanto o véu pode abrir. */
+.auth-brand-veil {
+  background-image: linear-gradient(
+    to right,
+    rgb(2 2 2 / 0.92) 0%,
+    rgb(2 2 2 / 0.85) 40%,
+    rgb(2 2 2 / 0.3) 78%,
+    rgb(2 2 2 / 0) 100%
+  );
 }
 
 /* Tracking de corpo. O Linear aplica −0.011em já no texto de 15px, e é parte
