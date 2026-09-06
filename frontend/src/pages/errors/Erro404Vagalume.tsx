@@ -15,7 +15,9 @@
  * temperatura da cor que a acendeu. Quem lê o erro está lendo pela luz deles.
  *
  * Sem dependências além do React. Os keyframes são injetados uma única vez.
- * Requer a família Instrument Serif carregada (Google Fonts).
+ * A família Instrument Serif é carregada no index.html — é a única fonte
+ * externa do projeto, e existe por causa deste componente. Sem ela o lockup
+ * cai na Georgia e perde o contraste serifa/grotesca que o sustenta.
  *
  * O retorno é `React.JSX.Element`, e não `JSX.Element`: o React 19 deixou de
  * publicar o namespace JSX global, e a forma antiga não compila mais aqui

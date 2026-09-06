@@ -54,6 +54,10 @@ const AdminUsersPage   = lazy(() => import('./pages/dashboard/admin/AdminUsersPa
 // Institucional — pública, fora do DashboardLayout
 const AboutPage = lazy(() => import('./pages/About'));
 
+// 404 — lazy pelo mesmo motivo das demais: a arte e o lockup animado não
+// precisam entrar no bundle que serve quem digitou o endereço certo.
+const NotFoundPage = lazy(() => import('./pages/errors/NotFoundPage'));
+
 // Elemento único servido por "/" e "/sobre". O par ErrorBoundary+Suspense é
 // local porque o único boundary do app vive dentro do DashboardLayout, e
 // estas rotas são lazy sem passar por ele.
@@ -87,34 +91,23 @@ function OnboardingLayout() {
     <div className="min-h-screen w-full bg-smoke-abyss flex flex-col overflow-x-clip pt-16">
       <HeaderApp />
       <div className="flex-1 w-full flex justify-center items-start px-gutter py-section">
-        <Routes>
-          <Route path="/dados-perfil" element={<PerfilPage />} />
-          {/* Fora do onboarding, qualquer caminho desconhecido é um 404 de
-              verdade. Antes o catch-all abaixo renderizava este layout vazio
-              para qualquer URL inexistente. */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        {/* Suspense porque o 404 passou a ser lazy. Sem ele o React lança ao
+            suspender — a PerfilPage é import estático e nunca precisou de um.
+            O ErrorBoundary vem por fora pelo mesmo motivo do DashboardLayout:
+            se o chunk falhar ao baixar, o Suspense sozinho não captura nada e
+            a pessoa veria uma tela branca no lugar do erro. */}
+        <ErrorBoundary>
+          <Suspense fallback={<div className="min-h-64" />}>
+            <Routes>
+              <Route path="/dados-perfil" element={<PerfilPage />} />
+              {/* Fora do onboarding, qualquer caminho desconhecido é um 404 de
+                  verdade. Antes o catch-all abaixo renderizava este layout
+                  vazio para qualquer URL inexistente. */}
+              <Route path="*" element={<NotFoundPage />} />
+            </Routes>
+          </Suspense>
+        </ErrorBoundary>
       </div>
-    </div>
-  );
-}
-
-// ─── 404 ─────────────────────────────────────────────────────────────────────
-function NotFound() {
-  return (
-    <div className="flex flex-col items-center gap-4 text-center py-16">
-      <p className="text-6xl font-bold text-slate-700">404</p>
-      <h1 className="text-white text-xl">Página não encontrada</h1>
-      <p className="text-slate-400 text-sm max-w-md">
-        O endereço acessado não existe ou foi movido.
-      </p>
-      <a
-        href="/dashboard/economia"
-        className="mt-2 h-11 px-6 inline-flex items-center rounded-md bg-yellow-500 hover:bg-yellow-400
-                   text-slate-950 font-bold text-sm transition-all"
-      >
-        Ir para o painel
-      </a>
     </div>
   );
 }
@@ -149,6 +142,16 @@ function AppRoutes() {
             <Route element={<AdminRoute />}>
               <Route path="admin/usuarios" element={<AdminUsersPage />} />
             </Route>
+
+            {/* Curinga do painel. Sem ele, /dashboard/qualquer-coisa casava com
+                a rota pai e renderizava o DashboardLayout com o <Outlet> vazio:
+                sidebar e header montados, área de conteúdo em branco. O
+                catch-all lá embaixo nunca era alcançado, porque este ramo já
+                tinha casado.
+
+                Dentro do painel, e não redirecionando para fora: quem errou o
+                endereço continua com a sidebar ao lado para se achar. */}
+            <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Route>
 
