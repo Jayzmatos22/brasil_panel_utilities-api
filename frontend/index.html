@@ -4,6 +4,25 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Instrument Serif — usada SÓ pela palavra "Erro" do lockup do 404
+         (pages/errors/Erro404Vagalume.tsx). É a única fonte externa do
+         projeto; todo o resto roda no stack do sistema.
+
+         Existe porque o lockup se apoia no contraste entre uma serifa de
+         display fina e os dígitos em grotesca. Caindo na Georgia do fallback,
+         os dois viram a mesma coisa e o desenho se perde.
+
+         `display=swap` para o texto nunca ficar invisível esperando o
+         download, e os dois preconnect porque o CSS do Google mora num domínio
+         e os arquivos da fonte em outro — sem eles a segunda conexão só começa
+         depois que a primeira responde. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Serif&display=swap"
+      rel="stylesheet"
+    />
     <title>estudos-typescript</title>
   </head>
   <body>
