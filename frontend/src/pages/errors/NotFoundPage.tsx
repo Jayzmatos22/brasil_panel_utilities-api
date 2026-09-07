@@ -49,11 +49,20 @@ export default function NotFoundPage() {
   const logado = isAuthenticated();
 
   return (
-    // A seção assume a PROPORÇÃO da arte — 2:3 no celular, 16:9 de md para cima.
-    // Sem isso a altura vinha do texto, o `object-cover` cortava a imagem no meio
-    // da névoa e sobrava um retângulo visível: a arte dissolve nas bordas DELA,
-    // não numa borda arbitrária. Com as proporções casando, o cover não corta
-    // nada e o desenho chega inteiro.
+    // A altura vem do CONTEÚDO, não de `aspect-ratio`.
+    //
+    // Uma versão anterior amarrava a altura à largura (2:3 / 16:9) para o
+    // object-cover não cortar a arte. Funcionava num celular estreito e quebrava
+    // em tablet: a 562px de largura a seção virava 842px de altura, o texto
+    // ficava preso no rodapé dessa caixa e sobravam 389px de vazio no meio —
+    // além de estourar a tela e criar rolagem. Medido num Redmi Pad em retrato
+    // (600x960) e também em paisagem (1000x600, +104px de rolagem).
+    //
+    // A proporção fixa não tinha relação nenhuma com a altura da JANELA, e é por
+    // isso que quebrava. Agora o corte da arte é assumido e resolvido por
+    // object-position; quem esconde a emenda é a máscara logo abaixo, que já
+    // existe e dissolve as quatro bordas de qualquer jeito.
+    //
     // SEM `isolate`, de propósito. Ele criaria contexto de empilhamento, e aí o
     // `mix-blend-screen` da arte passaria a compor só com o que está DENTRO
     // desta seção — ou seja, com nada — e o retângulo voltaria. Sem ele a arte
@@ -62,7 +71,7 @@ export default function NotFoundPage() {
     // Tirar o isolate é seguro: o ::before do abyss vive em z-index -1 e a arte
     // em z-0, e num mesmo contexto de empilhamento o negativo pinta antes. A
     // ordem continua abyss → arte → conteúdo.
-    <section className="relative w-full max-w-5xl aspect-[2/3] md:aspect-[16/9]">
+    <section className="relative w-full max-w-5xl">
       {/* ── Camada 1 — arte ─────────────────────────────────────────────────
           Container SEM z-index, e isso é a peça central. `position: absolute`
           COM z-index cria contexto de empilhamento, e aí o `mix-blend-screen`
@@ -107,7 +116,7 @@ export default function NotFoundPage() {
             <img
               src={arteMobile ?? arteWide}
               alt=""
-              className="h-full w-full object-cover mix-blend-screen"
+              className="h-full w-full object-cover object-[50%_20%] mix-blend-screen md:object-[50%_50%]"
               style={{
                 maskImage:
                   'radial-gradient(closest-side, #000 86%, transparent 100%)',
@@ -126,19 +135,44 @@ export default function NotFoundPage() {
           no quadrante superior DIREITO. O lockup segue a arte nos dois casos —
           em cima no celular, à direita no desktop — e o texto ocupa o vazio que
           sobra. */}
+      {/* Conteúdo NO FLUXO, e não `absolute inset-0`. Absoluto ele herdava a
+          altura da caixa, e o `mt-auto` que empurrava o texto para o rodapé
+          virava um vão enorme assim que a caixa crescia. No fluxo, a distância
+          entre o lockup e o texto é sempre o mesmo `gap`, em qualquer tela. */}
+      {/* Abaixo de md a coluna ocupa a ALTURA VISÍVEL e distribui o conteúdo
+          dentro dela: o lockup centrado no espaço livre (portanto um pouco acima
+          do meio da tela, já que a mensagem ocupa a parte de baixo) e o bloco de
+          texto ancorado a ~20% do rodapé.
+
+          `svh`, e não `vh`: `100vh` mede a janela com a barra de endereço
+          RECOLHIDA e criaria exatamente a rolagem que este arranjo existe para
+          evitar. O desconto de 11rem cobre o header fixo mais o respiro
+          vertical do casco.
+
+          De md para cima nada disso vale: lá o layout é em linha e a altura
+          volta a vir do conteúdo. */}
       <div
-        className="absolute inset-0 z-10 flex flex-col
-                   md:flex-row-reverse md:items-center md:gap-8 md:px-8"
+        className="relative z-10 flex min-h-[calc(100svh-11rem)] flex-col pb-[12svh] pt-8
+                   md:min-h-0 md:flex-row-reverse md:items-center md:gap-8 md:px-8 md:py-16 md:pb-16"
       >
-        {/* O lockup pousa na NÉVOA da arte, que é onde a luz dos vaga-lumes tem
-            para onde derramar: no retrato ela fica a ~33% da altura, no 16:9 a
-            ~45% e à direita. Daí o `pt-[24%]` do celular e o `items-center` com
-            ordem invertida no desktop. */}
-        <div className="flex justify-center pt-[24%] md:flex-1 md:pt-0">
+        {/* Dois vãos elásticos em 7:3 distribuem a altura livre: o lockup pousa
+            a ~43% da tela — meio, levemente acima — e o bloco de mensagem fecha
+            a ~80%, deixando a faixa de 20% de respiro embaixo. Proporção, e não
+            pixel fixo, para os dois pontos caírem no mesmo lugar num celular de
+            844px e num tablet de 960px.
+
+            Somem de md para cima: lá o layout é em linha e não há altura livre
+            para distribuir. Em `row-reverse` a ordem visual vira texto à
+            esquerda, lockup à direita — que é o que a arte 16:9 pede. */}
+        <div className="flex-[7] md:hidden" aria-hidden="true" />
+
+        <div className="flex justify-center md:flex-1">
           <Erro404Vagalume size={size} />
         </div>
 
-        <div className="mt-auto pb-[10%] md:mt-0 md:flex-1 md:pb-0">
+        <div className="flex-[3] md:hidden" aria-hidden="true" />
+
+        <div className="md:flex-1">
           {/* O lockup já se anuncia como `role="img"` com rótulo "Erro 404", então
               este <h1> não repete o código — ele diz o que aconteceu, e o
               lockup diz o número. */}
