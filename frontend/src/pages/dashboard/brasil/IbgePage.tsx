@@ -263,11 +263,11 @@ export default function IbgePage() {
                          outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 
                          transition-all text-sm appearance-none cursor-pointer hover:bg-white/10"
             >
-              <option value="" disabled className="bg-slate-900">
+              <option value="" disabled>
                 Selecione um estado
               </option>
               {states?.map((s) => (
-                <option key={s.id} value={s.sigla} className="bg-slate-900">
+                <option key={s.id} value={s.sigla}>
                   {s.sigla} — {s.nome}
                 </option>
               ))}
