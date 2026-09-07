@@ -83,9 +83,21 @@ export default function NotFoundPage() {
           .bg-smoke-abyss por baixo. Com o screen os halos atravessam a arte e
           não existe mais caixa nenhuma.
 
-          É por isso também que não há máscara aqui, ao contrário da foto do
-          auth: aquela era uma foto opaca com retângulo para esconder, esta se
-          dissolve sozinha pela própria natureza. */}
+          O `screen` sozinho ainda deixava um retângulo, e a máscara existe por
+          causa dele. A borda das duas artes não é preto PURO: é rgb(2,2,2). No
+          screen isso soma 2 em cada canal, e o resultado medido era um degrau de
+          rgb(2,3,10) para rgb(4,5,12) numa linha perfeitamente reta. Dois pontos
+          de luz é pouco, mas borda reta o olho acha sempre.
+
+          A máscara resolve fazendo o alfa cair nos quatro lados: os mesmos 2
+          pontos passam a entrar por rampa em vez de degrau. `closest-side` faz a
+          elipse tocar o meio de cada borda, e o corte só começa em 86% do raio —
+          então o miolo, onde mora a série, fica intacto, e só as pontas se
+          dissolvem. Um radial único, e não quatro lineares: `mask-composite`
+          ainda diverge de prefixo entre navegadores, e um radial já cobre os
+          quatro lados de uma vez.
+
+          Nada disso toca o .bg-smoke-abyss — a fusão é toda do lado da arte. */}
       {(arteMobile !== undefined || arteWide !== undefined) && (
         <div className="pointer-events-none absolute inset-0" aria-hidden="true">
           <picture>
@@ -96,6 +108,10 @@ export default function NotFoundPage() {
               src={arteMobile ?? arteWide}
               alt=""
               className="h-full w-full object-cover mix-blend-screen"
+              style={{
+                maskImage:
+                  'radial-gradient(closest-side, #000 86%, transparent 100%)',
+              }}
               fetchPriority="high"
               decoding="async"
             />
