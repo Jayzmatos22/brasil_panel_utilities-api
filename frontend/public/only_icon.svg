@@ -1,0 +1,19 @@
+<!-- Favicon do Brasil Panel — as três barras da marca.
+
+     É o MESMO desenho da variante "icon" de src/components/brand/BrandLogo.tsx,
+     e as coordenadas foram copiadas de lá. Precisa viver aqui em public/ e não
+     em src/assets/: o <link rel="icon"> do index.html é resolvido pelo
+     navegador, fora do grafo de imports do Vite, então o arquivo tem que ser
+     servido na raiz com nome estável.
+
+     Duplicação assumida, e por isso este aviso: mexeu nas barras do BrandLogo,
+     mexe aqui também. São 3 retângulos — o custo de sincronizar é menor que o
+     de fazer o favicon passar pelo bundler.
+
+     Sem fundo, de propósito: as três cores têm contraste tanto na aba clara
+     quanto na escura, e um fundo fixo erraria numa das duas. -->
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="3.84"   y="17.946" width="6.613" height="10.214" rx="2.315" fill="#10b981" />
+  <rect x="12.693" y="12.109" width="6.613" height="16.051" rx="2.315" fill="#3b82f6" />
+  <rect x="21.547" y="3.84"   width="6.613" height="24.32"  rx="2.315" fill="#f59e0b" />
+</svg>
