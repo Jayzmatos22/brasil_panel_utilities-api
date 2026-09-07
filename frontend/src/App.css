@@ -167,6 +167,42 @@ html {
   background-color: #020202;
 }
 
+/* Lista de opções dos <select> nativos.
+
+   O `<option>` é desenhado pelo user agent, e a caixa que se abre nem sequer
+   pertence ao documento — é por isso que SelectField.tsx existe, para os casos
+   em que essa caixa precisa mesmo ser estilizada. Nos selects que sobraram
+   nativos, porém, há uma propriedade que o UA respeita: o fundo de cada linha.
+
+   Sem esta regra a lista abria BRANCA. O motivo é que todos esses gatilhos usam
+   superfície translúcida — bg-surface-2 (rgb 255 255 255 / 0.03), bg-inset,
+   bg-white/5. No corpo da página isso compõe sobre o abyss e lê escuro, mas a
+   caixa de opções é pintada FORA da página: os mesmos 3% de branco caem sobre a
+   base clara do popup e o resultado é branco, com o texto slate-200 do gatilho
+   por cima — ilegível.
+
+   `color-scheme: dark` no :root acima não resolve sozinho justamente por isso:
+   ele escurece a moldura que o navegador desenha, não o fundo que o autor
+   declarou.
+
+   #0f172a (slate-900) não é escolha nova: era o que IbgePage, SalarioPage e
+   CambioPage já aplicavam opção por opção, à mão. Esta regra generaliza o que
+   três telas já tinham descoberto — e as três perderam o remendo local, que
+   agora seria só duplicata pronta para divergir.
+
+   Regra sem @layer, de propósito: precisa vencer as utilitárias do Tailwind,
+   que vivem em @layer utilities e por isso perdem para qualquer regra fora de
+   camada, independentemente de especificidade.
+
+   Só `option`, nunca `select`: um fundo global no gatilho atropelaria os
+   `hover:bg-white/10` e `bg-inset` de cada tela, que são utilitárias em camada
+   e perderiam sem ter como reagir. O gatilho já lê escuro sobre a página — o
+   defeito sempre foi só a lista. */
+option {
+  background-color: #0f172a;
+  color: #e2e8f0;
+}
+
 /* Casco do DashboardLayout. As duas linhas de `min-height` são fallback, não
    duplicação: quem não conhece `svh` fica com `vh`.
 

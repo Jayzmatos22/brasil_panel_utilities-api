@@ -258,11 +258,7 @@ export default function SalarioPage() {
               className="h-10 coarse:min-h-11 px-4 rounded-xl bg-white/5 text-white border border-white/10 outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-sm cursor-pointer appearance-none hover:bg-white/10"
             >
               {SOURCES.map((s) => (
-                <option
-                  key={s.key}
-                  value={s.key}
-                  className="bg-slate-900 text-white"
-                >
+                <option key={s.key} value={s.key}>
                   {s.label}
                 </option>
               ))}
