@@ -45,8 +45,19 @@ export default function BancosPage() {
     if (!isNaN(parsed) && parsed > 0) setCode(parsed);
   };
 
+  // O termo é o nome real do arquivo, e isso é o conserto de um bug silencioso:
+  // aqui se procurava "cambio-img", que não existe em assets/bancos/ — mora em
+  // assets/cambio/, outra pasta, fora deste glob. A busca nunca casava e a
+  // página sempre caía no fallback `[0]`.
+  //
+  // Passou despercebido porque a pasta tinha um arquivo só, e `[0]` acertava
+  // por falta de alternativa. Com a arte nova entrando ao lado, `[0]` viraria
+  // ordem alfabética do glob decidindo o que a página mostra.
+  //
+  // O `||` fica, como rede: se o arquivo for renomeado, a página perde a arte
+  // certa mas não fica sem imagem.
   const headerImage =
-    findBancosImage("cambio-img") || Object.values(BANCOS_IMAGES)[0];
+    findBancosImage("banco-dg-img") || Object.values(BANCOS_IMAGES)[0];
 
   return (
     <motion.div
