@@ -18,8 +18,23 @@ import { useResponsiveValue } from '../../hooks/UseResponsiveValue';
 const arteMobile = findErrorImage('404-mobile');
 const arteWide = findErrorImage('404-desktop');
 
-/** Onde o <picture> troca de arte. Igual ao `md` do tema (48rem = 768px). */
-const MD = 768;
+/**
+ * Quando o layout vira DUAS COLUNAS (texto à esquerda, lockup à direita) e a
+ * arte passa a ser a paisagem 16:9.
+ *
+ * Largura sozinha não serve, e foi assim que isto quebrou: um Redmi Pad em
+ * RETRATO reporta 800px de largura (1200 físicos sobre DPR 1,5), passa do `md`
+ * de 768 e caía nas duas colunas — lockup e mensagem lado a lado numa tela em
+ * pé, cada um espremido em ~370px.
+ *
+ * `orientation: landscape` é o sinal que de fato separa os dois casos: o que
+ * decide não é o tamanho da tela, é o formato dela. Tablet em pé fica na
+ * coluna, junto do celular; deitado vai para as duas colunas, junto do desktop.
+ *
+ * A mesma consulta serve ao <source> do <picture> e ao layout, para a arte e o
+ * arranjo nunca discordarem.
+ */
+const MQ_LINHA = '(min-width: 48rem) and (orientation: landscape)';
 
 /**
  * Corpo dos dígitos, em px.
@@ -38,10 +53,12 @@ const MD = 768;
  * cada no desktop, 190px no celular. É a mesma classe de custo de composição
  * que já causou a faixa branca na rolagem do painel.
  */
-const tamanhoLockup = () => (window.innerWidth >= MD ? 96 : 56);
+const tamanhoLockup = () => (window.matchMedia(MQ_LINHA).matches ? 96 : 56);
 
 export default function NotFoundPage() {
   const size = useResponsiveValue(tamanhoLockup);
+  // Recomputado a cada resize — e girar o aparelho dispara resize.
+  const linha = useResponsiveValue(() => window.matchMedia(MQ_LINHA).matches);
 
   // Quem tem sessão volta ao painel; quem não tem iria bater no PrivateRoute e
   // ser jogado no login sem explicação — para essa pessoa o destino honesto é a
@@ -110,13 +127,13 @@ export default function NotFoundPage() {
       {(arteMobile !== undefined || arteWide !== undefined) && (
         <div className="pointer-events-none absolute inset-0" aria-hidden="true">
           <picture>
-            {arteWide !== undefined && (
-              <source media={`(min-width: ${MD}px)`} srcSet={arteWide} />
-            )}
+            {arteWide !== undefined && <source media={MQ_LINHA} srcSet={arteWide} />}
             <img
               src={arteMobile ?? arteWide}
               alt=""
-              className="h-full w-full object-cover object-[50%_20%] mix-blend-screen md:object-[50%_50%]"
+              className={`h-full w-full object-cover mix-blend-screen ${
+                linha ? 'object-[50%_50%]' : 'object-[50%_20%]'
+              }`}
               style={{
                 maskImage:
                   'radial-gradient(closest-side, #000 86%, transparent 100%)',
@@ -129,33 +146,39 @@ export default function NotFoundPage() {
       )}
 
       {/* ── Camada 2 — lockup e texto ───────────────────────────────────────
-          `flex-col-reverse` no celular e `md:flex-row` no desktop, e não duas
-          ordens iguais, porque as duas artes foram compostas ao contrário uma
+          Dois arranjos, escolhidos por ORIENTAÇÃO e não por largura (ver
+          MQ_LINHA acima), porque as duas artes foram compostas ao contrário uma
           da outra: no retrato a série corre no terço SUPERIOR, no 16:9 ela fica
-          no quadrante superior DIREITO. O lockup segue a arte nos dois casos —
-          em cima no celular, à direita no desktop — e o texto ocupa o vazio que
-          sobra. */}
-      {/* Conteúdo NO FLUXO, e não `absolute inset-0`. Absoluto ele herdava a
-          altura da caixa, e o `mt-auto` que empurrava o texto para o rodapé
-          virava um vão enorme assim que a caixa crescia. No fluxo, a distância
-          entre o lockup e o texto é sempre o mesmo `gap`, em qualquer tela. */}
-      {/* Abaixo de md a coluna ocupa a ALTURA VISÍVEL e distribui o conteúdo
-          dentro dela: o lockup centrado no espaço livre (portanto um pouco acima
-          do meio da tela, já que a mensagem ocupa a parte de baixo) e o bloco de
-          texto ancorado a ~20% do rodapé.
+          no quadrante superior DIREITO.
+
+          EM PÉ — coluna que ocupa a altura visível. Dois vãos elásticos em 5:3
+          distribuem o espaço livre: o lockup pousa a ~44% da tela (meio,
+          levemente acima) e a mensagem fecha a ~80%, deixando os 20% de respiro
+          embaixo. Proporção, e não pixel fixo, para os dois pontos caírem no
+          mesmo lugar num celular de 844px e num tablet de 1280px.
 
           `svh`, e não `vh`: `100vh` mede a janela com a barra de endereço
           RECOLHIDA e criaria exatamente a rolagem que este arranjo existe para
           evitar. O desconto de 11rem cobre o header fixo mais o respiro
           vertical do casco.
 
-          De md para cima nada disso vale: lá o layout é em linha e a altura
-          volta a vir do conteúdo. */}
+          DEITADO — duas colunas, com a altura voltando a vir do conteúdo. Em
+          `row-reverse` a ordem visual fica texto à esquerda e lockup à direita,
+          que é o vazio que a arte 16:9 deixa de propósito. Os vãos elásticos
+          somem: não há altura livre para distribuir.
+
+          O conteúdo fica NO FLUXO, e não `absolute inset-0`. Absoluto ele
+          herdava a altura da caixa, e um `mt-auto` que empurrava o texto para o
+          rodapé virava um vão enorme assim que a caixa crescia — foi o que
+          quebrou em tablet antes. */}
       <div
-        className="relative z-10 flex min-h-[calc(100svh-11rem)] flex-col pb-[12svh] pt-8
-                   md:min-h-0 md:flex-row-reverse md:items-center md:gap-8 md:px-8 md:py-16 md:pb-16"
+        className={
+          linha
+            ? 'relative z-10 flex flex-row-reverse items-center gap-8 px-8 py-16'
+            : 'relative z-10 flex min-h-[calc(100svh-11rem)] flex-col pb-[12svh] pt-8'
+        }
       >
-        {/* Dois vãos elásticos em 7:3 distribuem a altura livre: o lockup pousa
+        {/* Dois vãos elásticos em 5:3 distribuem a altura livre: o lockup pousa
             a ~43% da tela — meio, levemente acima — e o bloco de mensagem fecha
             a ~80%, deixando a faixa de 20% de respiro embaixo. Proporção, e não
             pixel fixo, para os dois pontos caírem no mesmo lugar num celular de
@@ -164,15 +187,15 @@ export default function NotFoundPage() {
             Somem de md para cima: lá o layout é em linha e não há altura livre
             para distribuir. Em `row-reverse` a ordem visual vira texto à
             esquerda, lockup à direita — que é o que a arte 16:9 pede. */}
-        <div className="flex-[7] md:hidden" aria-hidden="true" />
+        {!linha && <div className="flex-[5]" aria-hidden="true" />}
 
-        <div className="flex justify-center md:flex-1">
+        <div className={`flex justify-center ${linha ? 'flex-1' : ''}`}>
           <Erro404Vagalume size={size} />
         </div>
 
-        <div className="flex-[3] md:hidden" aria-hidden="true" />
+        {!linha && <div className="flex-[3]" aria-hidden="true" />}
 
-        <div className="md:flex-1">
+        <div className={linha ? 'flex-1' : undefined}>
           {/* O lockup já se anuncia como `role="img"` com rótulo "Erro 404", então
               este <h1> não repete o código — ele diz o que aconteceu, e o
               lockup diz o número. */}
