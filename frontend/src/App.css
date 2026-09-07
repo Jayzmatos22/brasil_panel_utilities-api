@@ -654,45 +654,21 @@ body {
   --hero-rim: #044c02e1;
 }
 
-.hero-edge-glow {
-  /* Sem mix-blend-mode. O `screen` foi o que estragou as versões anteriores:
-     sobre fundo quase preto ele clareia, mas lava a saturação, e a cor saía
-     acinzentada. Com alfa real sobre o preto a mistura é literal — cada
-     parada é o mesmo amarelo com menos opacidade, e o preto aparece na
-     proporção que falta.
-
-     Seis paradas, e não três: numa transição desta altura, poucas paradas
-     entre cores distantes produzem banding visível.
-
-     O pico fica em 13% da faixa, e não na base. Ancorar o auge em 0% jogaria
-     a cor mais forte exatamente na última linha do hero, onde começa a seção
-     preta seguinte — o resultado é uma régua reta cruzando a tela, que já
-     aconteceu duas vezes aqui. Com o pico recuado, a cor se dissolve no preto
-     nas duas pontas e não sobra emenda.
-
-     Altura total de 18%, não 30%. Em 811px de hero isso dá ~145px: espaço
-     suficiente para as paradas escoarem sem banding, e curto o bastante para
-     a faixa ler como apoio da foto em vez de fundo colorido. */
-  background-image: linear-gradient(
-    to top,
-    color-mix(in srgb, var(--hero-rim) 22%, transparent) 0%,
-    color-mix(in srgb, var(--hero-rim) 26%, transparent) 4%,
-    color-mix(in srgb, var(--hero-rim) 28%, transparent) 8%,
-    color-mix(in srgb, var(--hero-rim) 20%, transparent) 11%,
-    color-mix(in srgb, var(--hero-rim) 5%, transparent) 15%,
-    transparent 20%
-  );
-}
-
 /* Continuação da base na seção seguinte.
-   A borda inferior do hero deixou de voltar ao transparente: agora termina em
-   22%, e esta regra começa no MESMO 22% e segue desvanecendo para baixo. É a
-   igualdade entre os dois valores que apaga a emenda — a cor atravessa o
-   limite das seções sem degrau, em vez de o amarelo bater no preto de uma vez.
+   O hero termina numa faixa verde a 22%, e esta regra começa no MESMO 22% e
+   segue desvanecendo para baixo. É a igualdade entre os dois valores que apaga
+   a emenda — a cor atravessa o limite das seções sem degrau, em vez de o verde
+   bater no preto de uma vez.
 
-   Os dois valores são solidários: mexer em um sem mexer no outro reabre a
-   emenda. Por isso a cor vive em --hero-rim, e por isso os 22% aparecem
-   comentados dos dois lados. */
+   ATENÇÃO, porque o par mudou de natureza: o outro lado do 22% NÃO é mais uma
+   regra CSS que se possa editar aqui ao lado. Era `.hero-edge-glow`, que saiu
+   quando a composição do hero passou a vir assada na arte — hoje os 22% do
+   lado de cima são PIXELS, na base de sobre02-hero-arara-*.webp.
+
+   Consequência prática: mexer neste gradiente reabre a emenda e não há regra
+   irmã para acompanhar. Ajustar a base do hero agora significa regerar a arte.
+   A cor segue em --hero-rim porque ela é a referência do que foi assado, e
+   porque é ela que este gradiente precisa continuar. */
 .hero-edge-carry {
   background-image: linear-gradient(
     to bottom,
@@ -1005,61 +981,17 @@ body {
   }
 
   /* ── Hero da landing institucional (/sobre) ──────────────────────────────
-     Estas três classes só existem DENTRO do gate, e isso é proposital: o
-     estado final é o padrão do CSS. Quem pede menos movimento vê a linha já
-     desenhada, os pontos acesos e a imagem no lugar — sem nada piscando.
+     Aqui moravam também `.hero-line` e `.hero-vertex`, que desenhavam a série
+     temporal e acendiam os 11 vértices em cascata. Saíram junto com o SVG do
+     Hero: o grafismo passou a vir assado na arte (ver Hero.tsx), e classe de
+     animação sem elemento para animar é peso morto que o próximo leitor tenta
+     entender. O git guarda as duas, se um dia o SVG voltar por cima da
+     variante sem grafismo. */
 
-     Se `.hero-line` vivesse fora do gate, o stroke-dashoffset inicial de 1
-     deixaria a linha INVISÍVEL para essas pessoas, já que só a animação a
-     traria de volta. O gate é o que garante que o efeito seja aditivo. */
-
-  /* Linha de série temporal que se desenha. O pathLength="1" do SVG
-     normaliza o traçado, então 1 = comprimento total, qualquer que seja o
-     caminho real. */
-  @keyframes hero-line-draw {
-    from {
-      stroke-dashoffset: 1;
-    }
-    to {
-      stroke-dashoffset: 0;
-    }
-  }
-
-  .hero-line {
-    stroke-dasharray: 1;
-    stroke-dashoffset: 1;
-    /* `forwards` segura o estado final: sem ele a linha sumiria ao terminar. */
-    animation: hero-line-draw 1.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
-  }
-
-  /* Pontos dos vértices. `both` aplica o estado inicial durante o delay
-     escalonado, para o ponto não aparecer antes de a linha chegar nele. */
-  @keyframes hero-vertex-pulse {
-    0% {
-      opacity: 0;
-      transform: scale(0.4);
-    }
-    35% {
-      opacity: 0.85;
-      transform: scale(1);
-    }
-    100% {
-      opacity: 0.3;
-      transform: scale(1);
-    }
-  }
-
-  .hero-vertex {
-    /* transform-box/origin fazem o scale girar em torno do próprio ponto;
-       sem isso o SVG escala a partir da origem do viewBox e o ponto voa. */
-    transform-box: fill-box;
-    transform-origin: center;
-    animation: hero-vertex-pulse 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
-  }
-
-  /* Entrada da foto. Mora no wrapper, e não na <img>, porque a imagem já usa
-     transform para o espelhamento (-scale-x-100) — animar transform nos dois
-     no mesmo elemento faria um sobrescrever o outro. */
+  /* Entrada da foto. Mora no wrapper, e não na <img>, e continua assim mesmo
+     depois de a <img> ter perdido o -scale-x-100 que originou a separação: o
+     wrapper é quem tem `overflow-hidden`, então é nele que a escala de entrada
+     pode crescer sem vazar para fora da seção. */
   @keyframes hero-image-in {
     from {
       opacity: 0;
@@ -1074,11 +1006,6 @@ body {
   .hero-image-frame {
     animation: hero-image-in 1.4s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
-
-  /* A base do hero (.hero-edge-glow) não aparece aqui de propósito: ela é
-     estática. Pulsar uma área grande logo acima da dobra disputa atenção com
-     o texto, e o efeito pretendido é de profundidade, não de vida. Sem nada
-     animando, a regra inteira mora fora deste gate. */
 
   /* ── Esteira das fontes (/sobre) ──
      O trilho contém a lista DUAS vezes, então deslocar -50% deixa a segunda

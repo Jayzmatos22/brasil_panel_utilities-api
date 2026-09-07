@@ -1,15 +1,25 @@
 // Hero — a única seção com <h1> e a única com imagem de fundo.
 //
-// Camadas empilhadas, da base para o topo:
-//   1. imagem (object-cover, sem lazy: é o LCP da página)
-//   2. véu em dois eixos
-//   3. SVG inline com malha e a linha de série temporal
-// O SVG é inline, e não um arquivo, porque precisa herdar a cor do tema e
-// custa menos que uma requisição para ~1 KB de path.
+// UMA camada, e não cinco. A composição que antes era montada em tempo de
+// execução — foto tratada, véu em dois eixos, borda de luz e um SVG de malha
+// mais linha de série — hoje vem ASSADA nas próprias artes. O que sobra aqui é
+// a <picture> e o texto por cima dela.
 //
-// As animações moram em App.css, atrás do gate de prefers-reduced-motion, no
-// mesmo padrão que o projeto já usa. O estado final é o padrão do CSS: quem
-// pede menos movimento vê a linha desenhada e a imagem visível, sem transição.
+// A troca não foi por elegância: as cinco camadas custavam quatro elementos
+// posicionados e um SVG de 11 vértices compondo a cada quadro, sobre a imagem
+// que é o LCP da página. As artes assadas pesam 45 kB (2400x1000) e 32 kB
+// (1200x1600) — menos que os 182 kB da foto que substituem.
+//
+// O QUE SE PERDEU, para quem for reverter: a linha da série era desenhada na
+// entrada (hero-line-draw, 1,8s) e os 11 vértices acendiam em cascata atrás
+// dela. Em pixels isso é estático. O histórico do git tem o SVG inteiro, com
+// os vértices e o pattern da malha, caso valha a pena trazer de volta por
+// cima da variante sem grafismo.
+//
+// O que ainda é CSS: a animação de entrada da imagem (.hero-image-frame) e a
+// continuação da borda verde na seção seguinte (.hero-edge-carry, em
+// Metrics.tsx) — esta última agora casa com a base da ARTE, não com um
+// gradiente irmão. Ver a nota em App.css.
 import { Link } from 'react-router-dom';
 import {
   BUTTON_GHOST,
@@ -21,75 +31,13 @@ import { isAuthenticated } from '../../../lib/auth/jwt';
 import { DASHBOARD_CTA, HERO, SITE_NAME } from '../data/content';
 import { findAboutImage } from '../data/images';
 
-const heroBg = findAboutImage('sobre02');
-
-/** Vértices da série temporal — a linha e os pontos leem a mesma fonte. */
-const SERIE: readonly (readonly [number, number])[] = [
-  [0, 470], [120, 440], [240, 460], [360, 390], [480, 410], [600, 330],
-  [720, 350], [840, 260], [960, 285], [1080, 190], [1200, 215],
-];
-
-const CAMINHO = SERIE.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x} ${y}`).join(' ');
-
-/** Malha + linha de série temporal. Decorativo: fora da árvore de a11y. */
-function HeroGraphic() {
-  return (
-    <svg
-      aria-hidden="true"
-      className="absolute inset-0 h-full w-full text-fg"
-      preserveAspectRatio="none"
-      viewBox="0 0 1200 600"
-    >
-      <defs>
-        <pattern
-          id="hero-grid"
-          width="60"
-          height="60"
-          patternUnits="userSpaceOnUse"
-        >
-          <path
-            d="M60 0H0v60"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1"
-            opacity="0.06"
-          />
-        </pattern>
-      </defs>
-
-      <rect width="1200" height="600" fill="url(#hero-grid)" />
-
-      {/* pathLength="1" normaliza o comprimento, então o dasharray do
-          App.css não precisa saber a medida real do traçado. */}
-      <path
-        className="hero-line"
-        d={CAMINHO}
-        pathLength="1"
-        fill="none"
-        stroke="var(--color-accent)"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        opacity="0.22"
-      />
-
-      {/* Pontos nos vértices. O atraso escalonado acompanha o traçado da
-          linha, de modo que cada ponto acende quando ela chega nele. */}
-      {SERIE.map(([x, y], i) => (
-        <circle
-          key={x}
-          className="hero-vertex"
-          cx={x}
-          cy={y}
-          r="3.5"
-          fill="var(--color-accent)"
-          opacity="0.3"
-          style={{ animationDelay: `${200 + i * 150}ms` }}
-        />
-      ))}
-    </svg>
-  );
-}
+// Prefixos COMPLETOS, e não 'sobre02'.
+//
+// Os dois arquivos começam com sobre02, então o prefixo curto casaria com os
+// dois e o resolvedor entregaria um por ordem de glob — sorteio, não escolha.
+// A arte antiga (sobre02-panel2-img) saiu justamente por dividir esse prefixo.
+const heroWide = findAboutImage('sobre02-hero-arara-desktop');
+const heroMobile = findAboutImage('sobre02-hero-arara-mobile');
 
 export function Hero() {
   // A página é alcançável por quem já tem sessão (/sobre não tem guarda).
@@ -103,59 +51,40 @@ export function Hero() {
       aria-labelledby="hero-title"
       className="relative isolate overflow-hidden"
     >
-      {/* Camada 1 — imagem.
-          O espelhamento (-scale-x-100) não é capricho: a arara está composta
-          na metade ESQUERDA da foto, exatamente onde fica o texto. object-right
-          não resolveria, porque mostraria só a folhagem desfocada da direita.
-          Espelhar joga a ave para o lado livre sem recortar nada dela.
+      {/* Camada única — a arte.
+          Duas artes, uma por formato, porque a composição difere: na de
+          desktop (2400x1000) a arara ocupa o terço direito e a metade esquerda
+          fica limpa para o texto; na de celular (1200x1600) a ave sobe para o
+          terço superior e o texto ocupa a metade de baixo. Recortar a paisagem
+          em retrato colocaria a ave atrás do <h1>.
 
-          saturate-[.55] contém o azul e o amarelo da plumagem, que competiriam
-          com o accent esmeralda — a página tem um accent só, por decisão de
-          design. A foto continua reconhecível, só para de disputar atenção.
+          <picture> e não duas <img> alternadas por CSS: com `display: none` o
+          navegador ainda baixa a escondida, e seriam dois downloads para
+          mostrar um. O <source media> escolhe ANTES do fetch.
 
-          A escala de entrada vive no wrapper, e não na <img>, para não brigar
-          com o transform do espelhamento. */}
-      {heroBg !== undefined && (
-        <div className="hero-image-frame absolute inset-0 -z-20 overflow-hidden">
-          <img
-            src={heroBg}
-            alt={HERO.backgroundAlt}
-            // Sem loading="lazy": está acima da dobra e é o LCP.
-            fetchPriority="high"
-            className="h-full w-full object-cover -scale-x-100 saturate-[.55] opacity-70"
-          />
+          SEM -scale-x-100, saturate-[.55] ou opacity-70, que a versão anterior
+          aplicava. Os três já estão assados na arte — o espelhamento, então,
+          seria ativamente errado: a ave já nasce à direita, e espelhar a jogaria
+          de volta para debaixo do texto.
+
+          A escala de entrada vive no wrapper, e não na <img>: é o que sobrou de
+          animação nesta seção. */}
+      {(heroWide !== undefined || heroMobile !== undefined) && (
+        <div className="hero-image-frame absolute inset-0 -z-10 overflow-hidden">
+          <picture>
+            {heroWide !== undefined && (
+              <source media="(min-width: 48rem)" srcSet={heroWide} />
+            )}
+            <img
+              src={heroMobile ?? heroWide}
+              alt={HERO.backgroundAlt}
+              // Sem loading="lazy": está acima da dobra e é o LCP.
+              fetchPriority="high"
+              className="h-full w-full object-cover"
+            />
+          </picture>
         </div>
       )}
-
-      {/* Camada 2 — véu em dois eixos, e não um só.
-          O texto ocupa a metade esquerda; a arara, depois de espelhada, a
-          direita. Um véu uniforme forte o bastante para proteger o texto
-          apagaria a foto inteira. O gradiente horizontal concentra o
-          escurecimento onde há texto e libera a direita para a arte; o
-          vertical apenas costura o hero com o fundo da próxima seção. */}
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 -z-10 bg-gradient-to-r from-ink via-ink/85 to-ink/30"
-      />
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 -z-10 bg-gradient-to-b from-ink/50 via-transparent to-ink"
-      />
-
-      {/* Camada 3 — borda de luz.
-          Vem DEPOIS dos véus no DOM de propósito: os três estão em -z-10, e
-          entre irmãos de mesmo z quem vem depois pinta por cima. Se viesse
-          antes, o véu apagaria justamente o realce que ela existe para dar.
-
-          O gradiente e a respiração moram em App.css (.hero-edge-glow), e não
-          em utilities, porque envolvem color-mix, mix-blend-mode e keyframes —
-          nada disso cabe em classe utilitária sem virar valor arbitrário. */}
-      <div aria-hidden="true" className="hero-edge-glow absolute inset-0 -z-10" />
-
-      {/* Camada 4 — grafismo */}
-      <div aria-hidden="true" className="absolute inset-0 -z-10">
-        <HeroGraphic />
-      </div>
 
       <div className={`${CONTAINER} py-28 md:py-40`}>
         <div className="max-w-3xl">
