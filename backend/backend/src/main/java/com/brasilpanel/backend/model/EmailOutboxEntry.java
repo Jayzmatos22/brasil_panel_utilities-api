@@ -55,6 +55,15 @@ public class EmailOutboxEntry {
      * Motivo da última falha, truncado. Só para diagnóstico no banco: a mensagem de
      * uma falha de SMTP pode citar host e credencial, e nunca é devolvida ao cliente.
      */
+    /**
+     * Linha de onde o segredo deste envio deve ser lido, quando não for a conta do
+     * destinatário. Nulo em {@link EmailType#VERIFICATION_CODE}, cujo código sai de
+     * {@code users} pelo próprio recipient; preenchido no desafio de admin, que vai
+     * para o endereço de segurança do dono e não para o e-mail da conta.
+     */
+    @Column(name = "reference_id")
+    private UUID referenceId;
+
     @Column(length = 500)
     private String lastError;
 

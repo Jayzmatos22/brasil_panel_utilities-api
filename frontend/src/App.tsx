@@ -14,6 +14,7 @@ import { PublicOnly }    from './components/PublicOnly';
 import RegisterPage    from './pages/auth/RegisterPage';
 import LoginPage       from './pages/auth/LoginPage';
 import VerifyEmailPage from './pages/auth/VerifyEmailPage';
+import AdminConfirmPage from './pages/auth/AdminConfirmPage';
 
 // Onboarding (com header)
 import PerfilPage from './pages/onboarding/PerfilPage';
@@ -177,6 +178,13 @@ function AppRoutes() {
         {/* /verificar-email fica FORA do guard: o usuário chega nela já com
             cadastro feito e precisa concluir a verificação. */}
         <Route path="/verificar-email"  element={<VerifyEmailPage />} />
+
+        {/* Segundo fator do admin. Também FORA do PublicOnly, e pelo mesmo motivo
+            do /verificar-email: no modo `login` a pessoa ainda não tem sessão, e
+            no modo `senha` ela tem — o guard barraria justamente o segundo caso,
+            que é quando a troca de senha fica esperando confirmação. */}
+        <Route path="/confirmar-admin/login" element={<AdminConfirmPage modo="login" />} />
+        <Route path="/confirmar-admin/senha" element={<AdminConfirmPage modo="senha" />} />
 
         {/* ── Institucional ──
             /sobre NÃO passa pelo PublicOnly: é o destino do link "Sobre" da

@@ -121,7 +121,7 @@ class EmailServiceTest {
         // Marcação exclusiva do HTML e frase exclusiva do texto puro: se uma
         // sumir, a mensagem voltou a ter só uma versão.
         assertThat(corpo).contains("<!DOCTYPE html>");
-        assertThat(corpo).contains("Brasil Panel — confirme seu e-mail");
+        assertThat(corpo).contains("Brasil Panel — Confirme seu e-mail");
     }
 
     @Test

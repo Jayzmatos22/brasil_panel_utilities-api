@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { authService } from '../../api/services/Auth';
-import type { LoginRequest, AuthResponse } from '../../types/UserType';
+import type { LoginRequest, LoginResult } from '../../types/UserType';
 import { BrandLogo } from '../../components/brand/BrandLogo';
 import { FormField } from '../../components/forms/FormField';
 import { SubmitButton } from '../../components/forms/SubmitButton';
@@ -11,6 +11,7 @@ import { AuthBrandPanel } from '../../components/forms/AuthBrandPanel';
 import { AuthBackdrop } from './AuthBackdrop';
 import { AuthTestingNotice, AuthAboutLink } from './AuthNotices';
 import { saveSession } from '../../lib/auth/jwt';
+import { setPendingAdminLogin } from '../../lib/auth/pendingAdminLogin';
 import { resolveRedirect } from '../../lib/auth/redirect';
 
 export default function LoginPage() {
@@ -26,9 +27,19 @@ export default function LoginPage() {
 
   const { mutate, isPending } = useMutation({
     mutationFn: (data: LoginRequest) => authService.login(data),
-    onSuccess: (res: AuthResponse) => {
+    onSuccess: (res: LoginResult, variaveis: LoginRequest) => {
+      // Admin: credenciais certas ainda não são sessão. Nada é gravado aqui —
+      // saveSession antes da confirmação daria ao app um usuário "logado" que o
+      // backend não reconhece, e toda requisição seguinte voltaria 401.
+      if (res.twoFactorRequired) {
+        setPendingAdminLogin({ email: variaveis.email, password: variaveis.password });
+        toast.success(res.message);
+        navigate('/confirmar-admin/login', { replace: true });
+        return;
+      }
+
       // O JWT já veio em cookie httpOnly; aqui guardamos só o hint de exibição.
-      saveSession(res.email, res.role, res.expiresInMs, res.name);
+      saveSession(res.auth.email, res.auth.role, res.auth.expiresInMs, res.auth.name);
       toast.success('Login realizado com sucesso!');
       // `replace` para que o botão Voltar não traga a pessoa de volta ao
       // login já autenticada.

@@ -81,8 +81,31 @@ public class AuthController {
     @ApiResponse(responseCode = "401", description = "Credenciais inválidas")
     @ApiResponse(responseCode = "403", description = "E-mail não verificado")
     @PostMapping("/login")
-    public ResponseEntity<AuthResponseDTO> login(@RequestBody @Valid LoginRequestDTO dto) {
-        AuthResponseDTO response = authService.loginUser(dto);
+    public ResponseEntity<?> login(@RequestBody @Valid LoginRequestDTO dto) {
+        LoginOutcomeDTO outcome = authService.loginUser(dto);
+
+        // 202: credenciais aceitas, sessão ainda não. Nenhum Set-Cookie sai daqui — é
+        // isso que faz a senha de admin, sozinha, não valer acesso.
+        if (outcome.twoFactorRequired()) {
+            return ResponseEntity.accepted().body(TwoFactorRequiredDTO.of(outcome.message()));
+        }
+
+        AuthResponseDTO response = outcome.auth();
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, sessionCookie(response.token()).toString())
+                .body(response);
+    }
+
+
+    @Operation(summary = "Confirmar login de administrador",
+               description = "Conclui o login de admin com o código de 6 dígitos enviado por e-mail.")
+    @ApiResponse(responseCode = "200", description = "Código confirmado — sessão emitida")
+    @ApiResponse(responseCode = "400", description = "Código inválido ou expirado")
+    @ApiResponse(responseCode = "401", description = "Credenciais inválidas")
+    @PostMapping("/admin/confirm-login")
+    public ResponseEntity<AuthResponseDTO> confirmAdminLogin(
+            @RequestBody @Valid ConfirmAdminLoginRequestDTO dto) {
+        AuthResponseDTO response = authService.confirmAdminLogin(dto);
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, sessionCookie(response.token()).toString())
                 .body(response);
@@ -129,11 +152,33 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
+    @Operation(summary = "Alterar senha",
+               description = "Troca a senha. Para admin, responde 202 e a troca só vale após confirmação por e-mail.")
+    @ApiResponse(responseCode = "204", description = "Senha alterada")
+    @ApiResponse(responseCode = "202", description = "Troca pendente — código enviado por e-mail")
     @PatchMapping("/update-password")
-    public ResponseEntity<Void> updatePassword(
+    public ResponseEntity<?> updatePassword(
             @RequestBody @Valid UpdatePasswordRequestDTO dto,
             @AuthenticationPrincipal UserDetails userDetails) {
-        authService.updatePassword(userDetails.getUsername(), dto);
+        boolean pendente = authService.updatePassword(userDetails.getUsername(), dto);
+
+        if (pendente) {
+            return ResponseEntity.accepted().body(TwoFactorRequiredDTO.of(
+                    "Código de confirmação enviado. A senha atual continua valendo até você confirmar."));
+        }
+        return ResponseEntity.noContent().build();
+    }
+
+
+    @Operation(summary = "Confirmar troca de senha de administrador",
+               description = "Aplica a senha nova retida no desafio, conferindo o código enviado por e-mail.")
+    @ApiResponse(responseCode = "204", description = "Senha alterada")
+    @ApiResponse(responseCode = "400", description = "Código inválido ou expirado")
+    @PostMapping("/admin/confirm-password")
+    public ResponseEntity<Void> confirmAdminPasswordChange(
+            @RequestBody @Valid ConfirmAdminPasswordRequestDTO dto,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        authService.confirmAdminPasswordChange(userDetails.getUsername(), dto);
         return ResponseEntity.noContent().build();
     }
 

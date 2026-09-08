@@ -1,6 +1,7 @@
 // src/hooks/UseSettings.ts
 import { useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 import { authService } from '../api/services/Auth';
 import { clearSession, updateSessionName } from '../lib/auth/jwt';
 import type { UpdateNameRequest, UpdatePasswordRequest, DeleteAccountRequest } from '../types/UserType';
@@ -22,9 +23,19 @@ export function useUpdateName(onSuccess?: () => void) {
 }
 
 export function useUpdatePassword(onSuccess?: () => void) {
+  const navigate = useNavigate();
+
   return useMutation({
     mutationFn: (data: UpdatePasswordRequest) => authService.updatePassword(data),
-    onSuccess: () => {
+    onSuccess: (res) => {
+      // Admin: a senha nova ficou retida no desafio e a atual continua valendo.
+      // Anunciar "alterada com sucesso" aqui seria mentira — e mentira perigosa,
+      // porque a pessoa sairia achando que a senha antiga não abre mais nada.
+      if (res.pending) {
+        toast.success('Confirme o código enviado ao e-mail de segurança.');
+        navigate('/confirmar-admin/senha');
+        return;
+      }
       toast.success('Senha alterada com sucesso!');
       onSuccess?.();
     },

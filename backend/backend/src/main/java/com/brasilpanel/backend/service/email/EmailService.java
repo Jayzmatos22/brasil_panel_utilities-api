@@ -1,13 +1,12 @@
 package com.brasilpanel.backend.service.email;
 
+import com.brasilpanel.backend.model.AdminChallengePurpose;
 import jakarta.mail.internet.MimeMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
-
-import java.io.UnsupportedEncodingException;
 
 @Service
 @Slf4j
@@ -33,6 +32,45 @@ public class EmailService {
      * @param code código de 6 dígitos
      */
     public void sendVerificationCode(String to, String code) {
+        enviar(to,
+                "Seu código de verificação — Brasil Panel",
+                "Confirme seu e-mail",
+                "Use o código abaixo para concluir seu cadastro.",
+                code,
+                "Se você não solicitou este cadastro, pode ignorar este e-mail com segurança.",
+                "código de verificação");
+    }
+
+    /**
+     * Envia o código do segundo fator de uma ação sensível do admin.
+     *
+     * <p>O aviso muda com a finalidade, e não é enfeite: é ele que transforma o e-mail em
+     * alarme. Quem receber um código de login que não pediu sabe, pela própria mensagem,
+     * que alguém tem a senha de admin em mãos — e que trocá-la é urgente.
+     *
+     * @param to      endereço de segurança do admin
+     * @param code    código de 6 dígitos
+     * @param purpose ação que está sendo confirmada
+     */
+    public void sendAdminChallengeCode(String to, String code, AdminChallengePurpose purpose) {
+        boolean login = purpose == AdminChallengePurpose.LOGIN;
+
+        enviar(to,
+                login ? "Confirme o login de administrador — Brasil Panel"
+                      : "Confirme a troca de senha de administrador — Brasil Panel",
+                login ? "Login de administrador" : "Troca de senha de administrador",
+                login ? "Alguém entrou com a senha de administrador e precisa deste código para concluir o login."
+                      : "Foi solicitada a troca da senha de administrador. A senha atual continua valendo até este código ser confirmado.",
+                code,
+                login ? "Se não foi você, a senha de administrador está comprometida: ninguém chega a esta etapa sem acertá-la. Troque-a assim que puder — sem este código, o acesso não se completa."
+                      : "Se não foi você, alguém com a senha atual tentou trocá-la. A troca não foi aplicada. Revise o acesso imediatamente.",
+                "código de admin (" + purpose + ")");
+    }
+
+    // ── Envio ────────────────────────────────────────────────────────────────
+
+    private void enviar(String to, String assunto, String titulo, String chamada,
+                        String code, String aviso, String descricaoLog) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             // multipart = true: sem isso o helper monta um text/html solo, e
@@ -42,17 +80,18 @@ public class EmailService {
 
             helper.setFrom(fromAddress, fromName);
             helper.setTo(to);
-            helper.setSubject("Seu código de verificação — Brasil Panel");
+            helper.setSubject(assunto);
             // A ordem importa: o primeiro argumento é o texto puro, o segundo o
             // HTML. O cliente de e-mail escolhe, e o filtro vê os dois.
-            helper.setText(buildPlainText(code), buildHtml(code));
+            helper.setText(buildPlainText(titulo, chamada, code, aviso),
+                           buildHtml(titulo, chamada, code, aviso));
 
             mailSender.send(message);
-            log.info("EmailService: código de verificação enviado para '{}'.", to);
+            log.info("EmailService: {} enviado para '{}'.", descricaoLog, to);
 
         } catch (Exception e) {
             log.error("EmailService: falha ao enviar e-mail para '{}': {}", to, e.getMessage());
-            throw new RuntimeException("Falha ao enviar e-mail de verificação. Tente novamente.");
+            throw new RuntimeException("Falha ao enviar e-mail. Tente novamente.");
         }
     }
 
@@ -64,24 +103,23 @@ public class EmailService {
      * filtro. Precisa conter a mesma informação essencial do HTML — o código e o
      * prazo —, senão vira ruído e piora o sinal em vez de melhorar.
      */
-    private String buildPlainText(String code) {
+    private String buildPlainText(String titulo, String chamada, String code, String aviso) {
         return """
-               Brasil Panel — confirme seu e-mail
+               Brasil Panel — %s
 
-               Use o código abaixo para concluir seu cadastro.
-               Ele é válido por 15 minutos.
+               %s
+               O código é válido por 15 minutos.
 
                    %s
 
-               Se você não solicitou este cadastro, pode ignorar este e-mail
-               com segurança.
+               %s
 
                Este é um e-mail automático, não responda.
-               """.formatted(code);
+               """.formatted(titulo, chamada, code, aviso);
     }
 
     /** Monta o corpo HTML do e-mail com as cores e identidade do Brasil Panel. */
-    private String buildHtml(String code) {
+    private String buildHtml(String titulo, String chamada, String code, String aviso) {
         return """
             <!DOCTYPE html>
             <html lang="pt-BR">
@@ -104,9 +142,9 @@ public class EmailService {
                       <!-- Corpo -->
                       <tr>
                         <td style="padding:32px;">
-                          <h1 style="margin:0 0 12px;font-size:20px;color:#ffffff;">Confirme seu e-mail</h1>
+                          <h1 style="margin:0 0 12px;font-size:20px;color:#ffffff;">%s</h1>
                           <p style="margin:0 0 24px;font-size:14px;line-height:1.6;color:#94a3b8;">
-                            Use o código abaixo para concluir seu cadastro. Ele é válido por
+                            %s O código é válido por
                             <strong style="color:#f59e0b;">15 minutos</strong>.
                           </p>
 
@@ -118,7 +156,7 @@ public class EmailService {
                           </div>
 
                           <p style="margin:0;font-size:12px;line-height:1.6;color:#64748b;">
-                            Se você não solicitou este cadastro, pode ignorar este e-mail com segurança.
+                            %s
                           </p>
                         </td>
                       </tr>
@@ -138,6 +176,6 @@ public class EmailService {
               </table>
             </body>
             </html>
-            """.formatted(code);
+            """.formatted(titulo, chamada, code, aviso);
     }
 }
