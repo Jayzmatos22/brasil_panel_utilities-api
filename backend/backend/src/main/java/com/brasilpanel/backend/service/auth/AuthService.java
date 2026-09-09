@@ -60,24 +60,42 @@ public class AuthService {
             throw new IllegalArgumentException("Dados de cadastro inválidos");
         }
 
-        // Cadastro pendente com o mesmo e-mail: reemite o código em vez de recusar.
+        // Cadastro pendente com o mesmo e-mail: reemite o CÓDIGO, e só o código.
         //
-        // Antes, QUALQUER e-mail existente era recusado. Como o usuário é salvo antes
-        // do envio, uma falha de e-mail deixava a conta criada e não verificada — e a
-        // tentativa seguinte batia nessa recusa. Como a tela de verificação só é
-        // alcançável pela navegação de um cadastro bem-sucedido (VerifyEmailPage lê o
-        // e-mail do state da rota), a pessoa ficava sem caminho nenhum pela interface.
+        // Nome e senha da tentativa anterior ficam intactos de propósito. Sobrescrevê-los
+        // — como se fazia antes — abria uma tomada de conta:
         //
-        // Reemitir é seguro: quem não tem acesso à caixa de entrada não conclui nada,
-        // e a senha da conta pendente é reescrita pela informada agora — cadastro não
-        // confirmado não é credencial que mereça proteção.
+        //   1. Alice se cadastra e ainda não confirmou.
+        //   2. Mallory se cadastra com o e-mail de Alice e uma senha própria.
+        //      A linha pendente é sobrescrita: a senha passa a ser a de Mallory.
+        //   3. O código novo vai para a caixa de Alice — Mallory não o lê.
+        //   4. Alice digita o código e verifica a conta.
+        //   5. A conta está verificada no e-mail de Alice, com a senha de Mallory.
+        //
+        // O erro de fundo: confirmar o código prova posse da CAIXA DE ENTRADA, não que
+        // quem confirma seja quem submeteu as credenciais. Os dois se descolam, e o
+        // argumento anterior ("cadastro não confirmado não é credencial que mereça
+        // proteção") olhava para a coisa errada — o que estava sendo protegido não era a
+        // senha antiga, era o vínculo entre o e-mail e quem vai controlá-lo.
+        //
+        // Reenviar continua resolvendo o problema que motivou o comportamento antigo:
+        // uma falha de envio deixava a conta criada e não verificada, e a tela de
+        // verificação só é alcançável pela navegação de um cadastro bem-sucedido
+        // (VerifyEmailPage lê o e-mail do state da rota). A pessoa recebe o código de
+        // novo e conclui — sem que ninguém consiga trocar a senha por baixo.
+        //
+        // Quem errou a própria senha no cadastro conclui a verificação e usa
+        // /auth/forgot-password. Por isso esta mudança veio depois da recuperação: sem
+        // ela, essa pessoa ficaria sem saída.
         UserEntity usuario = existente
-                .map(pendente -> reemitir(pendente, dto))
+                .map(this::renovarCodigo)
                 .orElseGet(() -> novoUsuario(dto));
 
         userRepository.save(usuario);
-        emailOutbox.enqueueVerificationCode(dto.email());
+        emailOutbox.enqueueVerificationCode(usuario.getEmail());
 
+        // Mensagem única para cadastro novo e reenvio: distinguir os dois contaria a quem
+        // tentou que aquele endereço já está em uso.
         return new RegisterResponseDTO(
                 "Código de verificação enviado para " + dto.email() + ". Válido por 15 minutos."
         );
@@ -94,9 +112,13 @@ public class AuthService {
                 .build();
     }
 
-    private UserEntity reemitir(UserEntity pendente, UserRequestDTO dto) {
-        pendente.setName(dto.name());
-        pendente.setPassword(passwordEncoder.encode(dto.password()));
+    /**
+     * Renova só o código do cadastro pendente.
+     *
+     * <p>Não recebe o DTO da tentativa nova, e essa ausência é a proteção: sem ele não há
+     * como escrever nome ou senha aqui, nem por descuido de quem mexer depois.
+     */
+    private UserEntity renovarCodigo(UserEntity pendente) {
         pendente.setVerificationCode(generateCode());
         pendente.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(15));
         return pendente;

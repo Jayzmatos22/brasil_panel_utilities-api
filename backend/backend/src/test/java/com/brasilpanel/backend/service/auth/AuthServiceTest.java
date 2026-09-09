@@ -124,7 +124,6 @@ AuthServiceTest {
                     .build();
             var dto = new UserRequestDTO("Nome Novo", EMAIL, SENHA);
             when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(pendente));
-            when(passwordEncoder.encode(SENHA)).thenReturn("hash-novo");
 
             RegisterResponseDTO resposta = authService.registerUser(dto);
 
@@ -135,10 +134,44 @@ AuthServiceTest {
             assertThat(pendente.getVerificationCode())
                     .as("código novo, não o anterior")
                     .isNotEqualTo("111111");
-            assertThat(pendente.getName()).isEqualTo("Nome Novo");
-            assertThat(pendente.getPassword())
-                    .as("a senha informada agora substitui a da tentativa anterior")
-                    .isEqualTo("hash-novo");
+        }
+
+        /**
+         * O cadastro pendente pertence a quem o iniciou. Antes, uma segunda tentativa
+         * sobrescrevia nome e senha da linha — e isso era uma tomada de conta:
+         *
+         * <ol>
+         *   <li>Alice se cadastra e ainda não confirmou.
+         *   <li>Mallory se cadastra com o e-mail de Alice e senha própria.
+         *   <li>O código novo vai para a caixa de Alice; Mallory não o lê.
+         *   <li>Alice confirma — e a conta fica verificada com a senha de Mallory.
+         * </ol>
+         *
+         * <p>Confirmar o código prova posse da caixa de entrada, não que quem confirma
+         * seja quem submeteu as credenciais. Este teste é o que impede a volta disso.
+         */
+        @Test
+        @DisplayName("segunda tentativa não sobrescreve nome nem senha do cadastro pendente")
+        void secondAttemptCannotHijackAPendingRegistration() {
+            var deAlice = UserEntity.builder()
+                    .name("Alice").email(EMAIL).password("hash-de-alice")
+                    .role(Role.USER).verified(false)
+                    .verificationCode("111111")
+                    .build();
+            when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(deAlice));
+
+            authService.registerUser(new UserRequestDTO("Mallory", EMAIL, "SenhaDaMallory@1"));
+
+            assertThat(deAlice.getPassword())
+                    .as("a senha de quem iniciou o cadastro não pode ser trocada por terceiro")
+                    .isEqualTo("hash-de-alice");
+            assertThat(deAlice.getName())
+                    .as("nem o nome")
+                    .isEqualTo("Alice");
+            // O código é renovado e reenviado — é o que dá saída a quem não recebeu o
+            // primeiro —, mas isso é tudo que uma segunda tentativa consegue fazer.
+            assertThat(deAlice.getVerificationCode()).isNotEqualTo("111111");
+            verify(emailOutbox).enqueueVerificationCode(EMAIL);
         }
     }
 
