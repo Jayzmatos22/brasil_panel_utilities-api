@@ -1,4 +1,5 @@
 import toast from "react-hot-toast";
+import { limparNome, nomeValido } from '../../lib/validation/nome';
 import { useState, type FormEvent } from "react";
 import { motion } from "motion/react";
 import {
@@ -262,11 +263,11 @@ export default function SettingsAuthPage() {
       toast.error("Digite o novo nome.");
       return;
     }
-    if (name.trim().split(" ").length < 2) {
+    if (!nomeValido(name)) {
       toast.error("Digite nome e sobrenome.");
       return;
     }
-    changeName({ name: name.trim() });
+    changeName({ name: limparNome(name) });
   };
 
   const handleChangePassword = (e: FormEvent) => {
