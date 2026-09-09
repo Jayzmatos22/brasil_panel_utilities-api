@@ -122,6 +122,29 @@ public class AuthController {
     }
 
 
+    @Operation(summary = "Pedir recuperação de senha",
+               description = "Envia um código de 6 dígitos por e-mail. A resposta é a mesma "
+                           + "exista ou não conta para o endereço.")
+    @ApiResponse(responseCode = "200", description = "Pedido registrado")
+    @PostMapping("/forgot-password")
+    public ResponseEntity<RegisterResponseDTO> forgotPassword(
+            @RequestBody @Valid ForgotPasswordRequestDTO dto) {
+        return ResponseEntity.ok(authService.requestPasswordReset(dto));
+    }
+
+
+    @Operation(summary = "Redefinir a senha",
+               description = "Aplica a senha nova com o código recebido por e-mail. "
+                           + "Derruba todas as sessões abertas da conta.")
+    @ApiResponse(responseCode = "204", description = "Senha redefinida")
+    @ApiResponse(responseCode = "400", description = "Código inválido ou expirado")
+    @PostMapping("/reset-password")
+    public ResponseEntity<Void> resetPassword(@RequestBody @Valid ResetPasswordRequestDTO dto) {
+        authService.resetPassword(dto);
+        return ResponseEntity.noContent().build();
+    }
+
+
     // ── Cookie de sessão ──────────────────────────────────────────────────────
     // O JWT viaja em cookie httpOnly: inacessível ao JavaScript e, portanto, imune
     // a exfiltração por XSS. SameSite=Lax impede que o navegador o envie em

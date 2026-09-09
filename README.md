@@ -171,6 +171,8 @@ ver [DEPLOY.md](DEPLOY.md).
 | `PATCH` | `/api/auth/update-name` | Altera o nome — requer sessão |
 | `PATCH` | `/api/auth/update-password` | Altera a senha — requer sessão; para **admin**, responde `202` e a troca fica retida |
 | `POST` | `/api/auth/admin/confirm-password` | Aplica a troca de senha do admin com o código recebido por e-mail |
+| `POST` | `/api/auth/forgot-password` | Pede o código de recuperação — resposta idêntica exista ou não a conta |
+| `POST` | `/api/auth/reset-password` | Redefine a senha com o código e derruba as sessões abertas |
 | `DELETE` | `/api/auth/delete-account` | Exclui a conta — requer sessão |
 
 > Trocar a senha **invalida todas as sessões abertas**, inclusive em outros

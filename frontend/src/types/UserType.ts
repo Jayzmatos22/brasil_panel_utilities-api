@@ -65,6 +65,21 @@ export interface ResendCodeRequest {
   email: string;
 }
 
+// ─── Auth — POST /api/auth/forgot-password ───────────────────────────────────
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+// ─── Auth — POST /api/auth/reset-password ────────────────────────────────────
+//
+// Não pede a senha atual: é justamente quem não a sabe que chega aqui. O que
+// prova o direito de trocar é o código, que só existe na caixa de entrada.
+export interface ResetPasswordRequest {
+  email: string;
+  code: string;
+  newPassword: string;
+}
+
 // ─── Usuário — GET /api/auth/me (ou similar) ─────────────────────────────────
 export interface UserResponse {
   id: string;

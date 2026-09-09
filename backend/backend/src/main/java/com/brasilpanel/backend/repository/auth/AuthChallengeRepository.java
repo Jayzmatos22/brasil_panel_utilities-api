@@ -1,7 +1,7 @@
-package com.brasilpanel.backend.repository.admin;
+package com.brasilpanel.backend.repository.auth;
 
-import com.brasilpanel.backend.model.AdminChallenge;
-import com.brasilpanel.backend.model.AdminChallengePurpose;
+import com.brasilpanel.backend.model.AuthChallenge;
+import com.brasilpanel.backend.model.AuthChallengePurpose;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -13,7 +13,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface AdminChallengeRepository extends JpaRepository<AdminChallenge, UUID> {
+public interface AuthChallengeRepository extends JpaRepository<AuthChallenge, UUID> {
 
     /**
      * O desafio vigente do usuário para esta finalidade — o mais recente ainda não
@@ -21,8 +21,8 @@ public interface AdminChallengeRepository extends JpaRepository<AdminChallenge, 
      * (ver {@code AdminTwoFactorService}), e sem a ordenação a conferência poderia cair
      * num desafio velho que ainda não expirou.
      */
-    Optional<AdminChallenge> findFirstByUserIdAndPurposeAndConsumedAtIsNullOrderByCreatedAtDesc(
-            UUID userId, AdminChallengePurpose purpose);
+    Optional<AuthChallenge> findFirstByUserIdAndPurposeAndConsumedAtIsNullOrderByCreatedAtDesc(
+            UUID userId, AuthChallengePurpose purpose);
 
     /**
      * Consome os desafios abertos da finalidade. Chamado antes de emitir um novo: dois
@@ -31,14 +31,14 @@ public interface AdminChallengeRepository extends JpaRepository<AdminChallenge, 
      */
     @Modifying
     @Query("""
-            UPDATE AdminChallenge c
+            UPDATE AuthChallenge c
                SET c.consumedAt = :agora
              WHERE c.userId = :userId
                AND c.purpose = :purpose
                AND c.consumedAt IS NULL
             """)
     int invalidateOpen(@Param("userId") UUID userId,
-                       @Param("purpose") AdminChallengePurpose purpose,
+                       @Param("purpose") AuthChallengePurpose purpose,
                        @Param("agora") LocalDateTime agora);
 
     // Sem faxina agendada de propósito: um desafio nasce só em login ou troca de

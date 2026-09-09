@@ -1,6 +1,6 @@
 package com.brasilpanel.backend.service.email;
 
-import com.brasilpanel.backend.model.AdminChallengePurpose;
+import com.brasilpanel.backend.model.AuthChallengePurpose;
 import jakarta.mail.internet.MimeMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -42,29 +42,45 @@ public class EmailService {
     }
 
     /**
-     * Envia o código do segundo fator de uma ação sensível do admin.
+     * Envia o código de um desafio, com o texto da finalidade.
      *
      * <p>O aviso muda com a finalidade, e não é enfeite: é ele que transforma o e-mail em
      * alarme. Quem receber um código de login que não pediu sabe, pela própria mensagem,
      * que alguém tem a senha de admin em mãos — e que trocá-la é urgente.
      *
-     * @param to      endereço de segurança do admin
+     * @param to      destinatário — no admin, o endereço de segurança do dono
      * @param code    código de 6 dígitos
      * @param purpose ação que está sendo confirmada
      */
-    public void sendAdminChallengeCode(String to, String code, AdminChallengePurpose purpose) {
-        boolean login = purpose == AdminChallengePurpose.LOGIN;
+    public void sendAuthChallengeCode(String to, String code, AuthChallengePurpose purpose) {
+        switch (purpose) {
+            case LOGIN -> enviar(to,
+                    "Confirme o login de administrador — Brasil Panel",
+                    "Login de administrador",
+                    "Alguém entrou com a senha de administrador e precisa deste código para concluir o login.",
+                    code,
+                    "Se não foi você, a senha de administrador está comprometida: ninguém chega a esta "
+                            + "etapa sem acertá-la. Troque-a assim que puder — sem este código, o acesso não se completa.",
+                    "código de admin (LOGIN)");
 
-        enviar(to,
-                login ? "Confirme o login de administrador — Brasil Panel"
-                      : "Confirme a troca de senha de administrador — Brasil Panel",
-                login ? "Login de administrador" : "Troca de senha de administrador",
-                login ? "Alguém entrou com a senha de administrador e precisa deste código para concluir o login."
-                      : "Foi solicitada a troca da senha de administrador. A senha atual continua valendo até este código ser confirmado.",
-                code,
-                login ? "Se não foi você, a senha de administrador está comprometida: ninguém chega a esta etapa sem acertá-la. Troque-a assim que puder — sem este código, o acesso não se completa."
-                      : "Se não foi você, alguém com a senha atual tentou trocá-la. A troca não foi aplicada. Revise o acesso imediatamente.",
-                "código de admin (" + purpose + ")");
+            case PASSWORD_CHANGE -> enviar(to,
+                    "Confirme a troca de senha de administrador — Brasil Panel",
+                    "Troca de senha de administrador",
+                    "Foi solicitada a troca da senha de administrador. A senha atual continua valendo até este código ser confirmado.",
+                    code,
+                    "Se não foi você, alguém com a senha atual tentou trocá-la. A troca não foi "
+                            + "aplicada. Revise o acesso imediatamente.",
+                    "código de admin (PASSWORD_CHANGE)");
+
+            case PASSWORD_RESET -> enviar(to,
+                    "Recuperação de senha — Brasil Panel",
+                    "Recuperar senha",
+                    "Use o código abaixo para definir uma senha nova.",
+                    code,
+                    "Se não foi você que pediu, ignore este e-mail: sua senha atual continua "
+                            + "valendo e nada foi alterado.",
+                    "código de recuperação");
+        }
     }
 
     // ── Envio ────────────────────────────────────────────────────────────────

@@ -48,7 +48,10 @@ public class RateLimitFilter extends OncePerRequestFilter {
      */
     private static final Set<String> EMAIL_PATHS = Set.of(
             "/api/auth/register",
-            "/api/auth/resend-code");
+            "/api/auth/resend-code",
+            // Dispara e-mail para endereço de terceiro informado na requisição — mesma
+            // exposição do /register, e por isso o mesmo teto.
+            "/api/auth/forgot-password");
 
     /** Corpo de erro fixo: nada da requisição é ecoado de volta. */
     private static final String BODY_429 =

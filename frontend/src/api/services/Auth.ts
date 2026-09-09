@@ -14,7 +14,9 @@ import type {
   UpdatePasswordResult,
   LoginResult,
   ConfirmAdminLoginRequest,
-  ConfirmAdminPasswordRequest
+  ConfirmAdminPasswordRequest,
+  ForgotPasswordRequest,
+  ResetPasswordRequest
 } from '../../types/UserType';
 
 export const authService = {
@@ -42,6 +44,12 @@ export const authService = {
 
   confirmAdminPasswordChange: (data: ConfirmAdminPasswordRequest) =>
     apiClient.post<void>('/auth/admin/confirm-password', data).then((r) => r.data),
+
+  forgotPassword: (data: ForgotPasswordRequest) =>
+    apiClient.post<RegisterResponse>('/auth/forgot-password', data).then((r) => r.data),
+
+  resetPassword: (data: ResetPasswordRequest) =>
+    apiClient.post<void>('/auth/reset-password', data).then((r) => r.data),
 
   // Só o backend consegue apagar o cookie httpOnly — daí o endpoint dedicado.
   logout: () => apiClient.post<void>('/auth/logout').then((r) => r.data),
