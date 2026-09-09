@@ -2,11 +2,13 @@ package com.brasilpanel.backend.config.seed;
 
 import com.brasilpanel.backend.model.FinancialSeries;
 import com.brasilpanel.backend.repository.financial.FinancialSeriesRepository;
+import com.brasilpanel.backend.service.api.ipea.IpeaService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -106,5 +108,30 @@ class FinancialSeriesSeederTest {
         assertThat(porFonte.get("BCB"))
                 .extracting(FinancialSeries::getCode)
                 .contains("432", "433", "4390");   // SELIC diária, IPCA mensal, SELIC meta
+    }
+
+    /**
+     * O {@code refreshAll()} do IPEA busca todos os códigos de {@code ALL_CODES}, mas o
+     * ponto só entra no banco se existir uma {@code financial_series} com aquele par
+     * (code, "IPEA") — quem não tem cadastro é buscado de graça e descartado com um WARN
+     * por ponto, a cada refresh. Só o log denuncia, então este teste é o que segura:
+     * o WEO_DESEMWEOBRA ficou assim até aparecer inundando o log do Render.
+     */
+    @Test
+    @DisplayName("todo código que o IpeaService atualiza tem cadastro no catálogo")
+    @SuppressWarnings("unchecked")
+    void catalogo_cobreTodasAsSeriesDoIpeaService() throws Exception {
+        Field campo = IpeaService.class.getDeclaredField("ALL_CODES");
+        campo.setAccessible(true);
+        List<String> atualizadas = (List<String>) campo.get(null);
+
+        List<String> cadastradas = seriesPersistidas().stream()
+                .filter(s -> "IPEA".equals(s.getSource()))
+                .map(FinancialSeries::getCode)
+                .toList();
+
+        assertThat(atualizadas)
+                .as("códigos buscados no IPEA sem linha correspondente no seeder")
+                .isSubsetOf(cadastradas);
     }
 }

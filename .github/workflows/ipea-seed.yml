@@ -1,12 +1,17 @@
 name: Seed IPEA no Neon
 
 # Por que este workflow existe:
-# O backend roda no Render (datacenter nos EUA), que NAO tem rota ate o
-# ipeadata.gov.br — toda busca do IPEA falha com "connect timed out". Ja o
-# runner do GitHub Actions (tambem nos EUA, mas em outra rede) ALCANCA o IPEA
-# na hora (medido: HTTP 200 em 0,77s no host www). Como o app e DB-first, basta
-# gravar os dados do IPEA no Neon a partir daqui: o Render passa a servir do
-# banco e nunca precisa alcancar a fonte.
+# A rota do Render ate o ipeadata.gov.br e intermitente. Houve dias inteiros em
+# que toda busca morria em "connect timed out" no Render enquanto o runner do
+# GitHub Actions (tambem nos EUA, em outra rede) respondia HTTP 200 em 0,77s no
+# host www. Hoje o Render alcanca a fonte de novo — medido pelo shell da
+# instancia e por um refresh completo sem um unico timeout — mas o que destravou
+# foi a fonte, nao nos: o mesmo bloqueio pode voltar sem aviso.
+#
+# Entao este job e a rede de seguranca, nao o caminho principal. O caminho normal
+# e o IpeaScheduler dentro do proprio backend; aqui garantimos que o Neon fique
+# populado mesmo quando o Render for barrado. Como o app e DB-first, basta gravar
+# no Neon a partir daqui e o Render volta a servir do banco.
 #
 # Este job sobe o backend apontando para o Neon, espera ficar de pe e chama as
 # rotas publicas do IPEA. Cada uma busca a serie no IPEA e persiste no Neon

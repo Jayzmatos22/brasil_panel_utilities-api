@@ -41,7 +41,7 @@ class SecurityRoutesTest {
     /**
      * O refresh do IPEA morava em {@code POST /api/ipea/refresh}, que o
      * {@code permitAll} de {@code /api/ipea/**} liberava junto com as rotas de leitura.
-     * Qualquer anônimo disparava as 57 buscas sequenciais de {@code refreshAll()}.
+     * Qualquer anônimo disparava as 55 buscas sequenciais de {@code refreshAll()}.
      */
     @Nested
     @DisplayName("Refresh do IPEA")

@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
  *
  * <p>Mora sob {@code /api/admin} de propósito. Antes ficava em {@code /api/ipea/refresh},
  * que o {@code SecurityConfig} libera com {@code permitAll} junto com as ~50 rotas de
- * leitura do IPEA — ou seja, qualquer um na internet disparava as 57 buscas sequenciais
+ * leitura do IPEA — ou seja, qualquer um na internet disparava as 55 buscas sequenciais
  * de {@link IpeaService#refreshAll()} contra o ipeadata.gov.br, prendendo uma thread do
  * Tomcat por dezenas de segundos a cada chamada.
  *
@@ -32,7 +32,7 @@ public class IpeaAdminController {
 
     @Operation(summary = "Forçar refresh das séries do IPEA",
                description = "Busca todas as séries na API do IPEA e persiste os pontos novos. "
-                           + "Operação longa (57 séries em sequência) — exige ROLE_ADMIN.")
+                           + "Operação longa (55 séries em sequência) — exige ROLE_ADMIN.")
     @ApiResponse(responseCode = "200", description = "Refresh concluído")
     @ApiResponse(responseCode = "401", description = "Sem sessão")
     @ApiResponse(responseCode = "403", description = "Sessão sem ROLE_ADMIN")
