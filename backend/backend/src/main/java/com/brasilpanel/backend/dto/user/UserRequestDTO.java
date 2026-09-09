@@ -4,6 +4,7 @@ import jakarta.validation.constraints.*;
 public record UserRequestDTO(
 
         @NotBlank(message = "Nome obrigatório!")
+        @Pattern(regexp = ValidacaoUsuario.NOME, message = ValidacaoUsuario.NOME_INVALIDO)
         String name,
 
         @Email(message = "Formato de e-mail inválido")
@@ -15,7 +16,7 @@ public record UserRequestDTO(
         String email,
 
         @NotBlank(message = "Senha obrigatória!")
-        @Size(min = 8, message = "Senha deve ter no mínimo 8 caracteres.")
+        @Pattern(regexp = ValidacaoUsuario.SENHA_FORTE, message = ValidacaoUsuario.SENHA_FRACA)
         String password
 
 ) {}

@@ -211,4 +211,61 @@ class AuthControllerTest {
         // no formulário queimaria uma das 5 chances de quem está tentando entrar.
         verify(authService, never()).confirmAdminLogin(any());
     }
+
+    // ── Validação do cadastro ────────────────────────────────────────────────
+
+    /**
+     * Até aqui a composição da senha era exigida só pelo JavaScript da tela: o backend
+     * pedia oito caracteres e nada mais. Quem chamasse a API direto — curl, Postman,
+     * qualquer coisa — cadastrava "12345678" sem obstáculo. Estes testes prendem a
+     * regra no lugar onde ela não pode ser contornada.
+     */
+    private String registroJson(String nome, String senha) throws Exception {
+        return objectMapper.writeValueAsString(
+                Map.of("name", nome, "email", EMAIL, "password", senha));
+    }
+
+    private void esperaRecusa(String nome, String senha) throws Exception {
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(registroJson(nome, senha)))
+                .andExpect(status().isBadRequest());
+
+        verify(authService, never()).registerUser(any());
+    }
+
+    @Test
+    @DisplayName("senha sem símbolo, sem número ou curta é recusada pela API, não só pela tela")
+    void weakPasswordIsRejectedByTheApi() throws Exception {
+        esperaRecusa("Jailton Matos", "12345678");
+        esperaRecusa("Jailton Matos", "senhaminuscula@1");
+        esperaRecusa("Jailton Matos", "Ab1@cde");
+    }
+
+    @Test
+    @DisplayName("símbolo fora da lista branca antiga é aceito — é senha forte")
+    void symbolsOutsideTheOldWhitelistAreAccepted() throws Exception {
+        // A regra do frontend aceitava só @$!%*?&, então "Senha#Forte1" era recusada
+        // por conter '#'. A do backend não repete esse erro.
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(registroJson("Jailton Matos", "Senha#Forte1")))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    @DisplayName("nome de uma palavra é aceito — sobrenome não é exigido")
+    void singleWordNameIsAccepted() throws Exception {
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(registroJson("Ana", "Senha@123")))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    @DisplayName("nome com menos de 3 letras, ou com dígito, é recusado")
+    void nameNeedsThreeLetters() throws Exception {
+        esperaRecusa("Jo", "Senha@123");
+        esperaRecusa("Jailton 123", "Senha@123");
+    }
 }

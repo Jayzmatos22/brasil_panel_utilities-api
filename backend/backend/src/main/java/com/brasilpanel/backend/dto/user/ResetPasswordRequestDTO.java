@@ -21,6 +21,6 @@ public record ResetPasswordRequestDTO(
         String code,
 
         @NotBlank(message = "Nova senha é obrigatória")
-        @Size(min = 8, message = "Nova senha deve ter ao menos 8 caracteres")
+        @Pattern(regexp = ValidacaoUsuario.SENHA_FORTE, message = ValidacaoUsuario.SENHA_FRACA)
         String newPassword
 ) {}

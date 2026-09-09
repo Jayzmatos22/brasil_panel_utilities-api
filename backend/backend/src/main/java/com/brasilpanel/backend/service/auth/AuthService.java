@@ -268,11 +268,10 @@ public class AuthService {
         UserEntity user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado"));
 
-        if (dto.name().trim().split("\\s+").length < 2) {
-            throw new IllegalArgumentException("Informe nome e sobrenome.");
-        }
-
-        user.setName(dto.name().trim());
+        // Sem contagem de palavras aqui: sobrenome deixou de ser exigido, e o formato
+        // (letras, mínimo três) é do @Pattern no DTO — validar de novo no serviço só
+        // criaria uma segunda regra livre para divergir da primeira.
+        user.setName(dto.name().trim().replaceAll("\\s+", " "));
         userRepository.save(user);
     }
 

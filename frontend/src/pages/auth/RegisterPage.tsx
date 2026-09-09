@@ -10,10 +10,10 @@ import { SubmitButton } from '../../components/forms/SubmitButton';
 import { AuthBrandPanel } from '../../components/forms/AuthBrandPanel';
 import { AuthBackdrop } from './AuthBackdrop';
 import { AuthTestingNotice, AuthAboutLink } from './AuthNotices';
+import { limparNome, nomeValido } from '../../lib/validation/nome';
+import { SENHA_FRACA, senhaForte } from '../../lib/validation/senha';
 
 const VALID_EMAIL    = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-const VALID_NAME     = /^[a-zA-ZÀ-ÿ]{2,}(?:\s[a-zA-ZÀ-ÿ]+)+$/;
-const VALID_PASSWORD = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
 export default function RegisterPage() {
   const [name,     setName]     = useState('');
@@ -35,13 +35,14 @@ export default function RegisterPage() {
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (!VALID_NAME.test(name))         { toast.error('Digite seu nome completo.'); return; }
+    // A mensagem diz o que falta, e não só que algo está errado: "nome completo" não
+    // informa que o problema é a ausência do sobrenome.
+    if (!nomeValido(name)) { toast.error('Digite seu nome (mínimo 3 letras).'); return; }
     if (!VALID_EMAIL.test(email))       { toast.error('E-mail inválido.'); return; }
-    if (!VALID_PASSWORD.test(password)) {
-      toast.error('Senha fraca. Use maiúsculas, minúsculas, número e símbolo (@$!%*?&).');
-      return;
-    }
-    mutate({ name, email, password });
+    if (!senhaForte(password)) { toast.error(SENHA_FRACA); return; }
+    // Envia normalizado: sem isso o espaço sobrando seria gravado no banco e voltaria
+    // no cabeçalho do painel.
+    mutate({ name: limparNome(name), email, password });
   };
 
   return (
@@ -73,7 +74,7 @@ export default function RegisterPage() {
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <FormField
               id="reg-name"
-              label="Nome completo"
+              label="Nome"
               placeholder="Nome Sobrenome"
               autoComplete="name"
               value={name}
