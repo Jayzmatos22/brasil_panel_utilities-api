@@ -102,7 +102,51 @@ describe('authService', () => {
 
       const resposta = await authService.login({ email: 'a@b.com', password: 'x' });
 
-      expect(resposta).toEqual({ email: 'a@b.com', role: 'USER', expiresInMs: 86_400_000 });
+      expect(resposta).toEqual({
+        twoFactorRequired: false,
+        auth: { email: 'a@b.com', role: 'USER', expiresInMs: 86_400_000 },
+      });
+    });
+
+    // O 202 é o login de admin que ainda não virou sessão. Ler o status, e não o
+    // corpo, é o que importa: o corpo do 202 nem tem os campos de AuthResponse, e
+    // tratá-lo como sucesso gravaria uma sessão que o backend não reconhece.
+    it('202 vira desafio pendente, não sessão', async () => {
+      mocked.post.mockResolvedValue({
+        data: { twoFactorRequired: true, message: 'Código enviado.' },
+        status: 202,
+        headers: {},
+      });
+
+      const resposta = await authService.login({ email: 'admin@b.com', password: 'x' });
+
+      expect(resposta).toEqual({ twoFactorRequired: true, message: 'Código enviado.' });
+    });
+
+    it('confirmAdminLogin aponta para a rota do segundo fator', async () => {
+      mocked.post.mockResolvedValue({ data: { email: 'a@b.com' }, status: 200 });
+
+      await authService.confirmAdminLogin({
+        email: 'admin@b.com', password: 'x', code: '123456',
+      });
+
+      expect(mocked.post).toHaveBeenCalledWith('/auth/admin/confirm-login', {
+        email: 'admin@b.com', password: 'x', code: '123456',
+      });
+    });
+
+    // 204 = trocada de verdade; 202 = retida à espera do código. Confundir os dois
+    // faria a tela anunciar "senha alterada" com a senha antiga ainda valendo.
+    it('updatePassword distingue troca aplicada de troca pendente', async () => {
+      mocked.patch.mockResolvedValue({ data: undefined, status: 204 });
+      expect(await authService.updatePassword({
+        currentPassword: 'a', newPassword: 'b',
+      })).toEqual({ pending: false });
+
+      mocked.patch.mockResolvedValue({ data: undefined, status: 202 });
+      expect(await authService.updatePassword({
+        currentPassword: 'a', newPassword: 'b',
+      })).toEqual({ pending: true });
     });
 
     it('propaga a falha para quem chamou', async () => {

@@ -13,6 +13,36 @@ export interface AuthResponse {
   expiresInMs: number;
 }
 
+/**
+ * Login de admin não devolve sessão: o backend responde 202 e o acesso só se
+ * completa depois do código enviado por e-mail. O flag distingue as duas saídas
+ * sem obrigar o cliente a interpretar o código HTTP.
+ */
+export interface TwoFactorRequired {
+  twoFactorRequired: true;
+  message: string;
+}
+
+export type LoginResult =
+  | { twoFactorRequired: false; auth: AuthResponse }
+  | TwoFactorRequired;
+
+// ─── Auth — POST /api/auth/admin/confirm-login ───────────────────────────────
+//
+// A senha vai de novo junto do código. Sem ela, bastaria conhecer o e-mail do
+// admin para queimar as 5 tentativas de um desafio legítimo e trancar o login
+// do dono. Como o formulário de login já a tem em memória, não custa nada.
+export interface ConfirmAdminLoginRequest {
+  email: string;
+  password: string;
+  code: string;
+}
+
+// ─── Auth — POST /api/auth/admin/confirm-password ────────────────────────────
+export interface ConfirmAdminPasswordRequest {
+  code: string;
+}
+
 // ─── Auth — POST /api/auth/register ──────────────────────────────────────────
 export interface RegisterRequest {
   name: string;
@@ -63,6 +93,11 @@ export interface UpdateNameRequest {
 export interface UpdatePasswordRequest {
   currentPassword: string;
   newPassword: string;
+}
+
+/** Para admin a troca fica retida até a confirmação por e-mail — daí o `pending`. */
+export interface UpdatePasswordResult {
+  pending: boolean;
 }
 
 export interface DeleteAccountRequest {

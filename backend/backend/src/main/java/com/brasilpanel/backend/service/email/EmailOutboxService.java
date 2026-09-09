@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Fila de envio de e-mail: enfileira na requisição, envia no scheduler.
@@ -59,6 +60,27 @@ public class EmailOutboxService {
                 .build());
 
         log.debug("[Outbox] Envio enfileirado para '{}'.", recipient);
+    }
+
+    /**
+     * Enfileira o envio do código de um desafio de admin.
+     *
+     * <p>Recebe o id do desafio, e não o código, pela mesma razão do método acima: o
+     * segredo é lido na hora do envio. Aqui o motivo é mais forte — o destinatário é o
+     * endereço de segurança do dono, que pode não ser o e-mail da conta, então não há
+     * como reencontrar o código a partir do recipient.
+     */
+    @Transactional
+    public void enqueueAdminChallenge(String recipient, UUID challengeId) {
+        outboxRepository.save(EmailOutboxEntry.builder()
+                .recipient(recipient)
+                .emailType(EmailType.ADMIN_CHALLENGE_CODE)
+                .referenceId(challengeId)
+                .status(EmailOutboxStatus.PENDING)
+                .nextAttemptAt(LocalDateTime.now())
+                .build());
+
+        log.debug("[Outbox] Desafio de admin enfileirado para '{}'.", recipient);
     }
 
     // ── Consumo ──────────────────────────────────────────────────────────────

@@ -4,9 +4,12 @@ import com.brasilpanel.backend.config.jwt.JwtService;
 import com.brasilpanel.backend.dto.user.*;
 import com.brasilpanel.backend.exception.customized.TooManyAttemptsException;
 import com.brasilpanel.backend.mappers.UserMapper;
+import com.brasilpanel.backend.model.AdminChallenge;
+import com.brasilpanel.backend.model.AdminChallengePurpose;
 import com.brasilpanel.backend.model.Role;
 import com.brasilpanel.backend.model.UserEntity;
 import com.brasilpanel.backend.repository.user.UserRepository;
+import com.brasilpanel.backend.service.admin.AdminTwoFactorService;
 import com.brasilpanel.backend.service.email.EmailOutboxService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -22,6 +25,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -47,6 +51,7 @@ AuthServiceTest {
     @Mock private UserMapper userMapper;
     @Mock private EmailOutboxService emailOutbox;
     @Mock private LoginAttemptLimiter loginAttemptLimiter;
+    @Mock private AdminTwoFactorService adminTwoFactor;
 
     @InjectMocks
     private AuthService authService;
@@ -286,8 +291,12 @@ AuthServiceTest {
             when(jwtService.generateToken(usuarioVerificado)).thenReturn("jwt-gerado");
             when(jwtService.getExpirationMs()).thenReturn(EXPIRACAO_MS);
 
-            AuthResponseDTO resposta = authService.loginUser(dto);
+            LoginOutcomeDTO outcome = authService.loginUser(dto);
 
+            assertThat(outcome.twoFactorRequired())
+                    .as("usuário comum não passa pelo segundo fator")
+                    .isFalse();
+            AuthResponseDTO resposta = outcome.auth();
             assertThat(resposta.token()).isEqualTo("jwt-gerado");
             assertThat(resposta.name()).isEqualTo("Usuário Teste");
             assertThat(resposta.email()).isEqualTo(EMAIL);
@@ -412,6 +421,133 @@ AuthServiceTest {
                     .isInstanceOf(IllegalArgumentException.class);
 
             assertThat(usuario.getPasswordChangedAt()).isNull();
+            verify(userRepository, never()).save(any());
+        }
+    }
+
+    // ── Segundo fator do admin ───────────────────────────────────────────────
+
+    /**
+     * A promessa deste fluxo é uma só: a senha de admin, sozinha, não abre a porta.
+     * Cada teste aqui prende um pedaço dela.
+     */
+    @Nested
+    @DisplayName("Segundo fator do admin")
+    class SegundoFatorDoAdmin {
+
+        private UserEntity admin;
+
+        @BeforeEach
+        void setUp() {
+            admin = UserEntity.builder()
+                    .id(UUID.randomUUID())
+                    .name("Dono").email(EMAIL).password("hash-antigo")
+                    .role(Role.ADMIN).verified(true)
+                    .build();
+            when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(admin));
+        }
+
+        private AdminChallenge desafio(String hashPendente) {
+            return AdminChallenge.builder()
+                    .id(UUID.randomUUID()).userId(admin.getId())
+                    .purpose(AdminChallengePurpose.PASSWORD_CHANGE)
+                    .code("123456").pendingPasswordHash(hashPendente)
+                    .expiresAt(LocalDateTime.now().plusMinutes(10))
+                    .build();
+        }
+
+        @Test
+        @DisplayName("login de admin não emite sessão: acertar a senha só leva ao código")
+        void adminLoginIssuesNoSession() {
+            when(adminTwoFactor.isRequiredFor(admin)).thenReturn(true);
+
+            LoginOutcomeDTO outcome = authService.loginUser(new LoginRequestDTO(EMAIL, SENHA));
+
+            assertThat(outcome.twoFactorRequired()).isTrue();
+            assertThat(outcome.auth())
+                    .as("nenhum token pode sair antes da confirmação")
+                    .isNull();
+            verify(adminTwoFactor).issue(admin, AdminChallengePurpose.LOGIN, null);
+            verify(jwtService, never()).generateToken(any());
+        }
+
+        @Test
+        @DisplayName("confirmação com código válido emite a sessão")
+        void confirmingLoginIssuesSession() {
+            when(adminTwoFactor.isRequiredFor(admin)).thenReturn(true);
+            when(jwtService.generateToken(admin)).thenReturn("jwt-gerado");
+
+            AuthResponseDTO resposta = authService.confirmAdminLogin(
+                    new ConfirmAdminLoginRequestDTO(EMAIL, SENHA, "123456"));
+
+            assertThat(resposta.token()).isEqualTo("jwt-gerado");
+            verify(adminTwoFactor).consume(admin, AdminChallengePurpose.LOGIN, "123456");
+        }
+
+        @Test
+        @DisplayName("confirmar com o segundo fator desligado não vira porta dos fundos")
+        void confirmingWithTwoFactorOffIsRejected() {
+            when(adminTwoFactor.isRequiredFor(admin)).thenReturn(false);
+
+            // Se a válvula de escape estiver acionada, o caminho certo é o /login
+            // normal. Emitir sessão aqui daria acesso por uma rota que deveria estar
+            // fechada, sem nunca conferir código nenhum.
+            assertThatThrownBy(() -> authService.confirmAdminLogin(
+                    new ConfirmAdminLoginRequestDTO(EMAIL, SENHA, "123456")))
+                    .isInstanceOf(IllegalArgumentException.class);
+            verify(jwtService, never()).generateToken(any());
+        }
+
+        @Test
+        @DisplayName("troca de senha de admin fica pendente: a senha atual continua valendo")
+        void adminPasswordChangeStaysPending() {
+            when(passwordEncoder.matches("SenhaAtual@123", "hash-antigo")).thenReturn(true);
+            when(passwordEncoder.matches("SenhaNova@123", "hash-antigo")).thenReturn(false);
+            when(passwordEncoder.encode("SenhaNova@123")).thenReturn("hash-novo");
+            when(adminTwoFactor.isRequiredFor(admin)).thenReturn(true);
+
+            boolean pendente = authService.updatePassword(
+                    EMAIL, new UpdatePasswordRequestDTO("SenhaAtual@123", "SenhaNova@123"));
+
+            assertThat(pendente).isTrue();
+            assertThat(admin.getPassword())
+                    .as("a conta não pode mudar antes da confirmação")
+                    .isEqualTo("hash-antigo");
+            assertThat(admin.getPasswordChangedAt())
+                    .as("nem as sessões podem cair por uma troca que ainda não vale")
+                    .isNull();
+            verify(userRepository, never()).save(any());
+            verify(adminTwoFactor).issue(admin, AdminChallengePurpose.PASSWORD_CHANGE, "hash-novo");
+        }
+
+        @Test
+        @DisplayName("confirmada, a senha retida no desafio é aplicada e derruba as sessões")
+        void confirmingAppliesTheHeldPassword() {
+            when(adminTwoFactor.isRequiredFor(admin)).thenReturn(true);
+            when(adminTwoFactor.consume(admin, AdminChallengePurpose.PASSWORD_CHANGE, "123456"))
+                    .thenReturn(desafio("hash-novo"));
+
+            authService.confirmAdminPasswordChange(
+                    EMAIL, new ConfirmAdminPasswordRequestDTO("123456"));
+
+            assertThat(admin.getPassword()).isEqualTo("hash-novo");
+            assertThat(admin.getPasswordChangedAt()).isNotNull();
+            verify(userRepository).save(admin);
+        }
+
+        @Test
+        @DisplayName("desafio sem senha retida não apaga a senha da conta")
+        void challengeWithoutPayloadNeverWipesThePassword() {
+            when(adminTwoFactor.isRequiredFor(admin)).thenReturn(true);
+            when(adminTwoFactor.consume(admin, AdminChallengePurpose.PASSWORD_CHANGE, "123456"))
+                    .thenReturn(desafio(null));
+
+            // Não deveria existir; se existir, aplicar hash nulo deixaria a conta sem
+            // senha utilizável — falha catastrófica a partir de um estado só estranho.
+            assertThatThrownBy(() -> authService.confirmAdminPasswordChange(
+                    EMAIL, new ConfirmAdminPasswordRequestDTO("123456")))
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThat(admin.getPassword()).isEqualTo("hash-antigo");
             verify(userRepository, never()).save(any());
         }
     }

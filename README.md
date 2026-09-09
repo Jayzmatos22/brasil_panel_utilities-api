@@ -165,14 +165,22 @@ ver [DEPLOY.md](DEPLOY.md).
 | `POST` | `/api/auth/register` | Cria o usuário e envia código de verificação por e-mail |
 | `POST` | `/api/auth/verify-email` | Valida o código de 6 dígitos e abre a sessão |
 | `POST` | `/api/auth/resend-code` | Reenvia o código de verificação |
-| `POST` | `/api/auth/login` | Autentica e devolve o cookie de sessão |
+| `POST` | `/api/auth/login` | Autentica e devolve o cookie de sessão — para **admin**, responde `202` e nenhum cookie |
+| `POST` | `/api/auth/admin/confirm-login` | Conclui o login de admin com o código recebido por e-mail |
 | `POST` | `/api/auth/logout` | Encerra a sessão (apaga o cookie) |
 | `PATCH` | `/api/auth/update-name` | Altera o nome — requer sessão |
-| `PATCH` | `/api/auth/update-password` | Altera a senha — requer sessão |
+| `PATCH` | `/api/auth/update-password` | Altera a senha — requer sessão; para **admin**, responde `202` e a troca fica retida |
+| `POST` | `/api/auth/admin/confirm-password` | Aplica a troca de senha do admin com o código recebido por e-mail |
 | `DELETE` | `/api/auth/delete-account` | Exclui a conta — requer sessão |
 
 > Trocar a senha **invalida todas as sessões abertas**, inclusive em outros
 > dispositivos — ver [Fluxo de Autenticação](#-fluxo-de-autenticação).
+
+> **Segundo fator do admin.** Login e troca de senha da conta ADMIN exigem um código
+> de 6 dígitos enviado ao endereço de `ADMIN_SECURITY_EMAIL`. A senha, sozinha, não
+> dá acesso: o `202` não emite cookie e a troca não toca em `users.password` até a
+> confirmação. `ADMIN_2FA_ENABLED=false` é a válvula de escape se o e-mail falhar —
+> ver armadilha #8 no [DEPLOY.md](DEPLOY.md).
 > Não há fluxo de recuperação de senha por e-mail.
 
 ### 👤 Perfil — `/api/profile`

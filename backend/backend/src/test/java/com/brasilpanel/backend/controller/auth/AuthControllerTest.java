@@ -2,6 +2,7 @@ package com.brasilpanel.backend.controller.auth;
 
 import com.brasilpanel.backend.config.jwt.JwtService;
 import com.brasilpanel.backend.dto.user.AuthResponseDTO;
+import com.brasilpanel.backend.dto.user.LoginOutcomeDTO;
 import com.brasilpanel.backend.exception.customized.TooManyAttemptsException;
 import com.brasilpanel.backend.service.auth.AuthService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,6 +23,8 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -96,8 +99,8 @@ class AuthControllerTest {
     @Test
     @DisplayName("login bem-sucedido emite cookie httpOnly e não devolve o token no corpo")
     void successfulLoginEmitsHttpOnlyCookieAndHidesToken() throws Exception {
-        when(authService.loginUser(any()))
-                .thenReturn(new AuthResponseDTO("jwt-secreto", "Fulano de Tal", EMAIL, "USER", 86_400_000L));
+        when(authService.loginUser(any())).thenReturn(LoginOutcomeDTO.autenticado(
+                new AuthResponseDTO("jwt-secreto", "Fulano de Tal", EMAIL, "USER", 86_400_000L)));
 
         var resultado = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -120,8 +123,8 @@ class AuthControllerTest {
     @Test
     @DisplayName("corpo da resposta não contém o JWT em lugar nenhum")
     void responseBodyNeverLeaksTheToken() throws Exception {
-        when(authService.loginUser(any()))
-                .thenReturn(new AuthResponseDTO("jwt-secreto", "Fulano de Tal", EMAIL, "USER", 86_400_000L));
+        when(authService.loginUser(any())).thenReturn(LoginOutcomeDTO.autenticado(
+                new AuthResponseDTO("jwt-secreto", "Fulano de Tal", EMAIL, "USER", 86_400_000L)));
 
         var resultado = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -152,5 +155,60 @@ class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"email\":\"nao-e-email\",\"password\":\"\"}"))
                 .andExpect(status().isBadRequest());
+    }
+
+    // ── Segundo fator do admin ───────────────────────────────────────────────
+
+    @Test
+    @DisplayName("login que exige segundo fator responde 202 e NÃO emite cookie")
+    void twoFactorLoginIssuesNoCookie() throws Exception {
+        when(authService.loginUser(any()))
+                .thenReturn(LoginOutcomeDTO.desafioPendente("Código de confirmação enviado."));
+
+        var resultado = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(loginJson("SenhaCerta@123")))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.twoFactorRequired").value(true))
+                .andReturn();
+
+        // O ponto inteiro da mudança: credenciais certas, e ainda assim nenhuma
+        // sessão sai daqui. Um Set-Cookie nesta resposta anularia o segundo fator.
+        assertThat(resultado.getResponse().getHeader("Set-Cookie")).isNull();
+    }
+
+    @Test
+    @DisplayName("confirmação do código emite o cookie de sessão")
+    void confirmingTwoFactorEmitsCookie() throws Exception {
+        when(authService.confirmAdminLogin(any()))
+                .thenReturn(new AuthResponseDTO("jwt-admin", "Dono", EMAIL, "ADMIN", 86_400_000L));
+
+        var resultado = mockMvc.perform(post("/api/auth/admin/confirm-login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                 {"email":"%s","password":"SenhaCerta@123","code":"123456"}
+                                 """.formatted(EMAIL)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.role").value("ADMIN"))
+                .andExpect(jsonPath("$.token").doesNotExist())
+                .andReturn();
+
+        String setCookie = resultado.getResponse().getHeader("Set-Cookie");
+        assertThat(setCookie).contains("token=jwt-admin").contains("HttpOnly");
+    }
+
+    @Test
+    @DisplayName("código fora do formato de 6 dígitos é barrado antes do serviço")
+    void malformedCodeIsRejectedBeforeReachingTheService() throws Exception {
+        mockMvc.perform(post("/api/auth/admin/confirm-login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                 {"email":"%s","password":"SenhaCerta@123","code":"abc"}
+                                 """.formatted(EMAIL)))
+                .andExpect(status().isBadRequest());
+
+        // Barrar na validação poupa uma tentativa do desafio: sem isso, lixo digitado
+        // no formulário queimaria uma das 5 chances de quem está tentando entrar.
+        verify(authService, never()).confirmAdminLogin(any());
     }
 }

@@ -85,6 +85,24 @@ app:
     email:    ${ADMIN_EMAIL:admin@brasilpanel.com}
     password: ${ADMIN_PASSWORD:}
 
+    # ── Segundo fator do admin ───────────────────────────────────────────────
+    # Login e troca de senha do admin exigem um código de 6 dígitos enviado por
+    # e-mail. A senha, sozinha, deixa de dar acesso.
+    #
+    # security-email — para onde o código vai. Separado de ADMIN_EMAIL de
+    #   propósito: se o e-mail da conta for comprometido ou trocado por quem
+    #   invadiu, o código continua chegando ao dono do sistema. Vazio faz cair
+    #   no e-mail da própria conta, que é o razoável em desenvolvimento.
+    #
+    # two-factor.enabled — válvula de escape. Se o provedor de e-mail cair ou a
+    #   cota estourar, o código nunca chega e o admin fica trancado para fora do
+    #   próprio painel. ADMIN_2FA_ENABLED=false destranca pelo painel do Render,
+    #   sem rodar SQL em produção. Ligado por padrão: proteção que precisa ser
+    #   lembrada para existir não protege.
+    security-email: ${ADMIN_SECURITY_EMAIL:}
+    two-factor:
+      enabled: ${ADMIN_2FA_ENABLED:true}
+
   # ── Rate limit ─────────────────────────────────────────────────────────────
   # Teto por IP nas rotas /api/**, em janela de 1 minuto. Existe porque essas
   # rotas são públicas e várias consomem cota de API externa paga: sem teto, um

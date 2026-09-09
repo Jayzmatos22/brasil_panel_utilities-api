@@ -67,6 +67,8 @@ public class SecurityConfig {
                     auth.requestMatchers(
                             "/api/auth/register",
                             "/api/auth/login",
+                            // Sem sessão ainda: é justamente esta rota que a emite.
+                            "/api/auth/admin/confirm-login",
                             "/api/auth/verify-email",
                             "/api/auth/resend-code",
                             // Público de propósito: uma sessão já expirada precisa

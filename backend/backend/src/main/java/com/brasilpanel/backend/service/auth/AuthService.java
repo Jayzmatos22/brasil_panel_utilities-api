@@ -3,8 +3,11 @@ package com.brasilpanel.backend.service.auth;
 import com.brasilpanel.backend.config.jwt.JwtService;
 import com.brasilpanel.backend.dto.user.*;
 import com.brasilpanel.backend.mappers.UserMapper;
+import com.brasilpanel.backend.model.AdminChallenge;
+import com.brasilpanel.backend.model.AdminChallengePurpose;
 import com.brasilpanel.backend.model.UserEntity;
 import com.brasilpanel.backend.repository.user.UserRepository;
+import com.brasilpanel.backend.service.admin.AdminTwoFactorService;
 import com.brasilpanel.backend.service.email.EmailOutboxService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -29,6 +32,7 @@ public class AuthService {
     private final UserMapper          userMapper;
     private final EmailOutboxService  emailOutbox;
     private final LoginAttemptLimiter loginAttemptLimiter;
+    private final AdminTwoFactorService adminTwoFactor;
 
     private static final SecureRandom RANDOM = new SecureRandom();
 
@@ -155,26 +159,63 @@ public class AuthService {
 
     // ── Login ─────────────────────────────────────────────────────────────────
 
-    public AuthResponseDTO loginUser(LoginRequestDTO dto) {
-        loginAttemptLimiter.checkNotBlocked(dto.email());
+    public LoginOutcomeDTO loginUser(LoginRequestDTO dto) {
+        UserEntity user = autenticar(dto.email(), dto.password());
+
+        // Admin não recebe sessão aqui: acertar a senha só o leva ao segundo fator.
+        if (adminTwoFactor.isRequiredFor(user)) {
+            adminTwoFactor.issue(user, AdminChallengePurpose.LOGIN, null);
+            return LoginOutcomeDTO.desafioPendente(
+                    "Código de confirmação enviado. Válido por 15 minutos.");
+        }
+
+        return LoginOutcomeDTO.autenticado(sessaoDe(user));
+    }
+
+    /**
+     * Conclui o login de admin conferindo o código do segundo fator.
+     *
+     * <p>Reautentica antes de olhar o código: ver o javadoc de
+     * {@link ConfirmAdminLoginRequestDTO} — sem isso, qualquer um queimaria o desafio do
+     * dono só conhecendo o e-mail dele.
+     */
+    public AuthResponseDTO confirmAdminLogin(ConfirmAdminLoginRequestDTO dto) {
+        UserEntity user = autenticar(dto.email(), dto.password());
+
+        // Chegar aqui sem 2FA ligado significa desafio que não existe: recusa em vez de
+        // emitir sessão por um caminho que deveria estar fechado.
+        if (!adminTwoFactor.isRequiredFor(user)) {
+            throw new IllegalArgumentException(AdminTwoFactorService.CODIGO_INVALIDO);
+        }
+
+        adminTwoFactor.consume(user, AdminChallengePurpose.LOGIN, dto.code());
+        return sessaoDe(user);
+    }
+
+    /** Credenciais + conta verificada. Compartilhado pelo login e pela confirmação. */
+    private UserEntity autenticar(String email, String password) {
+        loginAttemptLimiter.checkNotBlocked(email);
 
         try {
             authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(dto.email(), dto.password())
+                    new UsernamePasswordAuthenticationToken(email, password)
             );
         } catch (BadCredentialsException e) {
-            loginAttemptLimiter.recordFailure(dto.email());
+            loginAttemptLimiter.recordFailure(email);
             throw e;
         }
-        loginAttemptLimiter.reset(dto.email());
+        loginAttemptLimiter.reset(email);
 
-        UserEntity user = userRepository.findByEmail(dto.email())
+        UserEntity user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado"));
 
         if (!user.isVerified()) {
             throw new IllegalStateException("E-mail não verificado. Verifique sua caixa de entrada.");
         }
+        return user;
+    }
 
+    private AuthResponseDTO sessaoDe(UserEntity user) {
         return new AuthResponseDTO(
                 jwtService.generateToken(user),
                 user.getName(),
@@ -207,7 +248,12 @@ public class AuthService {
     }
 
     // ── Alterar senha ─────────────────────────────────────────────────────────────
-    public void updatePassword(String email, UpdatePasswordRequestDTO dto) {
+
+    /**
+     * @return {@code true} se a troca ficou pendente de confirmação por e-mail (admin),
+     *         {@code false} se já foi aplicada
+     */
+    public boolean updatePassword(String email, UpdatePasswordRequestDTO dto) {
         UserEntity user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado"));
 
@@ -219,7 +265,42 @@ public class AuthService {
             throw new IllegalArgumentException("A nova senha deve ser diferente da atual.");
         }
 
-        user.setPassword(passwordEncoder.encode(dto.newPassword()));
+        String novoHash = passwordEncoder.encode(dto.newPassword());
+
+        // Admin: a senha nova fica retida no desafio. Gravar em users.password agora
+        // aplicaria a troca antes do segundo fator — exatamente o que este fluxo impede.
+        if (adminTwoFactor.isRequiredFor(user)) {
+            adminTwoFactor.issue(user, AdminChallengePurpose.PASSWORD_CHANGE, novoHash);
+            return true;
+        }
+
+        aplicarSenha(user, novoHash);
+        return false;
+    }
+
+    /** Conclui a troca de senha do admin conferindo o código do segundo fator. */
+    public void confirmAdminPasswordChange(String email, ConfirmAdminPasswordRequestDTO dto) {
+        UserEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado"));
+
+        if (!adminTwoFactor.isRequiredFor(user)) {
+            throw new IllegalArgumentException(AdminTwoFactorService.CODIGO_INVALIDO);
+        }
+
+        AdminChallenge desafio =
+                adminTwoFactor.consume(user, AdminChallengePurpose.PASSWORD_CHANGE, dto.code());
+
+        // Defesa contra desafio da finalidade certa mas sem carga: não deveria existir,
+        // e aplicar hash nulo apagaria a senha da conta.
+        if (desafio.getPendingPasswordHash() == null) {
+            throw new IllegalArgumentException(AdminTwoFactorService.CODIGO_INVALIDO);
+        }
+
+        aplicarSenha(user, desafio.getPendingPasswordHash());
+    }
+
+    private void aplicarSenha(UserEntity user, String novoHash) {
+        user.setPassword(novoHash);
         // Derruba as sessões abertas: o JwtService recusa todo token emitido antes
         // deste instante. Sem esta linha, quem tivesse acesso indevido à conta
         // continuaria dentro apesar da troca de senha.

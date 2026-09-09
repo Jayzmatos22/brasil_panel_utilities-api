@@ -136,6 +136,8 @@ subida. Provisione o Neon **antes** de criar o serviço no Render.
 | `CMC_API_KEY` | Não | Chave CoinMarketCap. Sem ela a fonte fica desligada e o painel roda só com o CoinGecko — de propósito, para a aplicação subir sem a chave. |
 | `ADMIN_EMAIL` | Recomendada | Default `admin@brasilpanel.com`. É **credencial de login**, não endereço de envio: nada é enviado para ele, e a conta é criada já com `verified = true`. |
 | `ADMIN_PASSWORD` | **Sim, na prática** | Sem ela o admin **não é criado** e `/api/admin/**` fica inalcançável — ninguém consegue autenticar como ADMIN. Ver armadilha #6. |
+| `ADMIN_SECURITY_EMAIL` | **Sim, se houver admin** | Para onde vai o código do segundo fator do admin (login e troca de senha). Separado de `ADMIN_EMAIL` de propósito: se o e-mail da conta for comprometido ou trocado por quem invadiu, o código continua chegando ao dono. Vazio faz cair no e-mail da própria conta. |
+| `ADMIN_2FA_ENABLED` | Não | Default `true`. Válvula de escape: se o provedor de e-mail cair, o código nunca chega e o admin fica trancado do lado de fora. `false` destranca pelo painel do Render, sem SQL em produção. Ver armadilha #8. |
 
 ### Frontend (Vercel / Cloudflare)
 
@@ -323,6 +325,25 @@ Boot não os preenche, então sem eles a thread do health check ficaria pendurad
 sempre em vez de falhar em 5s.
 
 ---
+
+### #8 — O segundo fator pode trancar o admin para fora
+
+Login e troca de senha do admin exigem um código de 6 dígitos enviado por e-mail.
+A consequência incômoda é direta: **se o e-mail não sai, o admin não entra**. Provedor
+fora do ar, cota estourada, domínio suspenso — em todos esses casos a senha continua
+certa e mesmo assim não abre nada.
+
+Por isso existe `ADMIN_2FA_ENABLED`. Defina como `false` no painel do Render, salve, e o
+login volta a valer só com a senha enquanto você resolve o e-mail. **Volte para `true`
+assim que resolver** — a variável é uma saída de emergência, não uma configuração.
+
+O código sai pela fila do outbox (tabela `email_outbox`), com retry e backoff, então uma
+falha transitória do SMTP não exige nada: o e-mail chega quando o provedor voltar, desde
+que o desafio ainda não tenha expirado (15 minutos).
+
+Não há caminho de recuperação sem uma dessas duas coisas — a variável, ou acesso ao banco
+para promover outra conta a ADMIN. Vale conferir que você tem pelo menos uma antes de
+depender do painel em produção.
 
 ## 6. Pendências de código antes do primeiro deploy
 
