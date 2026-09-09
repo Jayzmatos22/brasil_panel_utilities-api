@@ -3,8 +3,9 @@ package com.brasilpanel.backend.service.auth;
 import com.brasilpanel.backend.config.jwt.JwtService;
 import com.brasilpanel.backend.dto.user.*;
 import com.brasilpanel.backend.mappers.UserMapper;
-import com.brasilpanel.backend.model.AdminChallenge;
-import com.brasilpanel.backend.model.AdminChallengePurpose;
+import com.brasilpanel.backend.model.AuthChallenge;
+import com.brasilpanel.backend.model.Role;
+import com.brasilpanel.backend.model.AuthChallengePurpose;
 import com.brasilpanel.backend.model.UserEntity;
 import com.brasilpanel.backend.repository.user.UserRepository;
 import com.brasilpanel.backend.service.admin.AdminTwoFactorService;
@@ -33,6 +34,7 @@ public class AuthService {
     private final EmailOutboxService  emailOutbox;
     private final LoginAttemptLimiter loginAttemptLimiter;
     private final AdminTwoFactorService adminTwoFactor;
+    private final AuthChallengeService authChallenges;
 
     private static final SecureRandom RANDOM = new SecureRandom();
 
@@ -41,6 +43,11 @@ public class AuthService {
     private static final String CODIGO_INVALIDO = "Código inválido.";
     private static final String REENVIO_GENERICO =
             "Se houver um cadastro pendente para este e-mail, um novo código foi enviado.";
+
+    // Mesma razão: /forgot-password não exige credencial nenhuma, então uma resposta que
+    // dependesse da existência da conta viraria um oráculo de quais e-mails têm cadastro.
+    private static final String RECUPERACAO_GENERICA =
+            "Se houver uma conta para este e-mail, um código de recuperação foi enviado.";
 
 
     // ── Registro ──────────────────────────────────────────────────────────────
@@ -164,7 +171,7 @@ public class AuthService {
 
         // Admin não recebe sessão aqui: acertar a senha só o leva ao segundo fator.
         if (adminTwoFactor.isRequiredFor(user)) {
-            adminTwoFactor.issue(user, AdminChallengePurpose.LOGIN, null);
+            adminTwoFactor.issue(user, AuthChallengePurpose.LOGIN, null);
             return LoginOutcomeDTO.desafioPendente(
                     "Código de confirmação enviado. Válido por 15 minutos.");
         }
@@ -188,7 +195,7 @@ public class AuthService {
             throw new IllegalArgumentException(AdminTwoFactorService.CODIGO_INVALIDO);
         }
 
-        adminTwoFactor.consume(user, AdminChallengePurpose.LOGIN, dto.code());
+        adminTwoFactor.consume(user, AuthChallengePurpose.LOGIN, dto.code());
         return sessaoDe(user);
     }
 
@@ -270,7 +277,7 @@ public class AuthService {
         // Admin: a senha nova fica retida no desafio. Gravar em users.password agora
         // aplicaria a troca antes do segundo fator — exatamente o que este fluxo impede.
         if (adminTwoFactor.isRequiredFor(user)) {
-            adminTwoFactor.issue(user, AdminChallengePurpose.PASSWORD_CHANGE, novoHash);
+            adminTwoFactor.issue(user, AuthChallengePurpose.PASSWORD_CHANGE, novoHash);
             return true;
         }
 
@@ -287,8 +294,8 @@ public class AuthService {
             throw new IllegalArgumentException(AdminTwoFactorService.CODIGO_INVALIDO);
         }
 
-        AdminChallenge desafio =
-                adminTwoFactor.consume(user, AdminChallengePurpose.PASSWORD_CHANGE, dto.code());
+        AuthChallenge desafio =
+                adminTwoFactor.consume(user, AuthChallengePurpose.PASSWORD_CHANGE, dto.code());
 
         // Defesa contra desafio da finalidade certa mas sem carga: não deveria existir,
         // e aplicar hash nulo apagaria a senha da conta.
@@ -307,6 +314,60 @@ public class AuthService {
         user.setPasswordChangedAt(LocalDateTime.now());
         userRepository.save(user);
     }
+
+    // ── Recuperação de senha ──────────────────────────────────────────────────────
+
+    /**
+     * Emite o código de recuperação, se houver conta para o e-mail.
+     *
+     * <p>A resposta é a mesma em todos os casos — conta inexistente, conta pendente de
+     * verificação e código enviado. Sem isso, quem quisesse descobrir se um endereço tem
+     * cadastro bastaria pedir a recuperação e ler a resposta.
+     *
+     * <p>Só conta verificada recupera. Cadastro não confirmado não provou o vínculo com a
+     * caixa de entrada, e o caminho dele é concluir a verificação — que reenvia código pelo
+     * próprio {@code /register}.
+     */
+    public RegisterResponseDTO requestPasswordReset(ForgotPasswordRequestDTO dto) {
+        userRepository.findByEmail(dto.email())
+                .filter(UserEntity::isVerified)
+                .ifPresent(user -> authChallenges.issue(
+                        user, AuthChallengePurpose.PASSWORD_RESET, destinoDoCodigo(user), null));
+
+        return new RegisterResponseDTO(RECUPERACAO_GENERICA);
+    }
+
+    /**
+     * Redefine a senha com o código recebido.
+     *
+     * <p>Aplica {@code passwordChangedAt}, então toda sessão aberta cai — inclusive a de
+     * quem tenha invadido a conta, que é a razão de alguém recuperar a senha às pressas.
+     */
+    public void resetPassword(ResetPasswordRequestDTO dto) {
+        // Mesma mensagem de código inválido para e-mail inexistente e conta não verificada:
+        // esta rota também não exige credencial.
+        UserEntity user = userRepository.findByEmail(dto.email())
+                .filter(UserEntity::isVerified)
+                .orElseThrow(() -> new IllegalArgumentException(AuthChallengeService.CODIGO_INVALIDO));
+
+        authChallenges.consume(user, AuthChallengePurpose.PASSWORD_RESET, dto.code());
+        aplicarSenha(user, passwordEncoder.encode(dto.newPassword()));
+    }
+
+    /**
+     * Para onde vai o código de recuperação.
+     *
+     * <p>No admin, o endereço de segurança — e não o e-mail da conta. Senão a recuperação
+     * seria um desvio do segundo fator: quem tomasse a caixa de entrada da conta redefiniria
+     * a senha por ali. Continuaria barrado no login pelo 2FA, mas não há motivo para deixar
+     * a porta entreaberta.
+     */
+    private String destinoDoCodigo(UserEntity user) {
+        return user.getRole() == Role.ADMIN
+                ? adminTwoFactor.recipientFor(user)
+                : user.getEmail();
+    }
+
 
     // ── Deletar conta ─────────────────────────────────────────────────────────────
     public void deleteAccount(String email, DeleteAccountRequestDTO dto) {

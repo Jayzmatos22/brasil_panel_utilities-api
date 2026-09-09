@@ -1,11 +1,11 @@
 package com.brasilpanel.backend.service.email;
 
-import com.brasilpanel.backend.model.AdminChallenge;
+import com.brasilpanel.backend.model.AuthChallenge;
 import com.brasilpanel.backend.model.EmailOutboxEntry;
 import com.brasilpanel.backend.model.EmailOutboxStatus;
 import com.brasilpanel.backend.model.EmailType;
 import com.brasilpanel.backend.model.UserEntity;
-import com.brasilpanel.backend.repository.admin.AdminChallengeRepository;
+import com.brasilpanel.backend.repository.auth.AuthChallengeRepository;
 import com.brasilpanel.backend.repository.email.EmailOutboxRepository;
 import com.brasilpanel.backend.repository.user.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -37,7 +37,7 @@ public class EmailOutboxDispatcher {
 
     private final EmailOutboxRepository outboxRepository;
     private final UserRepository userRepository;
-    private final AdminChallengeRepository challengeRepository;
+    private final AuthChallengeRepository challengeRepository;
     private final EmailService emailService;
 
     @Value("${app.mail.outbox.max-attempts:5}")
@@ -86,26 +86,25 @@ public class EmailOutboxDispatcher {
     private boolean despachar(EmailOutboxEntry entrada) {
         return switch (entrada.getEmailType()) {
             case VERIFICATION_CODE -> despacharVerificacao(entrada);
-            case ADMIN_CHALLENGE_CODE -> despacharDesafioAdmin(entrada);
+            case ADMIN_CHALLENGE_CODE, PASSWORD_RESET_CODE -> despacharDesafio(entrada);
         };
     }
 
     /**
-     * Desafio de admin: o código sai de {@code admin_challenge}, apontado por
-     * {@code reference_id}.
+     * Desafio: o código sai de {@code auth_challenge}, apontado por {@code reference_id}.
      *
      * <p>Um desafio já consumido ou vencido vira entrada obsoleta em vez de envio. Isso
      * importa depois de uma indisponibilidade longa do SMTP: sem a checagem, o drain
      * despejaria códigos velhos na caixa do dono, todos inúteis e todos parecendo
      * tentativa de invasão.
      */
-    private boolean despacharDesafioAdmin(EmailOutboxEntry entrada) {
+    private boolean despacharDesafio(EmailOutboxEntry entrada) {
         if (entrada.getReferenceId() == null) {
-            entrada.markObsolete("Desafio de admin sem reference_id");
+            entrada.markObsolete("Desafio sem reference_id");
             return false;
         }
 
-        AdminChallenge desafio = challengeRepository.findById(entrada.getReferenceId()).orElse(null);
+        AuthChallenge desafio = challengeRepository.findById(entrada.getReferenceId()).orElse(null);
 
         if (desafio == null) {
             entrada.markObsolete("Desafio não existe mais");
@@ -116,7 +115,7 @@ public class EmailOutboxDispatcher {
             return false;
         }
 
-        emailService.sendAdminChallengeCode(
+        emailService.sendAuthChallengeCode(
                 entrada.getRecipient(), desafio.getCode(), desafio.getPurpose());
         entrada.markSent();
         return true;

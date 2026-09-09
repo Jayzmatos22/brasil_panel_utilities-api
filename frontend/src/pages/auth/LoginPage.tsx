@@ -125,6 +125,14 @@ export default function LoginPage() {
               deixaria os dois parecendo assuntos separados. */}
           <div className="flex flex-col items-center gap-3">
 
+            <button
+              type="button"
+              onClick={() => navigate('/esqueci-senha')}
+              className="text-slate-400 hover:text-amber-300 text-sm transition-colors cursor-pointer rounded-control px-2 coarse:min-h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60"
+            >
+              Esqueci minha senha
+            </button>
+
             <div className="flex items-center justify-center gap-2 text-sm">
               {/* slate-400, e não o slate-500 que estava aqui: sobre qualquer
                   fundo o slate-500 fica em ~4,2:1, abaixo do AA de 4,5 — a

@@ -71,6 +71,9 @@ public class SecurityConfig {
                             "/api/auth/admin/confirm-login",
                             "/api/auth/verify-email",
                             "/api/auth/resend-code",
+                            // Quem esqueceu a senha não tem como estar autenticado.
+                            "/api/auth/forgot-password",
+                            "/api/auth/reset-password",
                             // Público de propósito: uma sessão já expirada precisa
                             // conseguir limpar o próprio cookie.
                             "/api/auth/logout",

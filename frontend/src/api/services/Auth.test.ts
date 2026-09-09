@@ -149,6 +149,20 @@ describe('authService', () => {
       })).toEqual({ pending: true });
     });
 
+    it('forgotPassword e resetPassword apontam para as rotas de recuperação', async () => {
+      mocked.post.mockResolvedValue({ data: { message: 'ok' }, status: 200 });
+
+      await authService.forgotPassword({ email: 'a@b.com' });
+      expect(mocked.post).toHaveBeenCalledWith('/auth/forgot-password', { email: 'a@b.com' });
+
+      await authService.resetPassword({
+        email: 'a@b.com', code: '123456', newPassword: 'SenhaNova@123',
+      });
+      expect(mocked.post).toHaveBeenCalledWith('/auth/reset-password', {
+        email: 'a@b.com', code: '123456', newPassword: 'SenhaNova@123',
+      });
+    });
+
     it('propaga a falha para quem chamou', async () => {
       mocked.post.mockRejectedValue(new Error('rede fora'));
 

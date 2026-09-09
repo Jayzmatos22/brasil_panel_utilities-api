@@ -13,5 +13,14 @@ public enum EmailType {
      * próprio desafio, em {@code reference_id}. Dois tipos aqui obrigariam a fila a
      * saber algo que a tabela do desafio já diz.
      */
-    ADMIN_CHALLENGE_CODE
+    ADMIN_CHALLENGE_CODE,
+
+    /**
+     * Código de 6 dígitos da recuperação de senha.
+     *
+     * <p>Tipo separado do de admin, e não uma finalidade a mais dentro dele, porque o
+     * valor do enum é persistido como texto em {@code email_outbox}: renomear o antigo
+     * quebraria a leitura de qualquer entrada ainda na fila no momento do deploy.
+     */
+    PASSWORD_RESET_CODE
 }

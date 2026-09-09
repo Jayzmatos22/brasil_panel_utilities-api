@@ -63,24 +63,24 @@ public class EmailOutboxService {
     }
 
     /**
-     * Enfileira o envio do código de um desafio de admin.
+     * Enfileira o envio do código de um desafio.
      *
      * <p>Recebe o id do desafio, e não o código, pela mesma razão do método acima: o
-     * segredo é lido na hora do envio. Aqui o motivo é mais forte — o destinatário é o
-     * endereço de segurança do dono, que pode não ser o e-mail da conta, então não há
-     * como reencontrar o código a partir do recipient.
+     * segredo é lido na hora do envio. Aqui o motivo é mais forte — o destinatário pode
+     * não ser o e-mail da conta (no admin é o endereço de segurança do dono), então não
+     * há como reencontrar o código a partir do recipient.
      */
     @Transactional
-    public void enqueueAdminChallenge(String recipient, UUID challengeId) {
+    public void enqueueAuthChallenge(String recipient, UUID challengeId, EmailType tipo) {
         outboxRepository.save(EmailOutboxEntry.builder()
                 .recipient(recipient)
-                .emailType(EmailType.ADMIN_CHALLENGE_CODE)
+                .emailType(tipo)
                 .referenceId(challengeId)
                 .status(EmailOutboxStatus.PENDING)
                 .nextAttemptAt(LocalDateTime.now())
                 .build());
 
-        log.debug("[Outbox] Desafio de admin enfileirado para '{}'.", recipient);
+        log.debug("[Outbox] Desafio enfileirado para '{}'.", recipient);
     }
 
     // ── Consumo ──────────────────────────────────────────────────────────────

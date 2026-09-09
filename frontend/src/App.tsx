@@ -15,6 +15,8 @@ import RegisterPage    from './pages/auth/RegisterPage';
 import LoginPage       from './pages/auth/LoginPage';
 import VerifyEmailPage from './pages/auth/VerifyEmailPage';
 import AdminConfirmPage from './pages/auth/AdminConfirmPage';
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
+import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 
 // Onboarding (com header)
 import PerfilPage from './pages/onboarding/PerfilPage';
@@ -178,6 +180,12 @@ function AppRoutes() {
         {/* /verificar-email fica FORA do guard: o usuário chega nela já com
             cadastro feito e precisa concluir a verificação. */}
         <Route path="/verificar-email"  element={<VerifyEmailPage />} />
+
+        {/* Recuperação de senha. Fora do PublicOnly: quem esqueceu a senha não tem
+            sessão, e o guard só atrapalharia quem chegou aqui logado em outra aba
+            querendo redefinir. */}
+        <Route path="/esqueci-senha"   element={<ForgotPasswordPage />} />
+        <Route path="/redefinir-senha" element={<ResetPasswordPage />} />
 
         {/* Segundo fator do admin. Também FORA do PublicOnly, e pelo mesmo motivo
             do /verificar-email: no modo `login` a pessoa ainda não tem sessão, e

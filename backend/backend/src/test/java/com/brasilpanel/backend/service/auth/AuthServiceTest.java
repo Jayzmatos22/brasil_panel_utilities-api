@@ -4,12 +4,13 @@ import com.brasilpanel.backend.config.jwt.JwtService;
 import com.brasilpanel.backend.dto.user.*;
 import com.brasilpanel.backend.exception.customized.TooManyAttemptsException;
 import com.brasilpanel.backend.mappers.UserMapper;
-import com.brasilpanel.backend.model.AdminChallenge;
-import com.brasilpanel.backend.model.AdminChallengePurpose;
+import com.brasilpanel.backend.model.AuthChallenge;
+import com.brasilpanel.backend.model.AuthChallengePurpose;
 import com.brasilpanel.backend.model.Role;
 import com.brasilpanel.backend.model.UserEntity;
 import com.brasilpanel.backend.repository.user.UserRepository;
 import com.brasilpanel.backend.service.admin.AdminTwoFactorService;
+import com.brasilpanel.backend.service.auth.AuthChallengeService;
 import com.brasilpanel.backend.service.email.EmailOutboxService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -52,6 +53,7 @@ AuthServiceTest {
     @Mock private EmailOutboxService emailOutbox;
     @Mock private LoginAttemptLimiter loginAttemptLimiter;
     @Mock private AdminTwoFactorService adminTwoFactor;
+    @Mock private AuthChallengeService authChallenges;
 
     @InjectMocks
     private AuthService authService;
@@ -447,10 +449,10 @@ AuthServiceTest {
             when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(admin));
         }
 
-        private AdminChallenge desafio(String hashPendente) {
-            return AdminChallenge.builder()
+        private AuthChallenge desafio(String hashPendente) {
+            return AuthChallenge.builder()
                     .id(UUID.randomUUID()).userId(admin.getId())
-                    .purpose(AdminChallengePurpose.PASSWORD_CHANGE)
+                    .purpose(AuthChallengePurpose.PASSWORD_CHANGE)
                     .code("123456").pendingPasswordHash(hashPendente)
                     .expiresAt(LocalDateTime.now().plusMinutes(10))
                     .build();
@@ -467,7 +469,7 @@ AuthServiceTest {
             assertThat(outcome.auth())
                     .as("nenhum token pode sair antes da confirmação")
                     .isNull();
-            verify(adminTwoFactor).issue(admin, AdminChallengePurpose.LOGIN, null);
+            verify(adminTwoFactor).issue(admin, AuthChallengePurpose.LOGIN, null);
             verify(jwtService, never()).generateToken(any());
         }
 
@@ -481,7 +483,7 @@ AuthServiceTest {
                     new ConfirmAdminLoginRequestDTO(EMAIL, SENHA, "123456"));
 
             assertThat(resposta.token()).isEqualTo("jwt-gerado");
-            verify(adminTwoFactor).consume(admin, AdminChallengePurpose.LOGIN, "123456");
+            verify(adminTwoFactor).consume(admin, AuthChallengePurpose.LOGIN, "123456");
         }
 
         @Test
@@ -517,14 +519,14 @@ AuthServiceTest {
                     .as("nem as sessões podem cair por uma troca que ainda não vale")
                     .isNull();
             verify(userRepository, never()).save(any());
-            verify(adminTwoFactor).issue(admin, AdminChallengePurpose.PASSWORD_CHANGE, "hash-novo");
+            verify(adminTwoFactor).issue(admin, AuthChallengePurpose.PASSWORD_CHANGE, "hash-novo");
         }
 
         @Test
         @DisplayName("confirmada, a senha retida no desafio é aplicada e derruba as sessões")
         void confirmingAppliesTheHeldPassword() {
             when(adminTwoFactor.isRequiredFor(admin)).thenReturn(true);
-            when(adminTwoFactor.consume(admin, AdminChallengePurpose.PASSWORD_CHANGE, "123456"))
+            when(adminTwoFactor.consume(admin, AuthChallengePurpose.PASSWORD_CHANGE, "123456"))
                     .thenReturn(desafio("hash-novo"));
 
             authService.confirmAdminPasswordChange(
@@ -539,7 +541,7 @@ AuthServiceTest {
         @DisplayName("desafio sem senha retida não apaga a senha da conta")
         void challengeWithoutPayloadNeverWipesThePassword() {
             when(adminTwoFactor.isRequiredFor(admin)).thenReturn(true);
-            when(adminTwoFactor.consume(admin, AdminChallengePurpose.PASSWORD_CHANGE, "123456"))
+            when(adminTwoFactor.consume(admin, AuthChallengePurpose.PASSWORD_CHANGE, "123456"))
                     .thenReturn(desafio(null));
 
             // Não deveria existir; se existir, aplicar hash nulo deixaria a conta sem
@@ -548,6 +550,111 @@ AuthServiceTest {
                     EMAIL, new ConfirmAdminPasswordRequestDTO("123456")))
                     .isInstanceOf(IllegalArgumentException.class);
             assertThat(admin.getPassword()).isEqualTo("hash-antigo");
+            verify(userRepository, never()).save(any());
+        }
+    }
+
+    // ── Recuperação de senha ─────────────────────────────────────────────────
+
+    /**
+     * A recuperação é a única rota que troca uma senha sem conhecer a anterior. O que a
+     * torna segura é o código, e o que a torna discreta é responder igual para todo mundo.
+     */
+    @Nested
+    @DisplayName("Recuperação de senha")
+    class RecuperacaoDeSenha {
+
+        private UserEntity verificado;
+
+        @BeforeEach
+        void setUp() {
+            verificado = UserEntity.builder()
+                    .id(UUID.randomUUID())
+                    .name("Fulano").email(EMAIL).password("hash-antigo")
+                    .role(Role.USER).verified(true)
+                    .build();
+        }
+
+        @Test
+        @DisplayName("conta existente recebe o código no próprio e-mail")
+        void existingAccountGetsTheCode() {
+            when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(verificado));
+
+            authService.requestPasswordReset(new ForgotPasswordRequestDTO(EMAIL));
+
+            verify(authChallenges).issue(
+                    verificado, AuthChallengePurpose.PASSWORD_RESET, EMAIL, null);
+        }
+
+        @Test
+        @DisplayName("e-mail sem cadastro devolve a mesma resposta e não emite nada")
+        void unknownEmailIsIndistinguishable() {
+            when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.empty());
+
+            var resposta = authService.requestPasswordReset(new ForgotPasswordRequestDTO(EMAIL));
+
+            // Resposta diferente aqui transformaria a rota num oráculo de quais
+            // endereços têm conta — e ela não exige credencial nenhuma.
+            assertThat(resposta.message()).contains("Se houver uma conta");
+            verify(authChallenges, never()).issue(any(), any(), anyString(), any());
+        }
+
+        @Test
+        @DisplayName("conta ainda não verificada não recupera")
+        void unverifiedAccountDoesNotReset() {
+            verificado.setVerified(false);
+            when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(verificado));
+
+            authService.requestPasswordReset(new ForgotPasswordRequestDTO(EMAIL));
+
+            // Cadastro não confirmado não provou o vínculo com a caixa de entrada; o
+            // caminho dele é concluir a verificação, não redefinir senha.
+            verify(authChallenges, never()).issue(any(), any(), anyString(), any());
+        }
+
+        @Test
+        @DisplayName("do admin, o código vai para o endereço de segurança")
+        void adminResetGoesToTheSecurityAddress() {
+            verificado.setRole(Role.ADMIN);
+            when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(verificado));
+            when(adminTwoFactor.recipientFor(verificado)).thenReturn("dono@exemplo.com");
+
+            authService.requestPasswordReset(new ForgotPasswordRequestDTO(EMAIL));
+
+            // Senão a recuperação seria um desvio do segundo fator: quem tomasse a caixa
+            // da conta redefiniria a senha por ali.
+            verify(authChallenges).issue(
+                    verificado, AuthChallengePurpose.PASSWORD_RESET, "dono@exemplo.com", null);
+        }
+
+        @Test
+        @DisplayName("código válido aplica a senha nova e derruba as sessões abertas")
+        void validCodeAppliesNewPasswordAndDropsSessions() {
+            when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(verificado));
+            when(passwordEncoder.encode("SenhaNova@123")).thenReturn("hash-novo");
+
+            authService.resetPassword(
+                    new ResetPasswordRequestDTO(EMAIL, "123456", "SenhaNova@123"));
+
+            assertThat(verificado.getPassword()).isEqualTo("hash-novo");
+            // Quem recupera a senha às pressas costuma estar expulsando alguém: sem o
+            // carimbo, a sessão do invasor sobreviveria à troca.
+            assertThat(verificado.getPasswordChangedAt()).isNotNull();
+            verify(authChallenges).consume(
+                    verificado, AuthChallengePurpose.PASSWORD_RESET, "123456");
+            verify(userRepository).save(verificado);
+        }
+
+        @Test
+        @DisplayName("e-mail sem cadastro não chega a conferir código")
+        void unknownEmailNeverReachesTheChallenge() {
+            when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> authService.resetPassword(
+                    new ResetPasswordRequestDTO(EMAIL, "123456", "SenhaNova@123")))
+                    .isInstanceOf(IllegalArgumentException.class);
+
+            verify(authChallenges, never()).consume(any(), any(), anyString());
             verify(userRepository, never()).save(any());
         }
     }
