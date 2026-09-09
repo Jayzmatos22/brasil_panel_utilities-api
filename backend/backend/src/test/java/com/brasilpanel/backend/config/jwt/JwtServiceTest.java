@@ -3,6 +3,8 @@ package com.brasilpanel.backend.config.jwt;
 import com.brasilpanel.backend.model.Role;
 import com.brasilpanel.backend.model.UserEntity;
 import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -10,7 +12,10 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Date;
 import java.time.temporal.ChronoUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -154,12 +159,31 @@ class JwtServiceTest {
     void tokenIssuedInTheSameSecondSurvives() {
         String token = jwtService.generateToken(user);
 
-        // Mesmo segundo do iat, mas com microssegundos à frente.
-        user.setPasswordChangedAt(LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS).plusNanos(900_000_000));
+        // Mesmo segundo do iat, com microssegundos à frente — derivado do PRÓPRIO token,
+        // não de um segundo LocalDateTime.now().
+        //
+        // Com now(), o teste era uma corrida: se a virada de segundo caísse entre gerar o
+        // token e ler o relógio, passwordChangedAt ficava um segundo À FRENTE do iat, o
+        // token era corretamente recusado e o teste falhava sem haver bug nenhum. Janela
+        // estreita, e mesmo assim caiu no CI. Lendo o iat do token, a relação "mesmo
+        // segundo" é garantida por construção, não por sorte.
+        user.setPasswordChangedAt(iatDe(token).plusNanos(900_000_000));
 
         assertThat(jwtService.isTokenValid(token, user))
                 .as("truncar para segundos evita expulsar quem acabou de logar")
                 .isTrue();
+    }
+
+    /** O instante de emissão gravado no token, com a precisão de segundo que o JWT usa. */
+    private static LocalDateTime iatDe(String token) {
+        Date issuedAt = Jwts.parser()
+                .verifyWith(Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8)))
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .getIssuedAt();
+
+        return LocalDateTime.ofInstant(issuedAt.toInstant(), ZoneId.systemDefault());
     }
 
     @Test
