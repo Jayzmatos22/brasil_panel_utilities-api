@@ -1,5 +1,6 @@
 import toast from "react-hot-toast";
 import { limparNome, nomeValido } from '../../lib/validation/nome';
+import { SENHA_FRACA, senhaForte } from '../../lib/validation/senha';
 import { useState, type FormEvent } from "react";
 import { motion } from "motion/react";
 import {
@@ -280,8 +281,8 @@ export default function SettingsAuthPage() {
       toast.error("As senhas não coincidem.");
       return;
     }
-    if (newPassword.length < 8) {
-      toast.error("Mínimo 8 caracteres.");
+    if (!senhaForte(newPassword)) {
+      toast.error(SENHA_FRACA);
       return;
     }
     changePassword({ currentPassword, newPassword });
@@ -523,7 +524,7 @@ export default function SettingsAuthPage() {
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 disabled={pendingPassword}
-                hint="Mínimo 8 caracteres."
+                hint="Mínimo 8 caracteres, com maiúscula, minúscula, número e símbolo."
               />
               <FormField
                 id="settings-confirm-password"

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ClipboardEvent, type FormEvent, type KeyboardEvent } from 'react';
+import { SENHA_FRACA, senhaForte } from '../../lib/validation/senha';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
@@ -51,8 +52,10 @@ export default function ResetPasswordPage() {
       toast.error('Digite os 6 dígitos do código.');
       return;
     }
-    if (senha.length < 8) {
-      toast.error('A senha deve ter ao menos 8 caracteres.');
+    // Mesma exigência do cadastro: sem isto dava para definir por aqui uma senha que o
+    // cadastro recusaria — e a recuperação vira o caminho fácil para a senha fraca.
+    if (!senhaForte(senha)) {
+      toast.error(SENHA_FRACA);
       return;
     }
     if (senha !== confirmacao) {
