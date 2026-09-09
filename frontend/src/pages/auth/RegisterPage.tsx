@@ -37,7 +37,7 @@ export default function RegisterPage() {
     e.preventDefault();
     // A mensagem diz o que falta, e não só que algo está errado: "nome completo" não
     // informa que o problema é a ausência do sobrenome.
-    if (!nomeValido(name)) { toast.error('Digite nome e sobrenome.'); return; }
+    if (!nomeValido(name)) { toast.error('Digite seu nome (mínimo 3 letras).'); return; }
     if (!VALID_EMAIL.test(email))       { toast.error('E-mail inválido.'); return; }
     if (!senhaForte(password)) { toast.error(SENHA_FRACA); return; }
     // Envia normalizado: sem isso o espaço sobrando seria gravado no banco e voltaria
@@ -74,7 +74,7 @@ export default function RegisterPage() {
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <FormField
               id="reg-name"
-              label="Nome completo"
+              label="Nome"
               placeholder="Nome Sobrenome"
               autoComplete="name"
               value={name}

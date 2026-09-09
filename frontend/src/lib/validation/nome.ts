@@ -19,7 +19,7 @@ export function limparNome(valor: string): string {
 }
 
 /**
- * Duas ou mais palavras de letras, aceitando hífen e apóstrofo.
+ * Uma ou mais palavras de letras, aceitando hífen e apóstrofo.
  *
  * <p>`\p{L}` em vez da faixa `À-ÿ` que estava aqui: aquela faixa é de code points, não
  * de letras, e engloba `×` (U+00D7) e `÷` (U+00F7) — "A×B C" passava. Ao mesmo tempo
@@ -28,9 +28,23 @@ export function limparNome(valor: string): string {
  * <p>Hífen e apóstrofo entram porque "Ana-Maria", "Maria D'Ávila" e "Sant'Anna" são
  * nomes brasileiros correntes que a regra anterior recusava.
  */
-const NOME_COMPLETO = /^\p{L}[\p{L}'’-]*(?: \p{L}[\p{L}'’-]*)+$/u;
+const FORMATO = /^\p{L}[\p{L}'’-]*(?: \p{L}[\p{L}'’-]*)*$/u;
 
-/** Se o valor, já normalizado, é um nome com sobrenome. */
+/**
+ * Mínimo de letras no nome inteiro.
+ *
+ * <p>Sobrenome deixou de ser exigido: recusar "Ana" não protegia nada e travava gente
+ * legítima na porta. O que resta é um piso que barra digitação acidental — "a", "x" —
+ * sem opinar sobre como a pessoa se chama.
+ *
+ * <p>Contado em LETRAS, não em caracteres: senão "A-B" passaria pelo tamanho sem ter
+ * três letras de verdade.
+ */
+const MIN_LETRAS = 3;
+
+/** Normaliza antes de validar; ver {@link limparNome}. */
 export function nomeValido(valor: string): boolean {
-  return NOME_COMPLETO.test(limparNome(valor));
+  const limpo = limparNome(valor);
+  if (!FORMATO.test(limpo)) return false;
+  return (limpo.match(/\p{L}/gu) ?? []).length >= MIN_LETRAS;
 }

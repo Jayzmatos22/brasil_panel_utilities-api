@@ -25,8 +25,15 @@ describe('nomeValido', () => {
     expect(nomeValido(entrada)).toBe(true);
   });
 
-  it('exige sobrenome', () => {
-    expect(nomeValido('Jailton')).toBe(false);
+  // Sobrenome deixou de ser exigido: recusar "Ana" não protegia nada e travava
+  // gente legítima na porta.
+  it.each(['Jailton', 'Ana', 'Ana Lu'])('aceita nome de uma palavra: %j', (entrada) => {
+    expect(nomeValido(entrada)).toBe(true);
+  });
+
+  it.each(['Jo', 'J', 'A-B'])('recusa com menos de 3 letras: %j', (entrada) => {
+    // Contado em LETRAS, não em caracteres: "A-B" tem três caracteres e duas letras.
+    expect(nomeValido(entrada)).toBe(false);
   });
 
   it('recusa vazio e só espaços', () => {

@@ -265,7 +265,7 @@ export default function SettingsAuthPage() {
       return;
     }
     if (!nomeValido(name)) {
-      toast.error("Digite nome e sobrenome.");
+      toast.error("Digite seu nome (mínimo 3 letras).");
       return;
     }
     changeName({ name: limparNome(name) });
@@ -454,12 +454,12 @@ export default function SettingsAuthPage() {
           <form onSubmit={handleChangeName} className="flex flex-col gap-5">
             <FormField
               id="settings-name"
-              label="Novo nome completo"
+              label="Novo nome"
               placeholder="Ex: João da Silva"
               value={name}
               onChange={(e) => setName(e.target.value)}
               disabled={pendingName}
-              hint="Use nome e sobrenome para formalidades."
+              hint="Mínimo 3 letras. Sobrenome é opcional."
             />
             <div className="flex justify-end">
               <SubmitButton
