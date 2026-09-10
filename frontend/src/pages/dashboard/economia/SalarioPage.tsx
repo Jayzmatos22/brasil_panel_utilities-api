@@ -176,7 +176,12 @@ export default function SalarioPage() {
       >
         {/* Visual Panel */}
         <div className="relative @3xl/page:w-2/5 h-56 @3xl/page:h-auto shrink-0 overflow-hidden">
-          <div className="absolute inset-0 bg-linear-to-br from-emerald-900 to-green-800" />
+          {/* Mesmo ajuste do IndicatorCard, pelo mesmo motivo: cor cheia por
+              baixo de uma imagem mascarada a 70% do raio inunda o painel. Esta
+              tela não usa aquele componente — repete o painel visual dele à
+              mão —, então o `opacity-50` precisa ser repetido aqui. Se um dia
+              os dois se unificarem, este comentário é o rastro. */}
+          <div className="absolute inset-0 bg-linear-to-br from-emerald-900 to-green-800 opacity-50" />
 
           {bannerImage && (
             <img
