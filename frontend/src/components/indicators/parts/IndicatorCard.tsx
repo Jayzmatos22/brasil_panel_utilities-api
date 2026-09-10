@@ -100,11 +100,25 @@ export const IndicatorCard = memo(function IndicatorCard({
             loading="lazy"
             className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
             // Máscara radial: a imagem "emerge" do gradiente em vez de cobri-lo.
+            //
+            // As paradas foram de `80% 80%, black 20% → transparent 70%` para
+            // `100% 100%, black 45% → transparent 88%`: vinheta MENOR e mais
+            // fraca, a pedido. O anel escuro deixa de comer metade do painel e
+            // vira uma orla fina.
+            //
+            // Isso tem um efeito colateral que não é bug: a paleta do assunto
+            // aparecia justamente PELO buraco que esta máscara abria, então
+            // encolher o buraco apaga quase toda a cor. Medido no canto do card
+            // do Salário: rgb(13,33,40) com a máscara antiga contra rgb(30,22,41)
+            // com esta — o verde deixa de existir e sobra o magenta da própria
+            // foto. Se um dia a cor do assunto precisar voltar sem trazer a
+            // vinheta junto, o lugar é uma camada de tinta POR CIMA da imagem,
+            // em alfa baixo, e não um buraco por baixo dela.
             style={{
               WebkitMaskImage:
-                "radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, transparent 70%)",
+                "radial-gradient(ellipse 100% 100% at 50% 50%, black 45%, transparent 88%)",
               maskImage:
-                "radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, transparent 70%)",
+                "radial-gradient(ellipse 100% 100% at 50% 50%, black 45%, transparent 88%)",
             }}
             onError={(e) => {
               e.currentTarget.style.display = "none";

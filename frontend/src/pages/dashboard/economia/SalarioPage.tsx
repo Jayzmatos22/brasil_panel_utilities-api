@@ -192,9 +192,9 @@ export default function SalarioPage() {
               className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
               style={{
                 WebkitMaskImage:
-                  "radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, transparent 70%)",
+                  "radial-gradient(ellipse 100% 100% at 50% 50%, black 45%, transparent 88%)",
                 maskImage:
-                  "radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, transparent 70%)",
+                  "radial-gradient(ellipse 100% 100% at 50% 50%, black 45%, transparent 88%)",
               }}
               onError={(e) => {
                 e.currentTarget.style.display = "none";
