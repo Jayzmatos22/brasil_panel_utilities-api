@@ -179,6 +179,9 @@ export const ACCENTS_BY_KEY: Record<string, string> = Object.fromEntries(
 
 /** Itens da QuickNav — derivados de EXPORT_SPECS. */
 export const NAV_ITEMS_EXPORTS: NavItem[] = [
+  // 'Composição' primeiro: é a seção que abre a página, e a QuickNav precisa
+  // seguir a ordem em que as seções realmente aparecem.
+  { id: 'sec-composicao',     label: 'Composição', color: '#34d399' },
   { id: 'sec-resumo-valores', label: 'Valores',   color: '#34d399' },
   { id: 'sec-resumo-indices', label: 'Índices',   color: '#818cf8' },
   { id: 'sec-comparativo',    label: 'Comparativo', color: '#a78bfa' },

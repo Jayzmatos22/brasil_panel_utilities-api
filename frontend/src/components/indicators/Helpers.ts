@@ -10,6 +10,7 @@ import type { LinePoint } from "../charts/LineChartEcharts";
 import type { IpeaItem, IpeaSerie } from "../../types/IpeaType";
 import type {
   AggregatedTotal,
+  SharesOfTotal,
   ClosingRow,
   LatestSummary,
   SeriesMetrics,
@@ -313,6 +314,70 @@ export const computeAggregatedTotal = (
     referenceMonth: refMonth,
     shares,
   };
+};
+
+/**
+ * Participação de cada parte numa série TOTAL conhecida.
+ *
+ * Irmão de computeAggregatedTotal, para o caso em que o todo não é a soma das
+ * partes e sim uma série própria — ver a nota em SharesOfTotal.
+ *
+ * Duas decisões que valem ser explícitas:
+ *
+ * 1. MÊS ESTRITO. Uma parte só entra se tiver ponto no MESMO mês do total.
+ *    computeAggregatedTotal cai para o último valor disponível quando a série
+ *    atrasa, e ali isso é aceitável porque o resultado é uma soma. Aqui o
+ *    resultado é uma RAZÃO entre duas séries: dividir o valor de maio de uma
+ *    pelo total de julho da outra produz um número que parece certo e não é.
+ *    Quem ficou de fora sai em `omitted`, para a tela poder dizer.
+ *
+ * 2. NÃO SOMA 100%. É esperado, e é a razão de o tipo existir. As partes podem
+ *    se sobrepor; a soma das participações não significa nada e não deve ser
+ *    exibida.
+ */
+export const computeSharesOfTotal = (
+  total: IpeaSerie[] | undefined,
+  parts: { key: string; label: string; data: IpeaSerie[] | undefined }[],
+): SharesOfTotal | null => {
+  const totalValid = sortAsc(filterValid(total?.[0]?.dados ?? []));
+  if (totalValid.length === 0) return null;
+
+  const ultimo = totalValid[totalValid.length - 1];
+  const referenceMonth = ultimo.data.substring(0, 7);
+  const totalValue = ultimo.valor as number;
+  // Total zero ou negativo nao produz participacao com significado.
+  if (!(totalValue > 0)) return null;
+
+  const resultado: SharesOfTotal["parts"] = [];
+  const omitted: string[] = [];
+
+  for (const part of parts) {
+    const valid = sortAsc(filterValid(part.data?.[0]?.dados ?? []));
+    // Último ponto DENTRO do mês de referência — algumas séries têm mais de um.
+    let achado: IpeaItem | null = null;
+    for (let i = valid.length - 1; i >= 0; i--) {
+      if (valid[i].data.substring(0, 7) === referenceMonth) {
+        achado = valid[i];
+        break;
+      }
+    }
+    if (!achado) {
+      omitted.push(part.label);
+      continue;
+    }
+    const value = achado.valor as number;
+    resultado.push({
+      key: part.key,
+      label: part.label,
+      value,
+      pct: (value / totalValue) * 100,
+    });
+  }
+
+  if (resultado.length === 0) return null;
+  resultado.sort((a, b) => b.pct - a.pct);
+
+  return { referenceMonth, totalValue, parts: resultado, omitted };
 };
 
 // ─── Busca de imagem (Vite glob import) ─────────────────────────────────────

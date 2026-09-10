@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { IpeaItem, IpeaSerie } from '../../types/IpeaType';
 import {
   computeAggregatedTotal,
+  computeSharesOfTotal,
   computeClosingsWithVariation,
   computeLatestSummary,
   computeMetrics,
@@ -583,5 +584,75 @@ describe('processamento de séries do IPEA', () => {
       expect(total?.totalCurrent).toBe(80);
       expect(total?.shares).toHaveLength(1);
     });
+  });
+});
+describe('computeSharesOfTotal', () => {
+  const serie = (pontos: [string, number | null][]) => [
+    { dados: pontos.map(([data, valor]) => ({ data, valor })) },
+  ] as unknown as IpeaSerie[];
+
+  it('mede cada parte contra o total, nao contra as irmas', () => {
+    const r = computeSharesOfTotal(
+      serie([['2026-07-01', 200]]),
+      [
+        { key: 'a', label: 'A', data: serie([['2026-07-01', 150]]) },
+        { key: 'b', label: 'B', data: serie([['2026-07-01', 120]]) },
+      ],
+    );
+    // 150/200 e 120/200 — somam 135%, e isso e correto: as partes se sobrepoem.
+    expect(r?.parts.map((p) => p.pct)).toEqual([75, 60]);
+    expect(r?.totalValue).toBe(200);
+    expect(r?.referenceMonth).toBe('2026-07');
+  });
+
+  it('ordena por participacao decrescente', () => {
+    const r = computeSharesOfTotal(
+      serie([['2026-07-01', 100]]),
+      [
+        { key: 'peq', label: 'Pequena', data: serie([['2026-07-01', 10]]) },
+        { key: 'gra', label: 'Grande', data: serie([['2026-07-01', 90]]) },
+      ],
+    );
+    expect(r?.parts.map((p) => p.key)).toEqual(['gra', 'peq']);
+  });
+
+  it('OMITE parte sem ponto no mes de referencia, em vez de misturar meses', () => {
+    // O risco real: dividir maio de uma serie pelo julho da outra devolve um
+    // numero que parece certo e nao e.
+    const r = computeSharesOfTotal(
+      serie([['2026-07-01', 100]]),
+      [
+        { key: 'ok', label: 'Em dia', data: serie([['2026-07-01', 40]]) },
+        { key: 'atrasada', label: 'Atrasada', data: serie([['2026-05-01', 90]]) },
+      ],
+    );
+    expect(r?.parts.map((p) => p.key)).toEqual(['ok']);
+    expect(r?.omitted).toEqual(['Atrasada']);
+  });
+
+  it('usa o ultimo ponto do mes quando a serie tem mais de um', () => {
+    const r = computeSharesOfTotal(
+      serie([['2026-07-31', 100]]),
+      [{ key: 'a', label: 'A', data: serie([['2026-07-01', 10], ['2026-07-20', 50]]) }],
+    );
+    expect(r?.parts[0].value).toBe(50);
+  });
+
+  it('devolve null quando o total nao serve de base', () => {
+    expect(computeSharesOfTotal(undefined, [])).toBeNull();
+    expect(computeSharesOfTotal(serie([]), [])).toBeNull();
+    expect(computeSharesOfTotal(serie([['2026-07-01', null]]), [])).toBeNull();
+    // Total zero: participacao seria divisao por zero.
+    expect(computeSharesOfTotal(serie([['2026-07-01', 0]]), [])).toBeNull();
+    // Total negativo: participacao perde o significado.
+    expect(computeSharesOfTotal(serie([['2026-07-01', -50]]), [])).toBeNull();
+  });
+
+  it('devolve null quando nenhuma parte alcanca o mes de referencia', () => {
+    const r = computeSharesOfTotal(
+      serie([['2026-07-01', 100]]),
+      [{ key: 'a', label: 'A', data: serie([['2026-01-01', 10]]) }],
+    );
+    expect(r).toBeNull();
   });
 });

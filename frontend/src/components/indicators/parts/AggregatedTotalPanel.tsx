@@ -132,7 +132,12 @@ export const AggregatedTotalPanel = memo(function AggregatedTotalPanel({
                   key={sh.key}
                   title={`${sh.label}: ${sh.pct.toFixed(1)}%`}
                   style={{
-                    width: `${sh.pct}%`,
+                    // clamp em 0: `width: -12%` é declaração inválida, o
+                    // navegador descarta e a fatia some sem aviso — a barra
+                    // fica com um vão e as outras não compensam. Só acontece
+                    // com série negativa, que é sinal de que aquelas séries não
+                    // formam um todo somável (ver a nota de Balança no PR).
+                    width: `${Math.max(0, sh.pct)}%`,
                     // Fallback para accent do painel se a key não estiver no mapa.
                     backgroundColor: accentsByKey?.[sh.key] ?? accent,
                   }}
