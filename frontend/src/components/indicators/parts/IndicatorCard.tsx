@@ -101,24 +101,31 @@ export const IndicatorCard = memo(function IndicatorCard({
             className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
             // Máscara radial: a imagem "emerge" do gradiente em vez de cobri-lo.
             //
-            // As paradas foram de `80% 80%, black 20% → transparent 70%` para
-            // `100% 100%, black 45% → transparent 88%`: vinheta MENOR e mais
-            // fraca, a pedido. O anel escuro deixa de comer metade do painel e
-            // vira uma orla fina.
+            // A GEOMETRIA e a original (80% 80%, black 20% -> 70%). O que mudou
+            // foi a PROFUNDIDADE: a parada final era `transparent`, agora e
+            // `rgba(0,0,0,0.55)`.
             //
-            // Isso tem um efeito colateral que não é bug: a paleta do assunto
-            // aparecia justamente PELO buraco que esta máscara abria, então
-            // encolher o buraco apaga quase toda a cor. Medido no canto do card
-            // do Salário: rgb(13,33,40) com a máscara antiga contra rgb(30,22,41)
-            // com esta — o verde deixa de existir e sobra o magenta da própria
-            // foto. Se um dia a cor do assunto precisar voltar sem trazer a
-            // vinheta junto, o lugar é uma camada de tinta POR CIMA da imagem,
-            // em alfa baixo, e não um buraco por baixo dela.
+            // A diferenca nao e de grau, e de natureza. Terminando em
+            // transparent a mascara APAGA a imagem na borda, e o que sobra ali
+            // e a camada de baixo — paleta chapada mais o fundo do card. Era
+            // esse buraco que se lia como vinheta forte. Parando em alfa 0,55 a
+            // foto continua na borda, so atenuada: mesma area, menos forca.
+            //
+            // Medido no canto do card do Salario: `transparent` dava
+            // rgb(11,35,36) — verde dominante, ou seja a paleta aparecendo pelo
+            // buraco. Com alfa 0,55 da rgb(19,26,33), neutro, que e a propria
+            // fotografia. A luminancia quase nao muda (30 -> 25); o que muda e
+            // QUEM ocupa o canto.
+            //
+            // Efeito colateral aceito: a paleta do assunto quase nao aparece
+            // mais, porque ela dependia justamente desse buraco. Se um dia
+            // precisar voltar, o lugar e uma camada de tinta POR CIMA da
+            // imagem, em alfa baixo — nao um buraco por baixo dela.
             style={{
               WebkitMaskImage:
-                "radial-gradient(ellipse 100% 100% at 50% 50%, black 45%, transparent 88%)",
+                "radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, rgba(0,0,0,0.55) 70%)",
               maskImage:
-                "radial-gradient(ellipse 100% 100% at 50% 50%, black 45%, transparent 88%)",
+                "radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, rgba(0,0,0,0.55) 70%)",
             }}
             onError={(e) => {
               e.currentTarget.style.display = "none";
