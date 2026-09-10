@@ -30,6 +30,7 @@ export * from './parts/PeriodExplorer';
 export * from './parts/EducationalInsightsPanel';
 export * from './parts/AggregatedTotalPanel';
 export * from './parts/SharesOfTotalPanel';
+export * from './parts/WaterfallPanel';
 
 // ─── Helpers (funções puras de processamento de séries IPEA) ────────────────
 export * from './Helpers';

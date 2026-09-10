@@ -11,6 +11,8 @@ import type { IpeaItem, IpeaSerie } from "../../types/IpeaType";
 import type {
   AggregatedTotal,
   SharesOfTotal,
+  WaterfallBreakdown,
+  WaterfallStep,
   ClosingRow,
   LatestSummary,
   SeriesMetrics,
@@ -378,6 +380,101 @@ export const computeSharesOfTotal = (
   resultado.sort((a, b) => b.pct - a.pct);
 
   return { referenceMonth, totalValue, parts: resultado, omitted };
+};
+
+/**
+ * Decompõe um saldo na contribuição algébrica de cada componente.
+ *
+ * Terceiro irmão de computeAggregatedTotal e computeSharesOfTotal — ver a nota
+ * comparativa em WaterfallBreakdown.
+ *
+ * O RESÍDUO é a parte que exige cuidado. Ele é `saldo − soma das partes`, ou
+ * seja, tudo que o total contém e as partes não explicam. Na Balança isso é
+ * legítimo: a identidade é
+ *
+ *   transações correntes = comercial + serviços + renda primária + renda secundária
+ *
+ * e renda secundária não existe entre as séries do projeto. O resíduo a mostra,
+ * junto de eventuais revisões — por isso ele é DESENHADO, e não descartado: a
+ * alternativa seria uma cascata que não fecha no saldo real.
+ *
+ * Mas o resíduo só é honesto quando todas as partes foram medidas. Se alguma
+ * faltar no mês de referência, ele absorveria o valor dela em silêncio e a
+ * cascata mentiria com cara de precisão — então nesse caso ele não é calculado,
+ * e quem faltou sai em `omitted` para a tela poder dizer.
+ */
+export const computeWaterfall = (
+  total: { label: string; data: IpeaSerie[] | undefined },
+  parts: { key: string; label: string; data: IpeaSerie[] | undefined }[],
+  residualLabel: string,
+): WaterfallBreakdown | null => {
+  const totalValid = sortAsc(filterValid(total.data?.[0]?.dados ?? []));
+  if (totalValid.length === 0) return null;
+
+  const ultimo = totalValid[totalValid.length - 1];
+  const referenceMonth = ultimo.data.substring(0, 7);
+  const totalValue = ultimo.valor as number;
+
+  const steps: WaterfallStep[] = [];
+  const omitted: string[] = [];
+  let acumulado = 0;
+
+  for (const part of parts) {
+    const valid = sortAsc(filterValid(part.data?.[0]?.dados ?? []));
+    let achado: IpeaItem | null = null;
+    for (let i = valid.length - 1; i >= 0; i--) {
+      if (valid[i].data.substring(0, 7) === referenceMonth) {
+        achado = valid[i];
+        break;
+      }
+    }
+    if (!achado) {
+      omitted.push(part.label);
+      continue;
+    }
+    const value = achado.valor as number;
+    const start = acumulado;
+    acumulado += value;
+    steps.push({ key: part.key, label: part.label, value, start, end: acumulado });
+  }
+
+  if (steps.length === 0) return null;
+
+  // Resíduo só quando o conjunto está completo — ver a nota acima.
+  if (omitted.length === 0) {
+    const residuo = totalValue - acumulado;
+    const start = acumulado;
+    acumulado += residuo;
+    steps.push({
+      key: "__residual",
+      label: residualLabel,
+      value: residuo,
+      start,
+      end: acumulado,
+      isResidual: true,
+    });
+  }
+
+  // A escala precisa conter o zero: sem ele, uma cascata toda negativa
+  // desenharia as barras como se partissem do próprio mínimo.
+  let min = 0;
+  let max = 0;
+  for (const st of steps) {
+    min = Math.min(min, st.start, st.end);
+    max = Math.max(max, st.start, st.end);
+  }
+  min = Math.min(min, totalValue);
+  max = Math.max(max, totalValue);
+
+  return {
+    referenceMonth,
+    totalValue,
+    totalLabel: total.label,
+    steps,
+    min,
+    max,
+    omitted,
+  };
 };
 
 // ─── Busca de imagem (Vite glob import) ─────────────────────────────────────

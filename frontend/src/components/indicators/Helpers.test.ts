@@ -3,6 +3,7 @@ import type { IpeaItem, IpeaSerie } from '../../types/IpeaType';
 import {
   computeAggregatedTotal,
   computeSharesOfTotal,
+  computeWaterfall,
   computeClosingsWithVariation,
   computeLatestSummary,
   computeMetrics,
@@ -654,5 +655,85 @@ describe('computeSharesOfTotal', () => {
       [{ key: 'a', label: 'A', data: serie([['2026-01-01', 10]]) }],
     );
     expect(r).toBeNull();
+  });
+});
+
+describe('computeWaterfall', () => {
+  const serie = (pontos: [string, number | null][]) => [
+    { dados: pontos.map(([data, valor]) => ({ data, valor })) },
+  ] as unknown as IpeaSerie[];
+
+  const parte = (key: string, valor: number, mes = '2026-07-01') => ({
+    key, label: key.toUpperCase(), data: serie([[mes, valor]]),
+  });
+
+  it('acumula cada passo de onde o anterior parou', () => {
+    const r = computeWaterfall(
+      { label: 'Saldo', data: serie([['2026-07-01', 10]]) },
+      [parte('a', 30), parte('b', -25)],
+      'Resíduo',
+    );
+    expect(r?.steps.map((s) => [s.value, s.start, s.end])).toEqual([
+      [30, 0, 30],
+      [-25, 30, 5],
+      [5, 5, 10], // resíduo fecha no saldo real
+    ]);
+  });
+
+  it('fecha SEMPRE no saldo da série total, via resíduo', () => {
+    const r = computeWaterfall(
+      { label: 'S', data: serie([['2026-07-01', -1200]]) },
+      [parte('comercial', 5000), parte('servicos', -3000), parte('renda', -3500)],
+      'Renda secundária e demais',
+    );
+    expect(r?.steps[r.steps.length - 1].end).toBe(-1200);
+    expect(r?.steps[r.steps.length - 1].isResidual).toBe(true);
+    expect(r?.steps[r.steps.length - 1].value).toBe(300);
+  });
+
+  it('NAO calcula residuo quando falta parte — ele absorveria a ausente', () => {
+    const r = computeWaterfall(
+      { label: 'S', data: serie([['2026-07-01', 100]]) },
+      [parte('a', 40), { key: 'b', label: 'B', data: serie([['2026-01-01', 60]]) }],
+      'Resíduo',
+    );
+    expect(r?.omitted).toEqual(['B']);
+    expect(r?.steps.some((s) => s.isResidual)).toBe(false);
+    // Sem resíduo, a cascata para no acumulado medido e não finge fechar.
+    expect(r?.steps[r.steps.length - 1].end).toBe(40);
+  });
+
+  it('a escala inclui o zero, mesmo com tudo negativo', () => {
+    const r = computeWaterfall(
+      { label: 'S', data: serie([['2026-07-01', -80]]) },
+      [parte('a', -50), parte('b', -30)],
+      'R',
+    );
+    expect(r?.max).toBe(0);
+    expect(r?.min).toBe(-80);
+  });
+
+  it('aceita saldo negativo — e é o caso comum de transacoes correntes', () => {
+    const r = computeWaterfall(
+      { label: 'TC', data: serie([['2026-07-01', -4500]]) },
+      [parte('a', -4500)],
+      'R',
+    );
+    expect(r?.totalValue).toBe(-4500);
+    expect(r).not.toBeNull();
+  });
+
+  it('devolve null sem total utilizavel ou sem nenhuma parte medida', () => {
+    expect(computeWaterfall({ label: 'S', data: undefined }, [], 'R')).toBeNull();
+    expect(
+      computeWaterfall({ label: 'S', data: serie([['2026-07-01', null]]) }, [], 'R'),
+    ).toBeNull();
+    expect(
+      computeWaterfall(
+        { label: 'S', data: serie([['2026-07-01', 10]]) },
+        [{ key: 'a', label: 'A', data: serie([['2020-01-01', 5]]) }],
+        'R',
+      ),
+    ).toBeNull();
   });
 });
