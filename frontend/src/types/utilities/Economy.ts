@@ -80,6 +80,33 @@ export interface AggregatedTotal {
   shares: { key: string; label: string; value: number; pct: number }[];
 }
 
+// ─── Participação de cada parte NUM TOTAL conhecido ────────────────────────
+/**
+ * Diferente de AggregatedTotal, e a diferença é o ponto.
+ *
+ * Em AggregatedTotal o todo é a SOMA das séries: cada fatia é medida contra as
+ * irmãs, e por isso as séries precisam particionar o todo sem sobreposição.
+ *
+ * Aqui o todo é uma SÉRIE PRÓPRIA, e cada parte é medida contra ela. As partes
+ * podem se sobrepor à vontade — é o caso das exportações, onde `basic-products`
+ * é eixo de fator agregado e `fuels` é grupo de produto, e um barril de petróleo
+ * pertence aos dois. Somadas dariam mais que 100%; medidas contra o total, cada
+ * uma continua verdadeira.
+ *
+ * Consequência para quem for desenhar: as partes NÃO cabem numa barra empilhada.
+ * Cada uma precisa da própria barra.
+ */
+export interface SharesOfTotal {
+  /** Mês de referência (yyyy-mm) — o do último ponto válido da série total. */
+  referenceMonth: string;
+  /** Valor da série total no mês de referência. */
+  totalValue: number;
+  /** Partes com valor NO MESMO mês, ordenadas por participação desc. */
+  parts: { key: string; label: string; value: number; pct: number }[];
+  /** Partes descartadas por não terem ponto no mês de referência. */
+  omitted: string[];
+}
+
 // ─── Resultado de hook React Query de IPEA ─────────────────────────────────
 /**
  * Shape genérico do retorno de hooks como useIbovespa, useImportTax, etc.

@@ -27,6 +27,7 @@ import {
   RecentClosingsTable,
   PeriodExplorer,
   EducationalInsightsPanel,
+  SharesOfTotalPanel,
   fmtPctSigned,
   fmtUSDCompact,
   fmtIndex,
@@ -34,6 +35,7 @@ import {
   MONTHS_PT,
   computeMetrics,
   computeLatestSummary,
+  computeSharesOfTotal,
   describeAmplitude,
   describeVolatility,
   describeLast5Trend,
@@ -500,6 +502,45 @@ function ExportacoesPage() {
     [resultsByKey],
   );
 
+  /**
+   * Composição da pauta: cada categoria de VALOR medida contra a série `total`.
+   *
+   * Não é o painel de soma que Impostos e Câmbio usam, e não podia ser. Lá as
+   * séries particionam o todo; aqui elas são EIXOS DE CLASSIFICAÇÃO DIFERENTES:
+   * `basic-products` é fator agregado, `consumer-goods` e `intermediate-value`
+   * são categoria de uso, `fuels` é grupo de produto. Um barril de petróleo é
+   * básico E combustível — somar as quatro contaria o mesmo dólar duas vezes.
+   *
+   * Medindo cada uma contra o total, a sobreposição deixa de importar: as
+   * participações podem passar de 100% somadas, e cada uma continua verdadeira.
+   *
+   * Só `category === 'valor'`: os índices (quantum, preço) são adimensionais,
+   * base 100, e não são parte de valor nenhum.
+   */
+  const VALUE_PARTS = useMemo(
+    () => EXPORT_SPECS.filter((s) => s.category === 'valor' && s.key !== 'total'),
+    [],
+  );
+
+  const composicao = useMemo(
+    () =>
+      computeSharesOfTotal(
+        resultsByKey['total']?.data,
+        VALUE_PARTS.map((spec) => ({
+          key: spec.key,
+          label: spec.shortName,
+          data: resultsByKey[spec.key]?.data,
+        })),
+      ),
+    [VALUE_PARTS, resultsByKey],
+  );
+
+  const accentsByKey = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const spec of VALUE_PARTS) map[spec.key] = spec.accent;
+    return map;
+  }, [VALUE_PARTS]);
+
   // Série por key — usada pelo Explorador
   const seriesByKey = useMemo(() => {
     const map: Record<string, IpeaSerie[] | undefined> = {};
@@ -524,6 +565,20 @@ function ExportacoesPage() {
         subtitle="Comércio exterior — séries mensais de valor FOB (US$) e índices de quantum/preço."
         navItems={NAV_ITEMS_EXPORTS}
         accentColor="#34d399"
+      />
+
+      {/* ── Composição da pauta ──
+          Antes dos resumos, pela mesma razão que o agregado abre a Impostos: a
+          proporção dá a escala em que ler os números que vêm depois. */}
+      <SharesOfTotalPanel
+        id="sec-composicao"
+        title="Composição da Pauta — Participação no Total"
+        subtitle="Cada categoria medida contra as exportações totais"
+        shares={composicao}
+        accent="#34d399"
+        accentsByKey={accentsByKey}
+        valueFormatter={fmtUSDCompact}
+        totalLabel="Exportações totais (FOB)"
       />
 
       {/* ── Painel de Valores FOB ── */}
