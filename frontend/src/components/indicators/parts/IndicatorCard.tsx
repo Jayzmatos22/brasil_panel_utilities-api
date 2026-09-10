@@ -63,7 +63,34 @@ export const IndicatorCard = memo(function IndicatorCard({
     >
       {/* ── Painel visual (esquerda) ── */}
       <div className="relative @3xl/page:w-2/5 aspect-video @3xl/page:aspect-auto shrink-0 overflow-hidden">
-        <div className={`absolute inset-0 bg-linear-to-br ${gradient}`} />
+        {/* Paleta do assunto. `opacity-50` NÃO é enfeite — sem ela a cor cobre
+            quase todo o painel, e a imagem vira um vulto atrás de um vidro
+            colorido.
+
+            O mecanismo é a soma de duas coisas. As classes que chegam em
+            `gradient` são cores Tailwind CHEIAS (from-green-900 to-emerald-700
+            = #14532d → #047857, alfa 1), e a <img> logo abaixo é mascarada por
+            um radial que zera o alfa a 70% do raio. Ou seja: em toda a coroa
+            externa do painel não há imagem nenhuma, só a cor chapada.
+
+            Medido no canto superior esquerdo, com a foto do Ibovespa: a 100% o
+            painel lia rgb(14,62,42) — verde valendo mais de 4x o vermelho, um
+            excesso de 20 pontos sobre os outros canais. A 50% cai para
+            rgb(11,36,31), excesso 5: a cor do assunto continua legível e a
+            fotografia volta a mandar. Varri 100/60/50/45/40/35/30 em três artes
+            (Ibovespa, Salário, Impostos) — abaixo de 40% o assunto perde a cor,
+            acima de 60% a foto some de novo.
+
+            Aqui, e não nas ~45 strings dos *Specs: a string diz QUAL é a cor do
+            assunto, esta regra diz QUANTA cor o card aceita. Espalhar alfa por
+            todas elas seria a mesma decisão repetida 45 vezes, pronta para
+            divergir na primeira que alguém editasse.
+
+            Vale para a foto que existe hoje: as artes já vêm com vinheta escura
+            assada nas quatro bordas (medido: centro rgb(22,27,37), bordas
+            rgb(3,5,7)), então a dissolução das quebradas não depende mais desta
+            camada — ela é só cor. */}
+        <div className={`absolute inset-0 bg-linear-to-br ${gradient} opacity-50`} />
 
         {img && (
           <img
@@ -73,11 +100,32 @@ export const IndicatorCard = memo(function IndicatorCard({
             loading="lazy"
             className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
             // Máscara radial: a imagem "emerge" do gradiente em vez de cobri-lo.
+            //
+            // A GEOMETRIA e a original (80% 80%, black 20% -> 70%). O que mudou
+            // foi a PROFUNDIDADE: a parada final era `transparent`, agora e
+            // `rgba(0,0,0,0.55)`.
+            //
+            // A diferenca nao e de grau, e de natureza. Terminando em
+            // transparent a mascara APAGA a imagem na borda, e o que sobra ali
+            // e a camada de baixo — paleta chapada mais o fundo do card. Era
+            // esse buraco que se lia como vinheta forte. Parando em alfa 0,55 a
+            // foto continua na borda, so atenuada: mesma area, menos forca.
+            //
+            // Medido no canto do card do Salario: `transparent` dava
+            // rgb(11,35,36) — verde dominante, ou seja a paleta aparecendo pelo
+            // buraco. Com alfa 0,55 da rgb(19,26,33), neutro, que e a propria
+            // fotografia. A luminancia quase nao muda (30 -> 25); o que muda e
+            // QUEM ocupa o canto.
+            //
+            // Efeito colateral aceito: a paleta do assunto quase nao aparece
+            // mais, porque ela dependia justamente desse buraco. Se um dia
+            // precisar voltar, o lugar e uma camada de tinta POR CIMA da
+            // imagem, em alfa baixo — nao um buraco por baixo dela.
             style={{
               WebkitMaskImage:
-                "radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, transparent 70%)",
+                "radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, rgba(0,0,0,0.55) 70%)",
               maskImage:
-                "radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, transparent 70%)",
+                "radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, rgba(0,0,0,0.55) 70%)",
             }}
             onError={(e) => {
               e.currentTarget.style.display = "none";
