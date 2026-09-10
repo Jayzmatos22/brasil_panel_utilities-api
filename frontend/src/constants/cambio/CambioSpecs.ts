@@ -79,7 +79,18 @@ export const CAMBIO_SPECS: CambioContractedSpec[] = [
     gradient: 'from-orange-900 to-amber-700',
     accent: '#fb923c',
     iconKey: 'banknote',
-    isAggregate: false,
+    // Era `false`, e isso era um erro de marcação: esta série é
+    // "Financeiro (Total)", ou seja, a soma de financeiro-compras e
+    // financeiro-vendas. Com ela como folha, qualquer agregado que filtrasse
+    // por `!isAggregate` a somaria JUNTO das duas partes dela e contaria o
+    // financeiro duas vezes — inflando o total e distorcendo todas as fatias.
+    //
+    // Depois desta correção sobram exatamente quatro folhas, e elas particionam
+    // o câmbio contratado sem sobra nem sobreposição:
+    //   comercial-exportacoes + comercial-importacoes = comercial
+    //   financeiro-compras    + financeiro-vendas     = financeiro
+    //   comercial + financeiro                        = comercial-financeiro
+    isAggregate: true,
   },
   {
     key: 'financeiro-compras',
@@ -120,6 +131,9 @@ export const ACCENTS_BY_KEY: Record<string, string> = Object.fromEntries(
 
 /** Itens da QuickNav — derivados de CAMBIO_SPECS. */
 export const NAV_ITEMS_CAMBIO: NavItem[] = [
+  // 'Total' primeiro, espelhando NAV_ITEMS_TAXES: o agregado abre a página e
+  // a QuickNav precisa refletir a ordem em que as seções aparecem.
+  { id: 'sec-agregado',     label: 'Total',        color: '#f59e0b' },
   { id: 'sec-resumo',       label: 'Resumo',       color: '#f59e0b' },
   { id: 'sec-comparativo',  label: 'Comparativo',  color: '#a78bfa' },
   ...CAMBIO_SPECS.map((s) => ({ id: `sec-${s.key}`, label: s.shortName, color: s.accent })),

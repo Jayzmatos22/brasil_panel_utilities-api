@@ -24,6 +24,7 @@ import {
   PeriodExplorer,
   EducationalInsightsPanel,
   IndicesSummaryPanel,
+  AggregatedTotalPanel,
   PageBanner,
   fmtPctSigned,
   fmtUSDCompact,
@@ -31,6 +32,7 @@ import {
   MONTHS_PT,
   computeMetrics,
   computeLatestSummary,
+  computeAggregatedTotal,
   describeAmplitude,
   describeVolatility,
   describeLast5Trend,
@@ -438,6 +440,40 @@ function CambioContratadoComercialPage() {
     return map;
   }, [resultsByKey]);
 
+  /**
+   * Folhas do câmbio contratado — as únicas séries que podem ser somadas.
+   *
+   * `isAggregate` marca as séries que já SÃO soma de outras (Comercial,
+   * Financeiro e Comercial+Financeiro). Incluí-las contaria o mesmo dólar duas
+   * ou três vezes: o total inflaria e cada fatia encolheria na mesma medida.
+   *
+   * O que sobra particiona o contratado sem sobra nem sobreposição —
+   * exportação + importação + compras + vendas.
+   */
+  const LEAF_SPECS = useMemo(
+    () => CAMBIO_SPECS.filter((s) => !s.isAggregate),
+    [],
+  );
+
+  const aggregate = useMemo(
+    () =>
+      computeAggregatedTotal(
+        LEAF_SPECS.map((spec) => ({
+          key: spec.key,
+          label: spec.shortName,
+          data: resultsByKey[spec.key]?.data,
+        })),
+      ),
+    [LEAF_SPECS, resultsByKey],
+  );
+
+  /** key → cor, para a barra de participação usar o accent de cada série. */
+  const accentsByKey = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const spec of LEAF_SPECS) map[spec.key] = spec.accent;
+    return map;
+  }, [LEAF_SPECS]);
+
   return (
     <motion.section
       className="@container/page flex flex-col gap-section max-w-5xl mx-auto py-6"
@@ -453,6 +489,19 @@ function CambioContratadoComercialPage() {
         subtitle="Volume de divisas contratado no Brasil — fluxo comercial e financeiro mensal."
         navItems={NAV_ITEMS_CAMBIO}
         accentColor="#f59e0b"
+      />
+
+      {/* Soma das quatro folhas. Fica ANTES do resumo por série, no mesmo
+          lugar em que a ImpostosPage põe o dela: o total dá a escala, e só
+          depois vem a abertura série a série. */}
+      <AggregatedTotalPanel
+        id="sec-agregado"
+        title={`Câmbio Contratado — Soma dos ${LEAF_SPECS.length} Componentes`}
+        subtitle="Último mês de referência comum"
+        aggregate={aggregate}
+        accent="#f59e0b"
+        accentsByKey={accentsByKey}
+        valueFormatter={fmtUSDCompact}
       />
 
       <IndicesSummaryPanel
