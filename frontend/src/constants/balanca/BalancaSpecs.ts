@@ -187,6 +187,8 @@ export const BALANCA_SPECS: BalancaSpec[] = [
 
 /** Itens da QuickNav — derivados de BALANCA_SPECS. */
 export const NAV_ITEMS_BALANCA: NavItem[] = [
+  // 'Saldo' primeiro: a cascata abre a página, e a QuickNav segue a ordem real.
+  { id: 'sec-cascata',      label: 'Saldo',        color: '#fbbf24' },
   { id: 'sec-resumo',       label: 'Resumo',       color: '#fbbf24' },
   { id: 'sec-comparativo',  label: 'Comparativo',  color: '#a78bfa' },
   ...BALANCA_SPECS.map((s) => ({ id: `sec-${s.key}`, label: s.shortName, color: s.accent })),

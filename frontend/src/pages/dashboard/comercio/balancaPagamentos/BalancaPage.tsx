@@ -29,6 +29,7 @@ import {
   PeriodExplorer,
   EducationalInsightsPanel,
   IndicesSummaryPanel,
+  WaterfallPanel,
   PageBanner,
   fmtPct,
   fmtPctSigned,
@@ -37,6 +38,7 @@ import {
   MONTHS_PT,
   computeMetrics,
   computeLatestSummary,
+  computeWaterfall,
   describeAmplitude,
   describeVolatility,
   describeLast5Trend,
@@ -468,6 +470,43 @@ function BalancaPage() {
     return map;
   }, [resultsByKey]);
 
+  /**
+   * Decomposição de Transações Correntes — a identidade que a Balança tem.
+   *
+   *   transações correntes = balança comercial
+   *                        + serviços
+   *                        + renda primária
+   *                        + renda secundária
+   *
+   * A ordem dos passos é a da identidade, não a de tamanho: a cascata conta uma
+   * história (o superávit comercial é consumido por serviços e renda primária),
+   * e ordenar por valor a desmontaria.
+   *
+   * `renda-secundaria` não existe entre as séries do projeto. A diferença até o
+   * saldo real entra como passo de resíduo, calculado por computeWaterfall —
+   * mostrar é melhor que fechar a conta escondendo.
+   */
+  const COMPONENTES_TC = ['comercial', 'servicos', 'renda-primaria'] as const;
+
+  const cascata = useMemo(
+    () =>
+      computeWaterfall(
+        {
+          label: 'Saldo em transações correntes',
+          data: resultsByKey['transacoes-correntes']?.data,
+        },
+        COMPONENTES_TC.map((key) => ({
+          key,
+          label:
+            BALANCA_SPECS.find((s) => s.key === key)?.shortName ?? key,
+          data: resultsByKey[key]?.data,
+        })),
+        'Renda secundária e demais',
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [resultsByKey],
+  );
+
   return (
     <motion.section
       className="@container/page flex flex-col gap-section max-w-5xl mx-auto py-6"
@@ -483,6 +522,18 @@ function BalancaPage() {
         subtitle="Fluxo de transações entre residentes e não residentes — comercial, serviços, renda e capital."
         navItems={NAV_ITEMS_BALANCA}
         accentColor="#fbbf24"
+      />
+
+      {/* ── Decomposição do saldo ──
+          Antes do resumo por série: a cascata explica de onde vem o saldo, e os
+          números individuais fazem mais sentido depois dela. */}
+      <WaterfallPanel
+        id="sec-cascata"
+        title="Transações Correntes — De Onde Vem o Saldo"
+        subtitle="Contribuição de cada conta no mês de referência"
+        breakdown={cascata}
+        accent="#fbbf24"
+        valueFormatter={fmtUSDCompact}
       />
 
       <IndicesSummaryPanel

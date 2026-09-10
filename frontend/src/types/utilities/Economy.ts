@@ -107,6 +107,51 @@ export interface SharesOfTotal {
   omitted: string[];
 }
 
+// ─── Decomposição em cascata de um saldo ───────────────────────────────────
+/**
+ * Terceiro modo de ler participação, e o único que aceita valor NEGATIVO.
+ *
+ *   AggregatedTotal   todo = soma das séries      → barra empilhada
+ *   SharesOfTotal     todo = uma série própria    → uma barra por parte
+ *   WaterfallBreakdown  saldo = soma algébrica    → cascata
+ *
+ * Existe para a Balança de Pagamentos, onde as séries são SALDOS: a balança
+ * comercial costuma ser positiva, transações correntes costuma ser deficitária,
+ * e as duas coisas são a informação, não ruído. Porcentagem sobre valores de
+ * sinais opostos não significa nada — mas contribuição algébrica significa.
+ *
+ * Cada passo parte de onde o anterior terminou; o acumulado final é o saldo.
+ */
+export interface WaterfallStep {
+  key: string;
+  label: string;
+  /** Contribuição do passo. Negativo empurra o acumulado para baixo. */
+  value: number;
+  /** Acumulado antes e depois deste passo — é o que posiciona a barra. */
+  start: number;
+  end: number;
+  /** Passo calculado por diferença, não medido. Ver `residual` abaixo. */
+  isResidual?: boolean;
+}
+
+export interface WaterfallBreakdown {
+  referenceMonth: string;
+  /** Saldo final — o valor da série total no mês de referência. */
+  totalValue: number;
+  totalLabel: string;
+  steps: WaterfallStep[];
+  /** Extremos do acumulado (com o zero incluído) — dão a escala do desenho. */
+  min: number;
+  max: number;
+  /**
+   * Partes sem ponto no mês de referência.
+   *
+   * Quando há alguma, o resíduo NÃO é calculado: ele absorveria em silêncio o
+   * valor da série faltante e a cascata mentiria com cara de precisão.
+   */
+  omitted: string[];
+}
+
 // ─── Resultado de hook React Query de IPEA ─────────────────────────────────
 /**
  * Shape genérico do retorno de hooks como useIbovespa, useImportTax, etc.
