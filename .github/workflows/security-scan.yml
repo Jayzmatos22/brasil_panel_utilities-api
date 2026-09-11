@@ -1,0 +1,131 @@
+name: Varredura de dependências
+
+# Duas verificações com propósitos diferentes:
+#
+#   dependency-review  — só em PR, e REPROVA. Olha apenas o que a PR ACRESCENTA,
+#                        então não pode falhar por dívida preexistente. É a trava
+#                        que impede o problema novo de entrar.
+#
+#   trivy              — inventário completo, e NÃO reprova (ver o comentário no
+#                        job). Serve para enxergar e triar o que já está aqui.
+#
+# Por que em workflow separado do ci.yml: o deploy do Render é liberado pela CI.
+# Uma varredura que reprovasse por uma CVE publicada numa terça-feira pararia os
+# deploys sem que ninguém tivesse mudado uma linha de código.
+on:
+  pull_request:
+    branches: [ "main", "master" ]
+  push:
+    branches: [ "main", "master" ]
+  schedule:
+    # Segunda de manhã (UTC). Dependência não muda sozinha, mas o que se sabe
+    # sobre ela muda: a varredura agendada é o que pega CVE publicada depois
+    # do último commit.
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # ==========================================
+  # 1. O QUE A PR ACRESCENTA (reprova)
+  # ==========================================
+  dependency-review:
+    name: Revisão de dependências (PR)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Baixar código do repositório
+        uses: actions/checkout@v4
+
+      # Compara a base com a head e falha se a PR INTRODUZIR dependência com
+      # vulnerabilidade conhecida de severidade alta ou crítica. Dívida que já
+      # existia na base não entra na conta — é isso que torna seguro reprovar
+      # desde o primeiro dia.
+      - name: Revisar dependências adicionadas
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: on-failure
+
+  # ==========================================
+  # 2. INVENTÁRIO COMPLETO (não reprova ainda)
+  # ==========================================
+  trivy:
+    name: Inventário de vulnerabilidades
+    runs-on: ubuntu-latest
+    # Blindagem no nível do job: nem uma falha do próprio scanner (versão da
+    # action, indisponibilidade da base de CVEs, timeout de rede) consegue
+    # marcar esta verificação como reprovada. Enquanto o inventário for só
+    # para enxergar, ele não pode ter voz sobre o deploy.
+    continue-on-error: true
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Baixar código do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+          cache-dependency-path: '**/pom.xml'
+
+      # O jar "gordo" do Spring Boot embute os jars das dependências, inclusive
+      # as transitivas já resolvidas. Escanear o artefato construído é mais fiel
+      # do que ler o pom.xml, que deixaria o scanner resolver a árvore por conta
+      # própria e discordar do que de fato vai para produção.
+      - name: Empacotar o backend
+        working-directory: ./backend/backend
+        run: mvn -B package -DskipTests
+
+      - name: Escanear o backend
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: rootfs
+          scan-ref: backend/backend/target
+          format: sarif
+          output: trivy-backend.sarif
+          severity: HIGH,CRITICAL
+          # Não derruba o passo: o objetivo aqui é enxergar, não barrar.
+          exit-code: '0'
+
+      - name: Escanear o frontend
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: frontend
+          format: sarif
+          output: trivy-frontend.sarif
+          severity: HIGH,CRITICAL
+          exit-code: '0'
+
+      # O resultado vai para a aba Security do repositório, que é onde dá para
+      # triar item a item, marcar falso positivo e acompanhar o que sobrou.
+      # Um log de job não serve para isso: some na próxima execução.
+      - name: Publicar resultado do backend
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-backend.sarif
+          category: trivy-backend
+
+      - name: Publicar resultado do frontend
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-frontend.sarif
+          category: trivy-frontend
+
+      # Cópia bruta para quem quiser ler sem abrir a aba Security.
+      - name: Guardar relatórios
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trivy-sarif
+          path: trivy-*.sarif
+          retention-days: 14
