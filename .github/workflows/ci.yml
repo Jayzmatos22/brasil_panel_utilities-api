@@ -21,6 +21,17 @@ jobs:
       - name: Baixar código do repositório
         uses: actions/checkout@v4
 
+      # Repositório público: um arquivo de config local ou .env commitado por
+      # descuido vira segredo vazado no mesmo instante. O .gitignore evita o
+      # caso comum; este passo reprova o build se ele for contornado (`git add -f`,
+      # renomeação, ignore editado).
+      - name: Barrar arquivos de segredo no repositório
+        working-directory: .
+        run: |
+          if git ls-files | grep -E 'application-local\.ya?ml$|(^|/)\.env(\..+)?$' | grep -v '\.env\.example$'; then
+            echo "::error::Arquivo de configuração local/segredo commitado. Remova do índice."; exit 1
+          fi
+
       - name: Configurar Java 21
         uses: actions/setup-java@v4
         with:

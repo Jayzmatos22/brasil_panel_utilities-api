@@ -23,6 +23,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 
 import java.util.Arrays;
 
@@ -50,8 +51,33 @@ public class SecurityConfig {
         boolean isDev = Arrays.asList(env.getActiveProfiles()).contains("dev");
 
         http
+                // CSRF desligado com justificativa, não por conveniência: a sessão é um
+                // cookie SameSite=Lax, o CORS só admite origens explícitas, a cadeia é
+                // STATELESS e não existe GET que mude estado. Com isso um site terceiro
+                // não consegue disparar POST/PATCH/DELETE autenticado — o navegador não
+                // envia o cookie em requisição cross-site desses métodos. Se algum dia
+                // entrar um GET mutante ou o SameSite mudar, este raciocínio cai junto.
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configure(http))
+                // Do que está aqui, só Referrer-Policy e Permissions-Policy são novidade:
+                // X-Content-Type-Options, X-Frame-Options e o próprio HSTS já vinham dos
+                // defaults do Spring Security. O HSTS está declarado mesmo assim para
+                // fixar o valor — um `defaultsDisabled()` futuro o derrubaria em silêncio.
+                //
+                // E declarar HSTS não basta: o writer só escreve quando
+                // request.isSecure(), e atrás do Render o TLS termina no proxy. É o
+                // forward-headers-strategy do application-prod.yml que faz o header
+                // existir de verdade em produção — ver ProdConfigTest.
+                .headers(headers -> headers
+                        .httpStrictTransportSecurity(hsts -> hsts
+                                .includeSubDomains(true)
+                                .maxAgeInSeconds(31_536_000))
+                        .referrerPolicy(referrer -> referrer
+                                .policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                        // API JSON: nenhum destes recursos faz sentido aqui. Negar tudo
+                        // fecha a porta caso uma resposta seja renderizada num iframe.
+                        .permissionsPolicyHeader(policy -> policy
+                                .policy("camera=(), microphone=(), geolocation=(), payment=()")))
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
