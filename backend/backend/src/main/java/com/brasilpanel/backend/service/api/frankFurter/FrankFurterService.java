@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
 import java.time.LocalDate;
+import java.util.Locale;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -57,17 +58,24 @@ public class FrankFurterService {
 
     @Cacheable("frank-furter")
     public FrankfurterRateDTO returnFrankFurterRate(String from, String to, double amount){
-        String url = "https://api.frankfurter.dev/v1/latest?from=" + from + "&to=" + to + "&amount=" + amount;
+        // Valida ANTES de montar qualquer coisa. A ordem estava invertida: a URL era
+        // construída com os valores crus e só depois o validador rodava.
         frankfurterValidator.validSearchFrankfurter(from, to, amount);
+        String origem = from.toUpperCase(Locale.ROOT);
+        String destino = to.toUpperCase(Locale.ROOT);
         try {
             FrankfurterRateDTO data = restClient.get()
-                    .uri(url)
+                    // Template com variáveis em vez de concatenação: o RestClient
+                    // codifica cada uma, então nada do que o usuário mandar consegue
+                    // abrir um parâmetro novo na query da fonte.
+                    .uri("https://api.frankfurter.dev/v1/latest?from={from}&to={to}&amount={amount}",
+                         origem, destino, amount)
                     .header("Accept", "application/json")
                     .header("User-Agent", "Mozilla/5.0")
                     .retrieve()
                     .onStatus(status -> status.value() == 404,
                             (request, response) -> {
-                                throw new FrankfurterRateException("Moeda não suportada pela fonte de câmbio: " + from + " ou " + to, 400);
+                                throw new FrankfurterRateException("Moeda não suportada pela fonte de câmbio: " + origem + " ou " + destino, 400);
                             })
 
                     .body(FrankfurterRateDTO.class);
@@ -81,7 +89,7 @@ public class FrankFurterService {
             // O detalhe fica no log do servidor; o cliente recebe mensagem genérica:
             // e.getMessage() de uma falha de transporte traz a URL da fonte, e de um
             // 5xx traz o corpo de erro dela.
-            log.error("Falha ao buscar o câmbio {} para {} na Frankfurter", from, to, e);
+            log.error("Falha ao buscar o câmbio {} para {} na Frankfurter", origem, destino, e);
             throw new FrankfurterRateException("Não foi possível obter a cotação.", 502);
         }
     }
@@ -89,29 +97,35 @@ public class FrankFurterService {
 
     @Cacheable("frank-furter-history")
     public FrankfurterHistoryDTO returnRateHistory(String from, String to, String startDate, String endDate){
-        String url = "https://api.frankfurter.dev/v1/" + startDate + ".." + endDate + "?from=" + from + "&to=" + to;
+        // O par de moedas NÃO era validado aqui — só as datas. from e to iam crus e de
+        // tamanho livre para a query da fonte; era o buraco maior das quatro rotas.
+        frankfurterValidator.validCurrencyPair(from, to);
+        frankfurterValidator.validDateRange(startDate, endDate);
+
+        String origem = from.toUpperCase(Locale.ROOT);
+        String destino = to.toUpperCase(Locale.ROOT);
         try {
-            frankfurterValidator.validDateRange(startDate, endDate);
             FrankfurterHistoryRawDTO raw = restClient.get()
-                    .uri(url)
+                    .uri("https://api.frankfurter.dev/v1/{inicio}..{fim}?from={from}&to={to}",
+                         startDate, endDate, origem, destino)
                     .retrieve()
                     .onStatus(status -> status.value() == 404,
                             (req, res) -> {
-                                throw new FrankfurterRateException("Moeda não suportada pela fonte de câmbio ou data inválida: " + from + " → " + to, 400);
+                                throw new FrankfurterRateException("Moeda não suportada pela fonte de câmbio ou data inválida: " + origem + " → " + destino, 400);
                             })
                     .body(FrankfurterHistoryRawDTO.class);
 
             if (raw == null){
-                throw new FrankfurterRateException("Dados cambiais vazios: " + from, 502);
+                throw new FrankfurterRateException("Dados cambiais vazios: " + origem, 502);
             }
 
             List<FrankfurterHistoryItemDTO> data = raw.rates().entrySet().stream()
-                    .map(e -> new FrankfurterHistoryItemDTO(e.getKey(), e.getValue().get(to)
+                    .map(e -> new FrankfurterHistoryItemDTO(e.getKey(), e.getValue().get(destino)
                     ))
                     .sorted(Comparator.comparing(FrankfurterHistoryItemDTO::date))
                     .toList();
 
-            return new FrankfurterHistoryDTO(from, to, data);
+            return new FrankfurterHistoryDTO(origem, destino, data);
 
         } catch (FrankfurterRateException e) {
             throw e;
