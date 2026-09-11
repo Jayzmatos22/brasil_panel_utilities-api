@@ -1,11 +1,18 @@
 package com.brasilpanel.backend.config.ratelimit;
 
 import jakarta.servlet.FilterChain;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
@@ -186,7 +193,7 @@ class RateLimitTest {
             filter.doFilter(request("/api/bcb", IP_A + ", 70.41.3.18, 150.172.238.178"),
                     new MockHttpServletResponse(), mock(FilterChain.class));
 
-            assertThat(limiter.currentHits(IP_A)).isEqualTo(1);
+            assertThat(limiter.currentHits("ip:" + IP_A)).isEqualTo(1);
         }
 
         @Test
@@ -198,7 +205,7 @@ class RateLimitTest {
             filter.doFilter(request("/api/bcb", null), new MockHttpServletResponse(),
                     mock(FilterChain.class));
 
-            assertThat(limiter.currentHits("10.0.0.1")).isEqualTo(1);
+            assertThat(limiter.currentHits("ip:10.0.0.1")).isEqualTo(1);
         }
     }
 
@@ -306,6 +313,124 @@ class RateLimitTest {
             filter.doFilter(post("/api/auth/register", IP_A), new MockHttpServletResponse(), chain);
 
             verify(chain, times(2)).doFilter(any(), any());
+        }
+    }
+
+    /**
+     * A identidade do cliente é o que o teto inteiro pressupõe. Enquanto ela vinha só do
+     * X-Forwarded-For — um header que o cliente escreve —, o teto por cliente era
+     * decorativo: bastava variar o header para ganhar um balde novo a cada requisição.
+     */
+    @Nested
+    @DisplayName("Identidade do cliente")
+    class Identidade {
+
+        @AfterEach
+        void limparContexto() {
+            // Sem isto a autenticação vaza para os testes seguintes da mesma JVM.
+            SecurityContextHolder.clearContext();
+        }
+
+        private MockHttpServletRequest get(String forwardedFor) {
+            MockHttpServletRequest req = new MockHttpServletRequest("GET", "/api/bcb");
+            req.setRequestURI("/api/bcb");
+            req.setRemoteAddr("10.0.0.1");
+            if (forwardedFor != null) {
+                req.addHeader("X-Forwarded-For", forwardedFor);
+            }
+            return req;
+        }
+
+        private void autenticarComo(String email) {
+            SecurityContextHolder.getContext().setAuthentication(
+                    new UsernamePasswordAuthenticationToken(email, null, List.of()));
+        }
+
+        @Test
+        @DisplayName("X-Forwarded-For que não é IP não vira chave: cai para o endereço da conexão")
+        void nonIpForwardedForFallsBackToRemoteAddr() throws Exception {
+            ApiRateLimiter limiter = limiter(10, true);
+            RateLimitFilter filter = new RateLimitFilter(limiter);
+
+            // Três valores diferentes e inventados. Antes davam três baldes; agora os
+            // três são recusados como identidade e caem no mesmo remoteAddr.
+            for (String lixo : List.of("nao-e-ip", "'; DROP TABLE", "999.999.999.999")) {
+                filter.doFilter(get(lixo), new MockHttpServletResponse(), mock(FilterChain.class));
+            }
+
+            assertThat(limiter.currentHits("ip:10.0.0.1"))
+                    .as("os três caem na mesma chave")
+                    .isEqualTo(3);
+        }
+
+        @Test
+        @DisplayName("usuário autenticado é chaveado pelo sub do JWT, não pelo header")
+        void authenticatedClientIsKeyedBySubject() throws Exception {
+            ApiRateLimiter limiter = limiter(10, true);
+            RateLimitFilter filter = new RateLimitFilter(limiter);
+            autenticarComo("fulano@exemplo.com");
+
+            // Mesmo usuário, X-Forwarded-For diferente a cada requisição — a manobra
+            // que multiplicava o teto.
+            filter.doFilter(get(IP_A), new MockHttpServletResponse(), mock(FilterChain.class));
+            filter.doFilter(get(IP_B), new MockHttpServletResponse(), mock(FilterChain.class));
+
+            assertThat(limiter.currentHits("user:fulano@exemplo.com"))
+                    .as("as duas requisições contam no mesmo balde")
+                    .isEqualTo(2);
+            assertThat(limiter.currentHits("ip:" + IP_A))
+                    .as("o header forjado não abre balde próprio")
+                    .isZero();
+        }
+
+        @Test
+        @DisplayName("usuários autenticados distintos não compartilham o teto")
+        void differentUsersDoNotShareTheBucket() throws Exception {
+            ApiRateLimiter limiter = limiter(1, true);
+            RateLimitFilter filter = new RateLimitFilter(limiter);
+
+            autenticarComo("um@exemplo.com");
+            MockHttpServletResponse primeira = new MockHttpServletResponse();
+            filter.doFilter(get(null), primeira, mock(FilterChain.class));
+
+            SecurityContextHolder.clearContext();
+            autenticarComo("dois@exemplo.com");
+            MockHttpServletResponse segunda = new MockHttpServletResponse();
+            filter.doFilter(get(null), segunda, mock(FilterChain.class));
+
+            // Teto de 1: se compartilhassem o balde, a segunda levaria 429.
+            assertThat(primeira.getStatus()).isEqualTo(200);
+            assertThat(segunda.getStatus()).isEqualTo(200);
+        }
+
+        @Test
+        @DisplayName("autenticação anônima não conta como identidade")
+        void anonymousAuthenticationIsNotAnIdentity() throws Exception {
+            ApiRateLimiter limiter = limiter(10, true);
+            RateLimitFilter filter = new RateLimitFilter(limiter);
+
+            // O Spring Security instala um AnonymousAuthenticationToken em requisição
+            // sem credencial. Tratá-lo como usuário poria todo mundo no mesmo balde
+            // chamado "anonymousUser" — um teto global acidental.
+            SecurityContextHolder.getContext().setAuthentication(
+                    new AnonymousAuthenticationToken("chave", "anonymousUser",
+                            List.of(new SimpleGrantedAuthority("ROLE_ANONYMOUS"))));
+
+            filter.doFilter(get(IP_A), new MockHttpServletResponse(), mock(FilterChain.class));
+
+            assertThat(limiter.currentHits("ip:" + IP_A)).isEqualTo(1);
+            assertThat(limiter.currentHits("user:anonymousUser")).isZero();
+        }
+
+        @Test
+        @DisplayName("IPv6 é aceito como identidade")
+        void ipv6IsAValidIdentity() throws Exception {
+            ApiRateLimiter limiter = limiter(10, true);
+            RateLimitFilter filter = new RateLimitFilter(limiter);
+
+            filter.doFilter(get("2001:db8::1"), new MockHttpServletResponse(), mock(FilterChain.class));
+
+            assertThat(limiter.currentHits("ip:2001:db8::1")).isEqualTo(1);
         }
     }
 }
