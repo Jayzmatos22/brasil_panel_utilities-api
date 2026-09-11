@@ -81,19 +81,39 @@ jobs:
           cache: 'maven'
           cache-dependency-path: '**/pom.xml'
 
-      # O jar "gordo" do Spring Boot embute os jars das dependências, inclusive
-      # as transitivas já resolvidas. Escanear o artefato construído é mais fiel
-      # do que ler o pom.xml, que deixaria o scanner resolver a árvore por conta
-      # própria e discordar do que de fato vai para produção.
-      - name: Empacotar o backend
+      # SBOM gerado pelo próprio Maven, e não varredura do jar.
+      #
+      # A primeira versão empacotava o jar e mandava o Trivy varrer target/. O
+      # jar era produzido (69 MB), o Trivy rodava sem erro e relatava
+      # "Number of language-specific files num=0": varria e não reconhecia uma
+      # única dependência Java. Uma varredura que não vê nada e passa é pior do
+      # que não ter varredura, porque parece cobertura.
+      #
+      # O SBOM tira a adivinhação do caminho: quem resolve a árvore é o Maven,
+      # que é a autoridade sobre ela, e o Trivy só compara os identificadores de
+      # pacote com os avisos. De quebra dispensa empacotar — são segundos em vez
+      # de construir um jar inteiro.
+      - name: Gerar SBOM do backend
         working-directory: ./backend/backend
-        run: mvn -B package -DskipTests
+        run: mvn -B org.cyclonedx:cyclonedx-maven-plugin:2.9.1:makeAggregateBom -DoutputFormat=json -DoutputName=bom
+
+      # Guarda contra a falha silenciosa que aconteceu aqui: se o SBOM vier sem
+      # componente, algo quebrou na geração e a varredura seguinte não teria o
+      # que olhar. Melhor gritar do que relatar "nenhuma vulnerabilidade".
+      - name: Conferir que o SBOM não está vazio
+        run: |
+          total=$(python3 -c "import json;print(len(json.load(open('backend/backend/target/bom.json')).get('components',[])))")
+          echo "Componentes no SBOM: $total"
+          if [ "$total" -lt 50 ]; then
+            echo "::error::SBOM com $total componentes — esperado bem mais. A varredura não teria o que analisar."
+            exit 1
+          fi
 
       - name: Escanear o backend
         uses: aquasecurity/trivy-action@v0.36.0
         with:
-          scan-type: fs
-          scan-ref: backend/backend/target
+          scan-type: sbom
+          scan-ref: backend/backend/target/bom.json
           format: sarif
           output: trivy-backend.sarif
           severity: HIGH,CRITICAL
