@@ -42,7 +42,6 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private static final String PROTECTED_PREFIX = "/api/";
 
     /** 45 caracteres cobrem o maior literal IPv6 com sufixo IPv4 mapeado. */
-    private static final int MAX_IP_LENGTH = 45;
 
     /**
      * Rotas que enviam e-mail para um endereço fornecido na requisição.
@@ -155,77 +154,6 @@ public class RateLimitFilter extends OncePerRequestFilter {
             return "user:" + auth.getName();
         }
 
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank()) {
-            int comma = forwarded.indexOf(',');
-            String first = (comma > 0 ? forwarded.substring(0, comma) : forwarded).trim();
-            if (isIpLiteral(first)) {
-                return "ip:" + first;
-            }
-        }
-        return "ip:" + request.getRemoteAddr();
-    }
-
-    /**
-     * Se o texto é um literal de endereço IP.
-     *
-     * <p>Escrito à mão porque o projeto não tem Guava nem commons-validator, e porque
-     * {@code InetAddress.getByName} resolveria DNS para qualquer coisa que não fosse
-     * literal — transformar um header hostil em consulta de rede seria trocar um
-     * problema pequeno por um grande.
-     *
-     * <p>O IPv6 aqui é conservador, não um parser de RFC: aceita algum literal malformado
-     * que um parser recusaria. Serve ao propósito, que é distinguir "isto parece um
-     * endereço" de "isto é uma string arbitrária escolhida para criar uma chave nova".
-     */
-    private static boolean isIpLiteral(String value) {
-        if (value.isEmpty() || value.length() > MAX_IP_LENGTH) {
-            return false;
-        }
-        return value.indexOf(':') >= 0 ? isIpv6Literal(value) : isIpv4Literal(value);
-    }
-
-    private static boolean isIpv4Literal(String value) {
-        int octetos = 0;
-        int inicio = 0;
-
-        for (int i = 0; i <= value.length(); i++) {
-            if (i != value.length() && value.charAt(i) != '.') {
-                continue;
-            }
-            int digitos = i - inicio;
-            if (digitos < 1 || digitos > 3) {
-                return false;
-            }
-            int valor = 0;
-            for (int j = inicio; j < i; j++) {
-                char c = value.charAt(j);
-                if (c < '0' || c > '9') {
-                    return false;
-                }
-                valor = valor * 10 + (c - '0');
-            }
-            if (valor > 255) {
-                return false;
-            }
-            octetos++;
-            inicio = i + 1;
-        }
-        return octetos == 4;
-    }
-
-    private static boolean isIpv6Literal(String value) {
-        int doisPontos = 0;
-
-        for (int i = 0; i < value.length(); i++) {
-            char c = value.charAt(i);
-            if (c == ':') {
-                doisPontos++;
-            } else if (c != '.' && Character.digit(c, 16) < 0) {
-                // '.' é aceito por causa da forma mista (::ffff:192.0.2.1).
-                return false;
-            }
-        }
-        return doisPontos >= 2 && doisPontos <= 8;
+        return "ip:" + ClientIp.fromRequest(request);
     }
 }
