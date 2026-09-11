@@ -8,6 +8,7 @@ import com.brasilpanel.backend.model.UserEntity;
 import com.brasilpanel.backend.repository.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -16,14 +17,19 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -108,5 +114,53 @@ class AdminControllerTest {
 
         mockMvc.perform(put("/api/admin/users/{id}/demote", idOutro))
                 .andExpect(status().isBadRequest());
+    }
+
+    /**
+     * O painel listava cadastro abandonado misturado com usuário de verdade, então a
+     * lista não respondia "quantas contas existem mesmo". O filtro é opcional para
+     * não mudar o comportamento de quem já consome a rota.
+     */
+    @Nested
+    @DisplayName("Filtro por situação da conta")
+    class FiltroVerificado {
+
+        @BeforeEach
+        void semResultados() {
+            Page<UserEntity> vazia = new PageImpl<>(List.of());
+            when(userRepository.findAll(any(Pageable.class))).thenReturn(vazia);
+            when(userRepository.findByVerified(anyBoolean(), any(Pageable.class))).thenReturn(vazia);
+        }
+
+        @Test
+        @DisplayName("sem o parâmetro, lista todos — comportamento antigo")
+        @WithMockUser(username = EMAIL_ADMIN, roles = "ADMIN")
+        void withoutTheParamListsEveryone() throws Exception {
+            mockMvc.perform(get("/api/admin/users")).andExpect(status().isOk());
+
+            verify(userRepository).findAll(any(Pageable.class));
+            verify(userRepository, never()).findByVerified(anyBoolean(), any(Pageable.class));
+        }
+
+        @Test
+        @DisplayName("verified=false traz só os cadastros nunca concluídos")
+        @WithMockUser(username = EMAIL_ADMIN, roles = "ADMIN")
+        void falseBringsOnlyUnverified() throws Exception {
+            mockMvc.perform(get("/api/admin/users").param("verified", "false"))
+                    .andExpect(status().isOk());
+
+            verify(userRepository).findByVerified(eq(false), any(Pageable.class));
+            verify(userRepository, never()).findAll(any(Pageable.class));
+        }
+
+        @Test
+        @DisplayName("verified=true traz só as contas de verdade")
+        @WithMockUser(username = EMAIL_ADMIN, roles = "ADMIN")
+        void trueBringsOnlyVerified() throws Exception {
+            mockMvc.perform(get("/api/admin/users").param("verified", "true"))
+                    .andExpect(status().isOk());
+
+            verify(userRepository).findByVerified(eq(true), any(Pageable.class));
+        }
     }
 }
