@@ -1,12 +1,15 @@
 package com.brasilpanel.backend.config.jwt;
 
 import com.brasilpanel.backend.model.Role;
+import com.brasilpanel.backend.service.auth.TokenDenylistService;
+import io.jsonwebtoken.Claims;
 import com.brasilpanel.backend.model.UserEntity;
 import io.jsonwebtoken.MalformedJwtException;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -28,10 +31,13 @@ class JwtFilterTest {
 
     private static final String EMAIL = "usuario@exemplo.com";
     private static final String TOKEN = "jwt-valido";
+    private static final String JTI = "11111111-2222-3333-4444-555555555555";
 
     private JwtService jwtService;
     private UserDetailsService userDetailsService;
+    private TokenDenylistService tokenDenylist;
     private JwtFilter jwtFilter;
+    private Claims claims;
 
     private MockHttpServletRequest request;
     private MockHttpServletResponse response;
@@ -42,7 +48,12 @@ class JwtFilterTest {
     void setUp() {
         jwtService = mock(JwtService.class);
         userDetailsService = mock(UserDetailsService.class);
-        jwtFilter = new JwtFilter(jwtService, userDetailsService);
+        tokenDenylist = mock(TokenDenylistService.class);
+        jwtFilter = new JwtFilter(jwtService, userDetailsService, tokenDenylist);
+
+        claims = mock(Claims.class);
+        when(claims.getSubject()).thenReturn(EMAIL);
+        when(claims.getId()).thenReturn(JTI);
 
         request = new MockHttpServletRequest();
         response = new MockHttpServletResponse();
@@ -64,9 +75,10 @@ class JwtFilterTest {
     }
 
     private void tokenValido() {
-        when(jwtService.extractEmail(TOKEN)).thenReturn(EMAIL);
+        when(jwtService.parseClaims(TOKEN)).thenReturn(claims);
         when(userDetailsService.loadUserByUsername(EMAIL)).thenReturn(usuario);
-        when(jwtService.isTokenValid(TOKEN, usuario)).thenReturn(true);
+        when(jwtService.isTokenValid(claims, usuario)).thenReturn(true);
+        when(tokenDenylist.isRevoked(JTI)).thenReturn(false);
     }
 
     private String autenticado() {
@@ -123,7 +135,7 @@ class JwtFilterTest {
         jwtFilter.doFilter(request, response, chain);
 
         assertThat(autenticado()).isEqualTo(EMAIL);
-        verify(jwtService, never()).extractEmail("token-do-header");
+        verify(jwtService, never()).parseClaims("token-do-header");
     }
 
     @Test
@@ -132,7 +144,7 @@ class JwtFilterTest {
         jwtFilter.doFilter(request, response, chain);
 
         assertThat(autenticado()).isNull();
-        verify(jwtService, never()).extractEmail(anyString());
+        verify(jwtService, never()).parseClaims(anyString());
     }
 
     @Test
@@ -143,14 +155,14 @@ class JwtFilterTest {
         jwtFilter.doFilter(request, response, chain);
 
         assertThat(autenticado()).isNull();
-        verify(jwtService, never()).extractEmail(anyString());
+        verify(jwtService, never()).parseClaims(anyString());
     }
 
     @Test
     @DisplayName("token malformado não autentica e não interrompe a cadeia")
     void malformedTokenDoesNotAuthenticate() throws Exception {
         request.setCookies(new Cookie(JwtFilter.SESSION_COOKIE, "lixo"));
-        when(jwtService.extractEmail("lixo")).thenThrow(new MalformedJwtException("inválido"));
+        when(jwtService.parseClaims("lixo")).thenThrow(new MalformedJwtException("inválido"));
 
         jwtFilter.doFilter(request, response, chain);
 
@@ -162,9 +174,9 @@ class JwtFilterTest {
     @Test
     @DisplayName("token que não valida contra o usuário não autentica")
     void tokenThatFailsValidationDoesNotAuthenticate() throws Exception {
-        when(jwtService.extractEmail(TOKEN)).thenReturn(EMAIL);
+        when(jwtService.parseClaims(TOKEN)).thenReturn(claims);
         when(userDetailsService.loadUserByUsername(EMAIL)).thenReturn(usuario);
-        when(jwtService.isTokenValid(TOKEN, usuario)).thenReturn(false);
+        when(jwtService.isTokenValid(claims, usuario)).thenReturn(false);
         request.setCookies(new Cookie(JwtFilter.SESSION_COOKIE, TOKEN));
 
         jwtFilter.doFilter(request, response, chain);
@@ -181,5 +193,75 @@ class JwtFilterTest {
 
         assertThat(autenticado()).isNull();
         verify(userDetailsService, never()).loadUserByUsername(any());
+    }
+
+    /**
+     * O logout só passa a significar alguma coisa se o filtro consultar a denylist.
+     * Antes disso o token seguia aceito por até 24 h depois de o usuário sair.
+     */
+    @Nested
+    @DisplayName("Token revogado (logout)")
+    class Revogado {
+
+        @Test
+        @DisplayName("token revogado não autentica")
+        void revokedTokenDoesNotAuthenticate() throws Exception {
+            tokenValido();
+            when(tokenDenylist.isRevoked(JTI)).thenReturn(true);
+            request.setCookies(new Cookie(JwtFilter.SESSION_COOKIE, TOKEN));
+
+            jwtFilter.doFilter(request, response, chain);
+
+            assertThat(autenticado()).isNull();
+        }
+
+        @Test
+        @DisplayName("token revogado não chega a consultar o usuário")
+        void revokedTokenSkipsUserLookup() throws Exception {
+            tokenValido();
+            when(tokenDenylist.isRevoked(JTI)).thenReturn(true);
+            request.setCookies(new Cookie(JwtFilter.SESSION_COOKIE, TOKEN));
+
+            jwtFilter.doFilter(request, response, chain);
+
+            verify(userDetailsService, never()).loadUserByUsername(anyString());
+        }
+
+        @Test
+        @DisplayName("token revogado não interrompe a cadeia de filtros")
+        void revokedTokenKeepsChainGoing() throws Exception {
+            tokenValido();
+            when(tokenDenylist.isRevoked(JTI)).thenReturn(true);
+            request.setCookies(new Cookie(JwtFilter.SESSION_COOKIE, TOKEN));
+
+            jwtFilter.doFilter(request, response, chain);
+
+            // Quem responde 401 é a camada de autorização, não este filtro.
+            assertThat(chain.getRequest()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("token não revogado segue autenticando")
+        void nonRevokedTokenStillAuthenticates() throws Exception {
+            tokenValido();
+            request.setCookies(new Cookie(JwtFilter.SESSION_COOKIE, TOKEN));
+
+            jwtFilter.doFilter(request, response, chain);
+
+            assertThat(autenticado()).isEqualTo(EMAIL);
+            verify(tokenDenylist).isRevoked(JTI);
+        }
+
+        @Test
+        @DisplayName("a denylist também vale para o header Authorization")
+        void denylistAppliesToBearerHeader() throws Exception {
+            tokenValido();
+            when(tokenDenylist.isRevoked(JTI)).thenReturn(true);
+            request.addHeader("Authorization", "Bearer " + TOKEN);
+
+            jwtFilter.doFilter(request, response, chain);
+
+            assertThat(autenticado()).isNull();
+        }
     }
 }

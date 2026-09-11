@@ -1,5 +1,6 @@
 package com.brasilpanel.backend.controller.profile;
 
+import com.brasilpanel.backend.service.auth.TokenDenylistService;
 import com.brasilpanel.backend.config.jwt.JwtService;
 import com.brasilpanel.backend.dto.profile.ProfileOptionsDTO;
 import com.brasilpanel.backend.dto.profile.ProfileResponseDTO;
@@ -51,6 +52,7 @@ class ProfileControllerTest {
     // o bean é criado, então suas dependências precisam existir.
     @MockitoBean private JwtService jwtService;
     @MockitoBean private UserDetailsService userDetailsService;
+    @MockitoBean private TokenDenylistService tokenDenylist;
 
     private static ProfileResponseDTO perfilVazio() {
         return new ProfileResponseDTO(null, null, null, null, null, null, null, null, null);

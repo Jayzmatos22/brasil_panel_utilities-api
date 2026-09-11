@@ -1,5 +1,6 @@
 package com.brasilpanel.backend.controller.api;
 
+import com.brasilpanel.backend.service.auth.TokenDenylistService;
 import com.brasilpanel.backend.config.jwt.JwtService;
 import com.brasilpanel.backend.service.api.frankFurter.FrankFurterService;
 import org.junit.jupiter.api.DisplayName;
@@ -42,6 +43,7 @@ class FrankfurterRoutesValidationTest {
     @MockitoBean private FrankFurterService frankFurterService;
     @MockitoBean private JwtService jwtService;
     @MockitoBean private UserDetailsService userDetailsService;
+    @MockitoBean private TokenDenylistService tokenDenylist;
 
     @Nested
     @DisplayName("Cotação")

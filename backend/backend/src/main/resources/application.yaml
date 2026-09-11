@@ -172,6 +172,13 @@ app:
         sent-days:   ${MAIL_OUTBOX_RETENTION_SENT:3}
         failed-days: ${MAIL_OUTBOX_RETENTION_FAILED:30}
 
+  # ── Contas ────────────────────────────────────────────────────────────────
+  accounts:
+    # Dias que um cadastro NÃO verificado sobrevive antes de ser apagado.
+    # Generoso de propósito: não é janela de segurança, é higiene de retenção,
+    # e precisa cobrir com folga quem só abre o e-mail no fim de semana.
+    unverified-retention-days: ${ACCOUNTS_UNVERIFIED_RETENTION_DAYS:7}
+
 # ── Springdoc — desabilitado por padrão; ativado apenas no perfil dev ────────
 springdoc:
   api-docs:
