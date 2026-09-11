@@ -8,6 +8,7 @@ import com.brasilpanel.backend.repository.user.UserRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -49,14 +50,22 @@ public class AdminController {
     @GetMapping("/users")
     public ResponseEntity<List<UserResponseDTO>> listUsers(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "100") int size) {
+            @RequestParam(defaultValue = "100") int size,
+            @RequestParam(required = false) Boolean verified) {
 
         Pageable pagina = PageRequest.of(
                 Math.max(page, 0),
                 Math.clamp(size, 1, TAMANHO_MAXIMO),
                 Sort.by(Sort.Direction.DESC, "createdAt"));
 
-        List<UserResponseDTO> users = userRepository.findAll(pagina)
+        // Sem o filtro, cadastro abandonado aparecia misturado com usuário de
+        // verdade e a lista não respondia "quantas contas existem mesmo".
+        // Ausente = todos, que é o comportamento que já havia.
+        Page<UserEntity> encontrados = verified == null
+                ? userRepository.findAll(pagina)
+                : userRepository.findByVerified(verified, pagina);
+
+        List<UserResponseDTO> users = encontrados
                 .map(userMapper::toResponse)
                 .getContent();
         return ResponseEntity.ok(users);
