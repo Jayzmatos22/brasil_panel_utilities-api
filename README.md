@@ -97,7 +97,7 @@ ver [DEPLOY.md](DEPLOY.md).
 │  /dashboard/economia  /acoes  /metais  /cambio  /cripto             │
 │  /dashboard/pib  /salario  /ibge  /bancos  /ipea                    │
 └──────────────────────────┬──────────────────────────────────────────┘
-                           │  REST/JSON  —  Bearer JWT
+                           │  REST/JSON  —  JWT em cookie HttpOnly
                            ▼
 ┌─────────────────────────────────────────────────────────────────────┐
 │                    SPRING BOOT 3.5  :8080                           │
@@ -450,8 +450,11 @@ portanto, imune a exfiltração por XSS.
 autentica nada: serve só para decidir o que renderizar e manter as funções de
 guarda síncronas. Toda autorização real acontece no servidor.
 
-O header `Authorization: Bearer` continua aceito pelo `JwtFilter`, para Swagger,
-`curl` e testes de integração.
+O cookie é a **única** via de autenticação. O header `Authorization: Bearer` era
+aceito como segundo canal e deixou de ser: header de requisição aparece em log de
+proxy, de CDN e de ferramenta de diagnóstico, onde um cookie `HttpOnly` não costuma
+parar. Nenhum cliente dependia dele — o projeto não declara `SecurityScheme` e o
+Swagger vem desligado por padrão.
 
 ### Invalidação de sessão ao trocar a senha
 
@@ -709,8 +712,10 @@ processo roda como usuário não-root).
 
 - Autenticação via **JWT em cookie `HttpOnly`** — inacessível ao JavaScript. `SameSite=Lax`
   cobre CSRF; a flag `Secure` é controlada por `COOKIE_SECURE` (`true` em produção)
-- `JwtFilter` lê o cookie e, se ausente, o header `Authorization` — o header segue
-  disponível para Swagger, `curl` e testes
+- `JwtFilter` lê **apenas** o cookie. O fallback para `Authorization: Bearer` foi
+  removido: era um segundo canal para a mesma credencial, e que vaza com facilidade
+  em log de proxy e de CDN
+- O token declara `aud` (`brasil-panel-api`) e o `JwtService` o exige na validação
 - Senhas armazenadas com **BCrypt**
 - **Trocar a senha invalida todas as sessões abertas** — `users.password_changed_at`
   faz o `JwtService` recusar tokens emitidos antes da troca

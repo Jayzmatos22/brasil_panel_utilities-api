@@ -29,6 +29,15 @@ public class JwtService {
 
     private static final String ISSUER = "brasil-panel";
 
+    /**
+     * Para quem o token foi emitido.
+     *
+     * <p>Hoje o emissor e o verificador são o mesmo serviço, então o ganho é pequeno.
+     * Existe para o dia em que não forem: sem {@code aud}, um token legítimo emitido
+     * para outro serviço que compartilhe o segredo seria aceito aqui.
+     */
+    private static final String AUDIENCE = "brasil-panel-api";
+
 
     /** Validade do token, para o cliente saber quando a sessão expira sem lê-lo. */
     public long getExpirationMs() {
@@ -48,6 +57,7 @@ public class JwtService {
     public String generateToken(UserDetails userDetails) {
         var builder = Jwts.builder()
                 .issuer(ISSUER)
+                .audience().add(AUDIENCE).and()
                 .subject(userDetails.getUsername())
                 .id(UUID.randomUUID().toString())   // jti — ID único do token
                 .issuedAt(new Date())
@@ -67,6 +77,7 @@ public class JwtService {
         return Jwts.parser()
                 .verifyWith(getSigningKey())
                 .requireIssuer(ISSUER)              // valida o emissor
+                .requireAudience(AUDIENCE)          // e o destinatário
                 .build()
                 .parseSignedClaims(token)
                 .getPayload()
@@ -88,6 +99,7 @@ public class JwtService {
         return Jwts.parser()
                 .verifyWith(getSigningKey())
                 .requireIssuer(ISSUER)
+                .requireAudience(AUDIENCE)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();

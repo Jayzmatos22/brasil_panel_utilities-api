@@ -97,17 +97,39 @@ class JwtFilterTest {
         assertThat(autenticado()).isEqualTo(EMAIL);
     }
 
+    /**
+     * O header era um segundo canal para a mesma credencial, e um canal que vaza com
+     * facilidade: header de requisição aparece em log de proxy, de CDN e de
+     * ferramenta de diagnóstico, onde um cookie httpOnly não costuma parar.
+     */
     @Test
-    @DisplayName("header Authorization continua funcionando para clientes não-navegador")
-    void authorizationHeaderStillWorks() throws Exception {
+    @DisplayName("header Authorization não autentica mais")
+    void authorizationHeaderNoLongerAuthenticates() throws Exception {
         tokenValido();
         request.addHeader("Authorization", "Bearer " + TOKEN);
 
         jwtFilter.doFilter(request, response, chain);
 
-        // Mantido para Swagger, curl e testes de integração.
-        assertThat(autenticado()).isEqualTo(EMAIL);
+        assertThat(autenticado()).isNull();
     }
+
+    /**
+     * Verifica {@code parseClaims}, e não {@code extractEmail}: depois da #45 o filtro
+     * parseia o token uma vez só, pelo primeiro. Conferir o segundo aqui passaria
+     * sempre — inclusive se o header voltasse a ser lido —, e um teste que não pode
+     * falhar não protege nada.
+     */
+    @Test
+    @DisplayName("token no header não chega nem a ser parseado")
+    void headerTokenIsNotEvenParsed() throws Exception {
+        tokenValido();
+        request.addHeader("Authorization", "Bearer " + TOKEN);
+
+        jwtFilter.doFilter(request, response, chain);
+
+        verify(jwtService, never()).parseClaims(anyString());
+    }
+
 
     @Test
     @DisplayName("cookie tem precedência sobre o header")
