@@ -1,3 +1,19 @@
+# ── Atrás do proxy do Render ──────────────────────────────────────────────
+# O TLS termina no proxy; o Tomcat recebe HTTP puro e, sem isto, acha que toda
+# requisição é insegura. Duas consequências silenciosas: o Spring Security NÃO
+# emite Strict-Transport-Security (o writer só escreve em request.isSecure()),
+# e qualquer URL absoluta montada pelo servidor sai com http://. `framework`
+# registra o ForwardedHeaderFilter, que lê X-Forwarded-Proto/Host/For do proxy.
+server:
+  forward-headers-strategy: framework
+
+app:
+  auth:
+    cookie:
+      # Fixo em true: produção nunca é localhost. Antes dependia de COOKIE_SECURE
+      # no ambiente, com default false — a variável faltando rebaixava o cookie de
+      # sessão para HTTP sem nenhum aviso. O override só existe no perfil dev.
+      secure: true
 
 spring:
   datasource:

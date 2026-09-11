@@ -121,7 +121,7 @@ subida. Provisione o Neon **antes** de criar o serviço no Render.
 | `DATABASE_URL` | **Sim** | Connection string do Neon |
 | `DATABASE_USERNAME` | **Sim** | |
 | `DATABASE_PASSWORD` | **Sim** | |
-| `COOKIE_SECURE` | **Sim** | Valor: `true`. Faz o cookie de sessão exigir HTTPS. O default é `false` (necessário em dev sobre `http://localhost`). |
+| `COOKIE_SECURE` | Não | **Deixou de ser necessária.** O perfil `prod` fixa `app.auth.cookie.secure: true` — produção nunca é `localhost`, e a variável faltando rebaixava o cookie de sessão para HTTP sem nenhum aviso. O default `false` do `application.yaml` só serve ao dev. Pode remover do Render. |
 | `CORS_ALLOWED_ORIGINS` | **Sim** | Domínio do frontend. O default é `http://localhost:5173` — em produção o front seria bloqueado. Irrelevante se o rewrite estiver ativo, mas mantenha correto. |
 | `ALPHA_KEYS` | Sim | Chaves AlphaVantage, separadas por vírgula |
 | `METALS_KEY` | Sim | Chave Metals.dev |

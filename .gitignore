@@ -20,6 +20,10 @@ backend/backend/src/main/resources/application-dev.yml
 backend/backend/src/main/resources/application-dev.yaml
 .env
 .env.local
+# Config local com segredos reais. O README manda criar este arquivo para rodar
+# localmente, e o repositório é PÚBLICO: um `git add .` com ele presente
+# publicaria JWT_SECRET, senha do banco e chaves de API para o mundo.
+backend/backend/src/main/resources/application-local.y*ml
 
 # Frontend — dependencies & build
 frontend/node_modules/
