@@ -113,6 +113,12 @@ class JwtFilterTest {
         assertThat(autenticado()).isNull();
     }
 
+    /**
+     * Verifica {@code parseClaims}, e não {@code extractEmail}: depois da #45 o filtro
+     * parseia o token uma vez só, pelo primeiro. Conferir o segundo aqui passaria
+     * sempre — inclusive se o header voltasse a ser lido —, e um teste que não pode
+     * falhar não protege nada.
+     */
     @Test
     @DisplayName("token no header não chega nem a ser parseado")
     void headerTokenIsNotEvenParsed() throws Exception {
@@ -121,7 +127,7 @@ class JwtFilterTest {
 
         jwtFilter.doFilter(request, response, chain);
 
-        verify(jwtService, never()).extractEmail(anyString());
+        verify(jwtService, never()).parseClaims(anyString());
     }
 
 
