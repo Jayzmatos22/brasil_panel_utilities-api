@@ -2,6 +2,7 @@ package com.brasilpanel.backend.validators.api;
 
 import com.brasilpanel.backend.exception.customized.FrankfurterRateException;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
@@ -87,5 +88,84 @@ class FrankfurterValidatorTest {
         assertThatThrownBy(() -> validator.validDateRange(data, "2026-01-31"))
                 .isInstanceOf(FrankfurterRateException.class)
                 .hasMessageContaining("Formato de data");
+    }
+
+    /**
+     * O que o teste antigo de moeda não pegava.
+     *
+     * <p>A checagem anterior era {@code length() != 3}: passava qualquer trio de
+     * caracteres. E {@code amount <= 0} é falso para {@code NaN}, então {@code NaN} e
+     * {@code Infinity} atravessavam o validador inteiro e viravam texto na URL da fonte.
+     */
+    @Nested
+    @DisplayName("Buracos da checagem antiga")
+    class ChecagemAntiga {
+
+        @ParameterizedTest(name = "\"{0}\" tem 3 caracteres mas não é moeda")
+        @ValueSource(strings = {"a&b", "U$D", "1 2", "../", "%2F", "US'"})
+        @DisplayName("rejeita trio de caracteres que não são letras")
+        void rejectsThreeCharsThatAreNotLetters(String moeda) {
+            assertThatThrownBy(() -> validator.validSearchFrankfurter(moeda, "BRL", 1.0))
+                    .isInstanceOf(FrankfurterRateException.class)
+                    .hasMessageContaining("origem");
+        }
+
+        @ParameterizedTest(name = "amount = {0}")
+        @ValueSource(doubles = {Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY})
+        @DisplayName("rejeita valor não finito")
+        void rejectsNonFiniteAmount(double valor) {
+            assertThatThrownBy(() -> validator.validSearchFrankfurter("USD", "BRL", valor))
+                    .isInstanceOf(FrankfurterRateException.class);
+        }
+
+        @Test
+        @DisplayName("rejeita valor acima do teto")
+        void rejectsAmountAboveCeiling() {
+            assertThatThrownBy(() -> validator.validSearchFrankfurter("USD", "BRL", 1e12))
+                    .isInstanceOf(FrankfurterRateException.class);
+        }
+
+        @Test
+        @DisplayName("aceita valor no teto exato")
+        void acceptsAmountAtCeiling() {
+            assertThatCode(() -> validator.validSearchFrankfurter("USD", "BRL", 1_000_000_000d))
+                    .doesNotThrowAnyException();
+        }
+    }
+
+    /**
+     * {@code validCurrencyPair} existe porque o histórico não validava moeda nenhuma —
+     * só data. Sem ele, {@code from} e {@code to} de tamanho livre iam direto para a
+     * query da fonte.
+     */
+    @Nested
+    @DisplayName("Par de moedas sem valor (histórico)")
+    class ParDeMoedas {
+
+        @Test
+        @DisplayName("aceita par válido")
+        void acceptsValidPair() {
+            assertThatCode(() -> validator.validCurrencyPair("usd", "brl"))
+                    .doesNotThrowAnyException();
+        }
+
+        @ParameterizedTest(name = "origem \"{0}\"")
+        @NullAndEmptySource
+        @ValueSource(strings = {"USDD", "a&b", "USD&amount=99"})
+        @DisplayName("rejeita origem fora do padrão")
+        void rejectsMalformedSource(String moeda) {
+            assertThatThrownBy(() -> validator.validCurrencyPair(moeda, "BRL"))
+                    .isInstanceOf(FrankfurterRateException.class)
+                    .hasMessageContaining("origem");
+        }
+
+        @ParameterizedTest(name = "destino \"{0}\"")
+        @ValueSource(strings = {"BRLL", "B R", "BRL&to=XXX"})
+        @DisplayName("rejeita destino fora do padrão")
+        void rejectsMalformedTarget(String moeda) {
+            assertThatThrownBy(() -> validator.validCurrencyPair("USD", moeda))
+                    .isInstanceOf(FrankfurterRateException.class)
+                    .hasMessageContaining("destino");
+        }
     }
 }
