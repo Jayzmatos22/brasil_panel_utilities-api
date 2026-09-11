@@ -74,18 +74,43 @@ public class JwtService {
     }
 
 
-    // Validar token — uma única leitura das claims.
-    // Antes eram duas: extractEmail e isTokenExpired parseavam o token de novo, cada
-    // uma reverificando a assinatura HMAC. Somado ao extractEmail que o JwtFilter já
-    // faz, eram três verificações criptográficas por requisição.
-    public boolean isTokenValid(String token, UserDetails userDetails) {
-        Claims claims = Jwts.parser()
+    /**
+     * Lê e verifica o token uma única vez, devolvendo as claims.
+     *
+     * <p>Existe para quem precisa de mais de um campo do token — o {@code JwtFilter}
+     * precisa do subject, do {@code jti} e da validade. Sem isto, cada campo custaria
+     * um parse novo e, com ele, uma verificação HMAC nova.
+     *
+     * <p>Lança se a assinatura, o emissor ou o formato não conferirem. Quem chama
+     * trata a exceção; não existe retorno "inválido" silencioso.
+     */
+    public Claims parseClaims(String token) {
+        return Jwts.parser()
                 .verifyWith(getSigningKey())
                 .requireIssuer(ISSUER)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
+    }
 
+
+    // Validar token — uma única leitura das claims.
+    // Antes eram duas: extractEmail e isTokenExpired parseavam o token de novo, cada
+    // uma reverificando a assinatura HMAC. Somado ao extractEmail que o JwtFilter já
+    // faz, eram três verificações criptográficas por requisição.
+    public boolean isTokenValid(String token, UserDetails userDetails) {
+        return isTokenValid(parseClaims(token), userDetails);
+    }
+
+
+    /**
+     * Mesma validação, para quem já parseou o token.
+     *
+     * <p>A revogação NÃO é verificada aqui: esta classe não fala com o banco, e
+     * dar a ela um repositório mudaria sua natureza (ver {@code JwtFilter}, que
+     * consulta a denylist).
+     */
+    public boolean isTokenValid(Claims claims, UserDetails userDetails) {
         return claims.getSubject().equals(userDetails.getUsername())
                 && claims.getExpiration().after(new Date())
                 && emitidoAposUltimaTrocaDeSenha(claims, userDetails);

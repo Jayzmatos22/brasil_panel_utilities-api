@@ -1,5 +1,6 @@
 package com.brasilpanel.backend.controller.api;
 
+import com.brasilpanel.backend.service.auth.TokenDenylistService;
 import com.brasilpanel.backend.config.jwt.JwtService;
 import com.brasilpanel.backend.dto.user.UserResponseDTO;
 import com.brasilpanel.backend.mappers.UserMapper;
@@ -51,6 +52,7 @@ class AdminControllerTest {
     // criado mesmo com addFilters = false, então suas dependências precisam existir.
     @MockitoBean private JwtService jwtService;
     @MockitoBean private UserDetailsService userDetailsService;
+    @MockitoBean private TokenDenylistService tokenDenylist;
 
     private UUID idAdmin;
     private UUID idOutro;

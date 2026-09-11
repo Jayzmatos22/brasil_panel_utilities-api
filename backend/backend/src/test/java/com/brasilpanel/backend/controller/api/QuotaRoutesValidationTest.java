@@ -1,5 +1,6 @@
 package com.brasilpanel.backend.controller.api;
 
+import com.brasilpanel.backend.service.auth.TokenDenylistService;
 import com.brasilpanel.backend.config.jwt.JwtService;
 import com.brasilpanel.backend.service.api.alphaVantage.AlphaVantageService;
 import com.brasilpanel.backend.service.api.coinGecko.CoinGeckoService;
@@ -43,6 +44,7 @@ class QuotaRoutesValidationTest {
     // O JwtFilter entra no slice por ser um Filter; suas dependências precisam existir.
     @MockitoBean private JwtService jwtService;
     @MockitoBean private UserDetailsService userDetailsService;
+    @MockitoBean private TokenDenylistService tokenDenylist;
 
     @Nested
     @DisplayName("Símbolo de ação (AlphaVantage)")

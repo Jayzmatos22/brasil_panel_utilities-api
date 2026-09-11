@@ -1,5 +1,6 @@
 package com.brasilpanel.backend.config.securityConfig;
 
+import com.brasilpanel.backend.service.auth.TokenDenylistService;
 import com.brasilpanel.backend.config.jwt.JwtService;
 import com.brasilpanel.backend.controller.api.IpeaAdminController;
 import com.brasilpanel.backend.service.api.ipea.IpeaService;
@@ -35,6 +36,7 @@ class SecurityHeadersTest {
     @MockitoBean private IpeaService ipeaService;
     @MockitoBean private JwtService jwtService;
     @MockitoBean private UserDetailsService userDetailsService;
+    @MockitoBean private TokenDenylistService tokenDenylist;
 
     @Test
     @DisplayName("HSTS sai quando a requisição é vista como segura")
