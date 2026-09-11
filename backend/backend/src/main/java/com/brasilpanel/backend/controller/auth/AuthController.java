@@ -1,13 +1,17 @@
 package com.brasilpanel.backend.controller.auth;
 
 import com.brasilpanel.backend.config.jwt.JwtFilter;
+import com.brasilpanel.backend.config.jwt.JwtService;
 import com.brasilpanel.backend.dto.user.*;
 import com.brasilpanel.backend.service.auth.AuthService;
+import com.brasilpanel.backend.service.auth.TokenDenylistService;
+import io.jsonwebtoken.Claims;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
@@ -22,12 +26,15 @@ import java.time.Duration;
 
 
 @RestController
+@Slf4j
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 @Tag(name = "Autenticação", description = "Endpoints de registro, verificação e login")
 public class AuthController {
 
     private final AuthService authService;
+    private final JwtService jwtService;
+    private final TokenDenylistService tokenDenylist;
 
     @Value("${jwt.expiration-ms}")
     private long expirationMs;
@@ -112,13 +119,49 @@ public class AuthController {
     }
 
 
-    @Operation(summary = "Logout", description = "Limpa o cookie de sessão do navegador")
+    /**
+     * Encerra a sessão: revoga o token apresentado e apaga o cookie.
+     *
+     * <p>Apagar o cookie sozinho não encerrava nada — o token continuava assinado
+     * e dentro da validade, aceito por qualquer requisição que o carregasse até
+     * 24 h depois. Quem tivesse uma cópia seguia dentro.
+     *
+     * <p>Revoga <b>só este</b> token, não todos os da conta: sair no celular não
+     * deve desconectar o navegador do trabalho. Derrubar tudo de uma vez é o
+     * comportamento da troca de senha, que é outra intenção.
+     *
+     * <p>Responde 204 mesmo sem cookie, com token ilegível ou já expirado. Logout
+     * é uma intenção de encerrar, não uma operação que possa falhar para o
+     * usuário; o cookie é apagado nos quatro casos.
+     */
+    @Operation(summary = "Logout",
+               description = "Revoga o token da sessão e limpa o cookie do navegador")
     @ApiResponse(responseCode = "204", description = "Sessão encerrada")
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout() {
+    public ResponseEntity<Void> logout(
+            @CookieValue(name = JwtFilter.SESSION_COOKIE, required = false) String token) {
+
+        revogarSePossivel(token);
+
         return ResponseEntity.noContent()
                 .header(HttpHeaders.SET_COOKIE, expiredSessionCookie().toString())
                 .build();
+    }
+
+
+    /** Token ausente ou ilegível não impede o logout — ver o javadoc acima. */
+    private void revogarSePossivel(String token) {
+        if (token == null || token.isBlank()) {
+            return;
+        }
+        try {
+            Claims claims = jwtService.parseClaims(token);
+            tokenDenylist.revoke(claims.getId(), claims.getExpiration());
+        } catch (Exception e) {
+            // Assinatura inválida, expirado ou malformado: nada a revogar.
+            // Um token que o parser recusa já não autentica ninguém.
+            log.debug("[Logout] Token não revogável: {}", e.getMessage());
+        }
     }
 
 

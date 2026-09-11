@@ -1,5 +1,6 @@
 package com.brasilpanel.backend.config.securityConfig;
 
+import com.brasilpanel.backend.service.auth.TokenDenylistService;
 import com.brasilpanel.backend.config.jwt.JwtService;
 import com.brasilpanel.backend.controller.api.IpeaAdminController;
 import com.brasilpanel.backend.service.api.ipea.IpeaService;
@@ -37,6 +38,7 @@ class SecurityRoutesTest {
     // O JwtFilter entra no slice por ser um Filter; suas dependências precisam existir.
     @MockitoBean private JwtService jwtService;
     @MockitoBean private UserDetailsService userDetailsService;
+    @MockitoBean private TokenDenylistService tokenDenylist;
 
     /**
      * O refresh do IPEA morava em {@code POST /api/ipea/refresh}, que o

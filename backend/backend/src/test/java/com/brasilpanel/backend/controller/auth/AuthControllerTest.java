@@ -1,5 +1,6 @@
 package com.brasilpanel.backend.controller.auth;
 
+import com.brasilpanel.backend.service.auth.TokenDenylistService;
 import com.brasilpanel.backend.config.jwt.JwtService;
 import com.brasilpanel.backend.dto.user.AuthResponseDTO;
 import com.brasilpanel.backend.dto.user.LoginOutcomeDTO;
@@ -7,6 +8,10 @@ import com.brasilpanel.backend.exception.customized.TooManyAttemptsException;
 import com.brasilpanel.backend.service.auth.AuthService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.Matchers;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.MalformedJwtException;
+import jakarta.servlet.http.Cookie;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,12 +22,15 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import java.util.Date;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -52,6 +60,7 @@ class AuthControllerTest {
     // addFilters = false — o bean é criado, então suas dependências precisam existir.
     @MockitoBean private JwtService jwtService;
     @MockitoBean private UserDetailsService userDetailsService;
+    @MockitoBean private TokenDenylistService tokenDenylist;
 
     private String loginJson(String senha) throws Exception {
         return objectMapper.writeValueAsString(Map.of("email", EMAIL, "password", senha));
@@ -147,6 +156,70 @@ class AuthControllerTest {
         assertThat(setCookie).contains("Max-Age=0");
         assertThat(setCookie).contains("HttpOnly");
     }
+
+    /**
+     * O logout antes apagava só o cookie. O token continuava assinado e dentro da
+     * validade, então bastava reapresentá-lo para seguir autenticado por até 24 h.
+     */
+    @Nested
+    @DisplayName("Logout revoga o token")
+    class LogoutRevoga {
+
+        private static final String TOKEN = "jwt-da-sessao";
+        private static final String JTI = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
+
+        @Test
+        @DisplayName("o jti do cookie vai para a denylist")
+        void revokesTheCookieToken() throws Exception {
+            Date expiracao = new Date(System.currentTimeMillis() + 3_600_000);
+            Claims claims = mock(Claims.class);
+            when(claims.getId()).thenReturn(JTI);
+            when(claims.getExpiration()).thenReturn(expiracao);
+            when(jwtService.parseClaims(TOKEN)).thenReturn(claims);
+
+            mockMvc.perform(post("/api/auth/logout").cookie(new Cookie("token", TOKEN)))
+                    .andExpect(status().isNoContent());
+
+            verify(tokenDenylist).revoke(JTI, expiracao);
+        }
+
+        @Test
+        @DisplayName("sem cookie devolve 204 e não revoga nada")
+        void withoutCookieStillSucceeds() throws Exception {
+            mockMvc.perform(post("/api/auth/logout"))
+                    .andExpect(status().isNoContent());
+
+            verify(tokenDenylist, never()).revoke(anyString(), any(Date.class));
+        }
+
+        @Test
+        @DisplayName("token ilegível devolve 204 e não derruba o logout")
+        void unparseableTokenStillSucceeds() throws Exception {
+            when(jwtService.parseClaims("lixo"))
+                    .thenThrow(new MalformedJwtException("inválido"));
+
+            mockMvc.perform(post("/api/auth/logout").cookie(new Cookie("token", "lixo")))
+                    .andExpect(status().isNoContent());
+
+            verify(tokenDenylist, never()).revoke(anyString(), any(Date.class));
+        }
+
+        @Test
+        @DisplayName("o cookie continua sendo apagado mesmo quando há revogação")
+        void cookieIsStillCleared() throws Exception {
+            Claims claims = mock(Claims.class);
+            when(claims.getId()).thenReturn(JTI);
+            when(claims.getExpiration()).thenReturn(new Date(System.currentTimeMillis() + 3_600_000));
+            when(jwtService.parseClaims(TOKEN)).thenReturn(claims);
+
+            var resultado = mockMvc.perform(post("/api/auth/logout").cookie(new Cookie("token", TOKEN)))
+                    .andExpect(status().isNoContent())
+                    .andReturn();
+
+            assertThat(resultado.getResponse().getHeader("Set-Cookie")).contains("Max-Age=0");
+        }
+    }
+
 
     @Test
     @DisplayName("payload inválido devolve 400 antes de chegar ao service")

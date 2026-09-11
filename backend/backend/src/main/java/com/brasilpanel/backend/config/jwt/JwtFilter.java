@@ -1,5 +1,7 @@
 package com.brasilpanel.backend.config.jwt;
 
+import com.brasilpanel.backend.service.auth.TokenDenylistService;
+import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -30,6 +32,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
+    private final TokenDenylistService tokenDenylist;
 
     @Override
     protected void doFilterInternal(
@@ -46,11 +49,20 @@ public class JwtFilter extends OncePerRequestFilter {
                 return;
             }
 
-            final String email = jwtService.extractEmail(token);
+            // Um parse só: o subject, o jti e a validade saem das mesmas claims.
+            final Claims claims = jwtService.parseClaims(token);
+            final String email = claims.getSubject();
+
+            // Revogado (logout) é recusado antes de tocar no banco de usuários.
+            if (tokenDenylist.isRevoked(claims.getId())) {
+                log.debug("Token revogado apresentado em [{}].", request.getRequestURI());
+                filterChain.doFilter(request, response);
+                return;
+            }
 
             if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(email);
-                if (jwtService.isTokenValid(token, userDetails)) {
+                if (jwtService.isTokenValid(claims, userDetails)) {
                     UsernamePasswordAuthenticationToken authToken =
                             new UsernamePasswordAuthenticationToken(
                                     userDetails, null, userDetails.getAuthorities()
