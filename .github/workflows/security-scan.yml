@@ -43,7 +43,13 @@ jobs:
       # vulnerabilidade conhecida de severidade alta ou crítica. Dívida que já
       # existia na base não entra na conta — é isso que torna seguro reprovar
       # desde o primeiro dia.
+      # continue-on-error NO PASSO enquanto o Dependency graph estiver desligado:
+      # sem ele a action responde "not supported on this repository" e a
+      # verificação fica vermelha para sempre, sem nunca ter olhado nada.
+      # Depois de ligar em Settings > Code security, remover esta linha para a
+      # verificação voltar a reprovar de verdade.
       - name: Revisar dependências adicionadas
+        continue-on-error: true
         uses: actions/dependency-review-action@v4
         with:
           fail-on-severity: high
@@ -55,10 +61,10 @@ jobs:
   trivy:
     name: Inventário de vulnerabilidades
     runs-on: ubuntu-latest
-    # Blindagem no nível do job: nem uma falha do próprio scanner (versão da
-    # action, indisponibilidade da base de CVEs, timeout de rede) consegue
-    # marcar esta verificação como reprovada. Enquanto o inventário for só
-    # para enxergar, ele não pode ter voz sobre o deploy.
+    # Blindagem no nível do job: uma falha DENTRO dos passos (base de CVEs fora
+    # do ar, timeout de rede, achado) não marca esta verificação como reprovada.
+    # Não cobre falha na RESOLUÇÃO das actions, que acontece antes de o job
+    # começar — por isso a versão abaixo é uma tag verificada, não um palpite.
     continue-on-error: true
     permissions:
       contents: read
@@ -84,9 +90,9 @@ jobs:
         run: mvn -B package -DskipTests
 
       - name: Escanear o backend
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
-          scan-type: rootfs
+          scan-type: fs
           scan-ref: backend/backend/target
           format: sarif
           output: trivy-backend.sarif
@@ -95,7 +101,7 @@ jobs:
           exit-code: '0'
 
       - name: Escanear o frontend
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
           scan-ref: frontend
