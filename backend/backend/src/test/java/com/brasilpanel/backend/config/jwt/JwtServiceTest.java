@@ -10,6 +10,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
+import io.jsonwebtoken.JwtException;
+import org.junit.jupiter.api.Nested;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.nio.charset.StandardCharsets;
@@ -194,5 +196,57 @@ class JwtServiceTest {
                 .password("irrelevante").authorities("ROLE_USER").build();
 
         assertThat(jwtService.isTokenValid(token, outro)).isTrue();
+    }
+
+    /**
+     * O {@code aud} responde "este token foi emitido para mim?". Hoje o emissor e o
+     * verificador são o mesmo serviço, então o ganho é pequeno; existe para o dia em
+     * que não forem, quando um token legítimo emitido para outro serviço que
+     * compartilhe o segredo seria aceito aqui sem ele.
+     */
+    @Nested
+    @DisplayName("Audiência do token")
+    class Audiencia {
+
+        @Test
+        @DisplayName("o token emitido carrega a audiência e se valida")
+        void issuedTokenCarriesTheAudience() {
+            String token = jwtService.generateToken(user);
+
+            assertThat(jwtService.isTokenValid(token, user)).isTrue();
+        }
+
+        @Test
+        @DisplayName("token sem audiência é recusado, mesmo assinado com a chave certa")
+        void tokenWithoutAudienceIsRejected() {
+            // Assinado com o MESMO secret e com o issuer certo: só falta o aud.
+            // Sem requireAudience, este token passaria.
+            String semAudiencia = Jwts.builder()
+                    .issuer("brasil-panel")
+                    .subject(user.getEmail())
+                    .issuedAt(new Date())
+                    .expiration(new Date(System.currentTimeMillis() + ONE_DAY_MS))
+                    .signWith(Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8)))
+                    .compact();
+
+            assertThatThrownBy(() -> jwtService.isTokenValid(semAudiencia, user))
+                    .isInstanceOf(JwtException.class);
+        }
+
+        @Test
+        @DisplayName("token com audiência de outro serviço é recusado")
+        void tokenForAnotherAudienceIsRejected() {
+            String outraAudiencia = Jwts.builder()
+                    .issuer("brasil-panel")
+                    .audience().add("outro-servico").and()
+                    .subject(user.getEmail())
+                    .issuedAt(new Date())
+                    .expiration(new Date(System.currentTimeMillis() + ONE_DAY_MS))
+                    .signWith(Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8)))
+                    .compact();
+
+            assertThatThrownBy(() -> jwtService.isTokenValid(outraAudiencia, user))
+                    .isInstanceOf(JwtException.class);
+        }
     }
 }

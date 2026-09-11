@@ -70,11 +70,20 @@ public class JwtFilter extends OncePerRequestFilter {
 
 
     /**
-     * Obtém o JWT do cookie httpOnly e, se ausente, do header Authorization.
+     * Obtém o JWT do cookie httpOnly. Única via.
      *
-     * <p>O cookie é a via usada pelo navegador — inacessível ao JavaScript, portanto
-     * imune a exfiltração por XSS. O header permanece aceito para clientes que não
-     * são navegador (Swagger, curl, testes de integração).
+     * <p>O cookie é inacessível ao JavaScript, portanto imune a exfiltração por XSS.
+     *
+     * <p><b>O header {@code Authorization: Bearer} deixou de ser aceito.</b> Ele era
+     * um segundo canal para a mesma credencial, e um canal que vaza com facilidade:
+     * header de requisição aparece em log de proxy, de CDN e de ferramenta de
+     * diagnóstico, lugares onde um cookie httpOnly não costuma parar. O javadoc
+     * anterior dizia que ele existia para Swagger e curl, mas o projeto não declara
+     * nenhum {@code SecurityScheme} e o Swagger vem desligado por padrão — ou seja,
+     * não havia cliente algum dependendo disso.
+     *
+     * <p>Se um dia existir cliente que não seja navegador, o caminho é um esquema
+     * próprio para ele, não reabrir este.
      */
     private String resolveToken(HttpServletRequest request) {
         if (request.getCookies() != null) {
@@ -83,11 +92,6 @@ public class JwtFilter extends OncePerRequestFilter {
                     return cookie.getValue();
                 }
             }
-        }
-
-        final String authHeader = request.getHeader("Authorization");
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            return authHeader.substring(7);
         }
         return null;
     }
