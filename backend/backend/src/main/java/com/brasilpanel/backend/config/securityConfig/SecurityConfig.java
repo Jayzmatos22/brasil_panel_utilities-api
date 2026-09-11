@@ -129,9 +129,16 @@ public class SecurityConfig {
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
-        // Antes do JwtFilter: recusar excesso é mais barato que validar token, e o
-        // teto vale para tráfego anônimo, que é a maior parte.
-        rateLimitFilter.ifAvailable(filter -> http.addFilterBefore(filter, JwtFilter.class));
+        // DEPOIS do JwtFilter, não antes. A ordem inversa era mais barata — recusar
+        // excesso sem validar token —, mas deixava o RateLimitFilter sem nenhuma
+        // identidade confiável: ele só via o X-Forwarded-For, que o cliente controla,
+        // e bastava variar o header para ganhar um balde novo a cada requisição.
+        //
+        // Rodando depois, o SecurityContext já está populado e o teto de quem está
+        // logado passa a ser chaveado pelo sub do JWT, que é assinado. O custo é uma
+        // verificação HMAC antes de recusar — microssegundos, e só para quem mandou
+        // token; requisição anônima sai do JwtFilter no primeiro `if`.
+        rateLimitFilter.ifAvailable(filter -> http.addFilterAfter(filter, JwtFilter.class));
 
         return http.build();
     }
