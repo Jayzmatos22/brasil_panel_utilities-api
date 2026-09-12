@@ -4,7 +4,8 @@ name: Varredura de dependências
 #
 #   dependency-review  — só em PR, e REPROVA. Olha apenas o que a PR ACRESCENTA,
 #                        então não pode falhar por dívida preexistente. É a trava
-#                        que impede o problema novo de entrar.
+#                        que impede o problema novo de entrar. Depende do
+#                        Dependency graph estar ligado no repositório.
 #
 #   trivy              — inventário completo, e NÃO reprova (ver o comentário no
 #                        job). Serve para enxergar e triar o que já está aqui.
@@ -39,17 +40,18 @@ jobs:
       - name: Baixar código do repositório
         uses: actions/checkout@v4
 
-      # Compara a base com a head e falha se a PR INTRODUZIR dependência com
-      # vulnerabilidade conhecida de severidade alta ou crítica. Dívida que já
-      # existia na base não entra na conta — é isso que torna seguro reprovar
-      # desde o primeiro dia.
-      # continue-on-error NO PASSO enquanto o Dependency graph estiver desligado:
-      # sem ele a action responde "not supported on this repository" e a
-      # verificação fica vermelha para sempre, sem nunca ter olhado nada.
-      # Depois de ligar em Settings > Code security, remover esta linha para a
-      # verificação voltar a reprovar de verdade.
+      # REPROVA de verdade. Compara a base com a head e falha se a PR INTRODUZIR
+      # dependência com vulnerabilidade conhecida de severidade alta ou crítica.
+      #
+      # Dívida que já existia na base NÃO entra na conta — é isso que torna seguro
+      # reprovar sem antes triar o que já está aqui. Uma CVE publicada amanhã numa
+      # biblioteca que já usamos não derruba PR nenhuma; quem pega essas é o
+      # inventário do Trivy e o Dependabot.
+      #
+      # Rodou tolerante até o Dependency graph ser ligado no repositório: sem ele a
+      # action responde "not supported on this repository" e a verificação ficaria
+      # vermelha para sempre sem nunca ter olhado nada.
       - name: Revisar dependências adicionadas
-        continue-on-error: true
         uses: actions/dependency-review-action@v4
         with:
           fail-on-severity: high
