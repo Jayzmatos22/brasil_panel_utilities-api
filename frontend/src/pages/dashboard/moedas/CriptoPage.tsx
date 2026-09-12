@@ -35,6 +35,45 @@ const SOURCE_LABEL: Record<CryptoSource, string> = {
   coinmarketcap: 'CoinMarketCap',
 };
 
+/**
+ * Ícone da moeda, servido pela própria fonte:
+ *   CoinGecko     → coin-images.coingecko.com (assets.coingecko.com no legado)
+ *   CoinMarketCap → s2.coinmarketcap.com/static/img/coins/64x64/{id}.png
+ *
+ * Esses três hosts precisam estar em `img-src` no vercel.json. Sem eles a CSP
+ * recusa a imagem e a tabela inteira fica com o placeholder de imagem quebrada
+ * — foi exatamente o que aconteceu quando a CSP entrou com `img-src 'self'
+ * data:`. Ao apertar a CSP de novo, mexer aqui junto.
+ *
+ * O fallback cobre o caso pontual: moeda nova que ainda não tem arte na fonte,
+ * ou URL que morreu depois do snapshot. Em vez do ícone quebrado, a inicial do
+ * símbolo — que já identifica a moeda na linha.
+ */
+export function CoinIcon({ src, symbol }: { src?: string; symbol: string }) {
+  const [falhou, setFalhou] = useState(false);
+
+  if (!src || falhou) {
+    return (
+      <span
+        aria-hidden="true"
+        className="w-5 h-5 rounded-full bg-surface-3 border border-hairline grid place-items-center text-[9px] font-semibold uppercase text-fg-dim"
+      >
+        {symbol.slice(0, 2)}
+      </span>
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt=""
+      loading="lazy"
+      onError={() => setFalhou(true)}
+      className="w-5 h-5 rounded-full"
+    />
+  );
+}
+
 /** "há 4 min" — deixa explicito que o dado vem de um snapshot, nao de chamada ao vivo */
 function timeAgo(iso?: string): string | null {
   if (!iso) return null;
@@ -355,7 +394,10 @@ export default function CriptoPage() {
                       <td className="py-2 px-3 text-slate-400">{i + 1}</td>
                       <td className="py-2 px-3">
                         <div className="flex items-center gap-2">
-                          <img src={coin.imageUrl} alt={coin.name} className="w-5 h-5 rounded-full" />
+                          {/* alt vazio de proposito: o nome da moeda vem logo
+                              ao lado, em texto — repetir no alt so duplica a
+                              leitura no leitor de tela. */}
+                          <CoinIcon src={coin.imageUrl} symbol={coin.symbol} />
                           <span className="text-white font-medium">{coin.name}</span>
                           <span className="text-slate-400 uppercase tracking-wider">{coin.symbol}</span>
                         </div>
