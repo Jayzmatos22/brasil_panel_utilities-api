@@ -5,7 +5,8 @@
 # 🇧🇷 Brasil Panel
 
 **Painel de dados econômicos e financeiros do Brasil.**  
-Indicadores oficiais, cotações ao vivo, séries históricas e dados geográficos reunidos em uma interface limpa e rápida.
+Indicadores oficiais, cotações ao vivo, séries históricas e dados geográficos reunidos
+em uma interface limpa e rápida.
 
 <br/>
 
@@ -15,9 +16,12 @@ Indicadores oficiais, cotações ao vivo, séries históricas e dados geográfic
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL_18-316192?style=for-the-badge&logo=postgresql&logoColor=white)
 ![React](https://img.shields.io/badge/React_19-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
 ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
-![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite_8-646CFF?style=for-the-badge&logo=vite&logoColor=white)
 ![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS_4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
-![Maven](https://img.shields.io/badge/Maven-C71A36?style=for-the-badge&logo=apachemaven&logoColor=white)
+
+<br/>
+
+**96 endpoints · 10+ fontes oficiais · 23 tabelas · 26 rotas no front**
 
 </div>
 
@@ -25,478 +29,368 @@ Indicadores oficiais, cotações ao vivo, séries históricas e dados geográfic
 
 ## 📋 Sumário
 
-- [Visão Geral](#-visão-geral)
-- [Stack](#-stack)
+- [O que é](#-o-que-é)
+- [O painel](#-o-painel)
 - [Arquitetura](#-arquitetura)
-- [APIs Externas Integradas](#-apis-externas-integradas)
-- [Endpoints do Backend](#-endpoints-do-backend)
-- [Banco de Dados](#-banco-de-dados)
-- [Frontend — Páginas](#-frontend--páginas)
-- [Fluxo de Autenticação](#-fluxo-de-autenticação)
-- [Cache](#-cache)
-- [Estrutura do Projeto](#-estrutura-do-projeto)
-- [Como Executar](#-como-executar)
+- [O ciclo completo](#-o-ciclo-completo)
+- [Stack](#-stack)
+- [Fontes de dados](#-fontes-de-dados)
+- [Páginas](#-páginas)
+- [Cache em duas camadas](#-cache-em-duas-camadas)
+- [Estrutura do projeto](#-estrutura-do-projeto)
+- [Como executar](#-como-executar)
 - [Produção](#-produção)
-- [Segurança e Credenciais](#-segurança-e-credenciais)
+- [Segurança](#-segurança)
+- [Documentação detalhada](#-documentação-detalhada)
 
 ---
 
-## 🎯 Visão Geral
+## 🎯 O que é
 
-O **Brasil Panel** é um monorepo full-stack que agrega dados de 10 APIs públicas e privadas, persiste tudo em PostgreSQL e exibe em um dashboard interativo com autenticação JWT.
+O **Brasil Panel** é um monorepo full-stack que agrega dados de mais de dez APIs
+públicas — Banco Central, IBGE, IPEA, World Bank, entre outras —, persiste o que vale a
+pena guardar em PostgreSQL e exibe tudo em um dashboard com autenticação própria.
 
+Não é um agregador de links: cada série passa pelo backend, que normaliza o formato,
+guarda histórico e serve o frontend a partir de um cache dimensionado pela cadência de
+cada fonte. É o que permite que uma página com quinze gráficos abra sem estourar a cota
+de nenhuma API.
+
+Em produção o frontend está na **Vercel**, o backend roda como container no **Render** e
+o banco fica no **Neon** — o passo a passo está em [DEPLOY.md](DEPLOY.md).
+
+---
+
+## 🖼 O painel
+
+<div align="center">
+
+![Painel no desktop](docs/img/painel-desktop.png)
+
+<sub>Painel principal — indicadores do Banco Central, séries do IPEA e cotações</sub>
+
+</div>
+
+<br/>
+
+<div align="center">
+
+![Gráficos no desktop](docs/img/desktop-grafico.png)
+
+<sub>Séries históricas com ECharts — participação de cada parte no total, calculada no cliente</sub>
+
+</div>
+
+<br/>
+
+<table>
+<tr>
+<td width="50%" align="center">
+
+![Painel no tablet](docs/img/painel-tablet.png)
+
+<sub><b>Tablet</b> — a grade recompõe em duas colunas</sub>
+
+</td>
+<td width="50%" align="center">
+
+![Painel no mobile](docs/img/painel-mobile.jpg)
+
+<sub><b>Mobile</b> — coluna única, menu em overlay</sub>
+
+</td>
+</tr>
+<tr>
+<td width="50%" align="center">
+
+![Login no mobile](docs/img/login-mobile.png)
+
+<sub><b>Login</b> — split-screen com painel de marca</sub>
+
+</td>
+<td width="50%" align="center">
+
+![Sobre no mobile](docs/img/sobre-mobile.png)
+
+<sub><b>Landing</b> — a arara é uma composição única, sem camadas de CSS por cima</sub>
+
+</td>
+</tr>
+</table>
+
+---
+
+## 🏗 Arquitetura
+
+![Arquitetura do Brasil Panel](docs/img/arquitetura.png)
+
+O desenho comunica duas decisões, e as duas são de segurança antes de serem de
+performance:
+
+**O navegador nunca fala com o Render.** O `vercel.json` reescreve `/api/*` para o
+backend, então, do ponto de vista do navegador, front e API têm a **mesma origem**. Não
+existe CORS a configurar e o cookie de sessão pode ser `HttpOnly` + `SameSite=Lax` sem
+nenhuma exceção — é o que torna o JWT inacessível ao JavaScript e, portanto, imune a
+exfiltração por XSS.
+
+**Só o backend alcança as APIs públicas.** As chaves da Alpha Vantage, da Metals.dev e do
+CoinMarketCap nunca chegam ao cliente, e o cache do servidor é **compartilhado entre
+todos os usuários** — o segundo visitante do dia não gasta cota nenhuma. Se o front
+chamasse as fontes direto, cada aba abriria a própria cota e as chaves estariam no bundle.
+
+```mermaid
+flowchart LR
+    subgraph NAV["🌐 Navegador"]
+        R["React 19 · Vite 8<br/>TanStack Query"]
+    end
+    subgraph VER["▲ Vercel"]
+        S["Estático + CDN<br/>rewrite /api/*"]
+    end
+    subgraph REN["🐳 Render"]
+        B["Spring Boot 3.5<br/>Java 21"]
+    end
+    subgraph DAT["Dados"]
+        N[("Neon<br/>PostgreSQL 18")]
+        M["Resend<br/>SMTP"]
+    end
+    subgraph EXT["APIs públicas"]
+        E["BCB · IBGE · IPEA · SIDRA<br/>World Bank · Frankfurter<br/>AlphaVantage · Metals.dev<br/>CoinGecko · CMC · ViaCep"]
+    end
+
+    R -->|"mesma origem"| S
+    S -->|"REST/JSON<br/>cookie HttpOnly"| B
+    B --> N
+    B --> M
+    B ==>|"só o backend sai"| E
 ```
-frontend (React 19 + Vite)  ──►  backend (Spring Boot 3.5)  ──►  APIs externas
-                                           │
-                                    PostgreSQL 18
-                        dev: Docker local · prod: Neon (serverless)
+
+### Camadas do backend
+
+```mermaid
+flowchart TD
+    A["RateLimitFilter"] --> B["JwtFilter"]
+    B --> C["SecurityConfig<br/>rotas públicas vs. autenticadas vs. ROLE_ADMIN"]
+    C --> D["Controllers · 16"]
+    D --> E["Services"]
+    E --> F{"@Cacheable<br/>77 caches Caffeine"}
+    F -->|hit| D
+    F -->|miss| G["RestClient<br/>HTTP/1.1 forçado"]
+    F -->|miss| H["Repositories · JPA"]
+    G --> I["API externa"]
+    H --> J[("PostgreSQL")]
+    I --> K["SnapshotService<br/>grava o histórico"]
+    K --> J
 ```
 
-Em produção o backend roda como container no Render e o banco fica no Neon —
-ver [DEPLOY.md](DEPLOY.md).
+O `RestClient` roda com **HTTP/1.1 forçado**: o WAF do BCB rejeita HTTP/2 com `502`.
+
+---
+
+## 🔄 O ciclo completo
+
+Do clique ao pixel, quando um usuário abre `/dashboard/economia`:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as Usuário
+    participant V as Vercel (CDN)
+    participant Q as TanStack Query
+    participant B as Backend
+    participant C as Caffeine
+    participant D as PostgreSQL
+    participant X as API externa
+
+    U->>V: GET /dashboard/economia
+    V-->>U: index.html + chunk da rota (lazy)
+    Note over U: React Router monta a página<br/>RouteAnnouncer foca o h1
+
+    U->>Q: useEconomy()
+    alt cache do cliente fresco (staleTime)
+        Q-->>U: dados de memória, zero rede
+    else stale ou primeiro acesso
+        Q->>V: GET /api/bcb/selic
+        V->>B: rewrite → Render
+        B->>B: JwtFilter valida o cookie
+        B->>C: @Cacheable("selic")
+        alt hit
+            C-->>B: valor em memória
+        else miss
+            B->>X: GET api.bcb.gov.br (HTTP/1.1)
+            X-->>B: série bruta
+            B->>D: upsert em financial_data_points
+            B->>C: popula o cache (TTL 60min)
+        end
+        B-->>Q: JSON normalizado
+        Q-->>U: render + cache local
+    end
+
+    Note over U: ECharts desenha — a participação<br/>de cada parte no total é calculada no cliente
+```
+
+Três coisas que esse fluxo esconde e que decidem o comportamento observável:
+
+1. **O primeiro acesso do dia é lento.** O Render Free hiberna após ~15 min ociosa e o
+   boot completo do Spring Boot na CPU compartilhada leva **~150 s**. O frontend trata
+   isso como estado de carregamento, com timeout compatível — não como erro.
+2. **O cache do servidor é o que protege a cota.** O cache do cliente (TanStack Query)
+   economiza rede para *aquele* usuário; o do servidor (Caffeine) economiza cota para
+   *todos*. São camadas independentes com propósitos diferentes — ver
+   [Cache em duas camadas](#-cache-em-duas-camadas).
+3. **Nem todo miss vai à API.** No CoinMarketCap, um miss cai no Postgres: só o scheduler
+   gasta crédito. É o que permite TTL curto sem estourar a cota.
 
 ---
 
 ## 🛠 Stack
 
 ### Backend
+
 | Tecnologia | Versão | Uso |
 |---|---|---|
 | ![Java](https://img.shields.io/badge/Java_21-ED8B00?style=flat-square&logo=openjdk&logoColor=white) | 21 | Linguagem principal |
-| ![Spring Boot](https://img.shields.io/badge/Spring_Boot_3.5-6DB33F?style=flat-square&logo=springboot&logoColor=white) | 3.5 | Framework base |
+| ![Spring Boot](https://img.shields.io/badge/Spring_Boot-6DB33F?style=flat-square&logo=springboot&logoColor=white) | 3.5 | Framework base |
 | ![Spring Security](https://img.shields.io/badge/Spring_Security-6DB33F?style=flat-square&logo=springsecurity&logoColor=white) | 6 | Autenticação JWT |
 | ![JPA](https://img.shields.io/badge/Spring_Data_JPA-6DB33F?style=flat-square&logo=spring&logoColor=white) | 3.5 | ORM / repositórios |
-| ![Hibernate](https://img.shields.io/badge/Hibernate_6.6-59666C?style=flat-square&logo=hibernate&logoColor=white) | 6.6 | Implementação JPA |
-| ![PostgreSQL](https://img.shields.io/badge/PostgreSQL_18-316192?style=flat-square&logo=postgresql&logoColor=white) | 18 | Banco de dados |
+| ![Hibernate](https://img.shields.io/badge/Hibernate-59666C?style=flat-square&logo=hibernate&logoColor=white) | 6.6 | Implementação JPA |
+| ![Flyway](https://img.shields.io/badge/Flyway-CC0200?style=flat-square&logo=flyway&logoColor=white) | — | Versionamento do schema |
+| ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=flat-square&logo=postgresql&logoColor=white) | 18 | Banco de dados |
 | ![HikariCP](https://img.shields.io/badge/HikariCP-6DB33F?style=flat-square&logoColor=white) | 6.3 | Pool de conexões |
-| ![Caffeine](https://img.shields.io/badge/Caffeine_Cache-6DB33F?style=flat-square&logo=spring&logoColor=white) | — | Cache em memória |
-| ![Lombok](https://img.shields.io/badge/Lombok-BC4521?style=flat-square&logoColor=white) | — | Redução de boilerplate |
-| ![Swagger](https://img.shields.io/badge/Swagger_UI-85EA2D?style=flat-square&logo=swagger&logoColor=black) | — | Documentação interativa |
+| ![Caffeine](https://img.shields.io/badge/Caffeine-6DB33F?style=flat-square&logo=spring&logoColor=white) | — | Cache em memória (77 caches) |
+| ![Swagger](https://img.shields.io/badge/Swagger_UI-85EA2D?style=flat-square&logo=swagger&logoColor=black) | — | Documentação interativa (só em `dev`) |
 
 ### Frontend
+
 | Tecnologia | Versão | Uso |
 |---|---|---|
-| ![React](https://img.shields.io/badge/React_19-20232A?style=flat-square&logo=react&logoColor=61DAFB) | 19 | UI framework |
-| ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat-square&logo=typescript&logoColor=white) | 5 | Tipagem estática |
-| ![Vite](https://img.shields.io/badge/Vite-646CFF?style=flat-square&logo=vite&logoColor=white) | 6 | Build tool |
-| ![Tailwind](https://img.shields.io/badge/Tailwind_CSS_4-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white) | 4 | Estilização |
-| ![TanStack Query](https://img.shields.io/badge/TanStack_Query_v5-FF4154?style=flat-square&logoColor=white) | 5 | Fetching, cache e estado assíncrono |
-| ![React Router](https://img.shields.io/badge/React_Router_7-CA4245?style=flat-square&logo=react-router&logoColor=white) | 7 | Roteamento SPA |
-| ![Lucide](https://img.shields.io/badge/Lucide_React-F56565?style=flat-square&logoColor=white) | — | Ícones |
+| ![React](https://img.shields.io/badge/React-20232A?style=flat-square&logo=react&logoColor=61DAFB) | 19 | UI |
+| ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat-square&logo=typescript&logoColor=white) | 6 | Tipagem estática |
+| ![Vite](https://img.shields.io/badge/Vite-646CFF?style=flat-square&logo=vite&logoColor=white) | 8 | Build (rolldown) |
+| ![Tailwind](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white) | 4 | Estilização |
+| ![TanStack Query](https://img.shields.io/badge/TanStack_Query-FF4154?style=flat-square&logoColor=white) | 5 | Fetching, cache e estado assíncrono |
+| ![React Router](https://img.shields.io/badge/React_Router-CA4245?style=flat-square&logo=react-router&logoColor=white) | 7 | Roteamento SPA (26 rotas, chunks lazy) |
+| ![ECharts](https://img.shields.io/badge/ECharts-AA344D?style=flat-square&logo=apacheecharts&logoColor=white) | 6 | Gráficos |
+| ![Vitest](https://img.shields.io/badge/Vitest-6E9F18?style=flat-square&logo=vitest&logoColor=white) | 4 | Testes |
+
+**Qualidade.** ESLint com `eslint-plugin-jsx-a11y`, 18 arquivos de teste no front e 48
+no backend, e quatro workflows no GitHub Actions (`ci`, `cd`, `ipea-seed`,
+`security-scan`). O CI roda as migrations em banco limpo e valida contra as entidades.
 
 ---
 
-## 🏗 Arquitetura
+## 🔌 Fontes de dados
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        BROWSER  :5173                               │
-│   React 19 · TailwindCSS 4 · TanStack Query v5 · React Router 7    │
-│                                                                     │
-│  /login-usuario  /registro-usuario                                  │
-│  /dashboard/economia  /acoes  /metais  /cambio  /cripto             │
-│  /dashboard/pib  /salario  /ibge  /bancos  /ipea                    │
-└──────────────────────────┬──────────────────────────────────────────┘
-                           │  REST/JSON  —  JWT em cookie HttpOnly
-                           ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                    SPRING BOOT 3.5  :8080                           │
-│                                                                     │
-│  JwtFilter ──► SecurityConfig ──► Controllers                       │
-│                                                                     │
-│  /api/auth       /api/bcb         /api/quote                        │
-│  /api/metals     /api/coingecko   /api/frankfurter                  │
-│  /api/ibge       /api/ipea        /api/worldbank                    │
-│  /api/banks      /api/viacep                                        │
-│                                                                     │
-│  Services ──► FinancialDataService / SnapshotService                │
-│            ──► StaticDataService                                    │
-│                                                                     │
-│  Caffeine Cache  (@Cacheable — TTL por domínio)                     │
-└──────────┬───────────────────────────────────────────────────────── ┘
-           │  HikariCP                      │  RestClient (HTTP/1.1)
-           ▼                                ▼
-┌──────────────────────┐     ┌──────────────────────────────────────┐
-│  PostgreSQL 18        │     │  APIs Externas                       │
-│  Docker (dev)         │     │                                      │
-│  Neon    (prod)       │     │                                      │
-│                       │     │  🏦 BCB      📊 IPEA                │
-│  financial_series     │     │  📈 Alpha Vantage                   │
-│  financial_data_points│     │  🥇 Metals Dev                      │
-│  stock_snapshots      │     │  ₿  CoinGecko                       │
-│  metal_snapshots      │     │  💱 Frankfurter                     │
-│  crypto_snapshots     │     │  🗺️  IBGE       🏛️ BrasilAPI        │
-│  banks                │     │  🌍 World Bank  📍 ViaCep            │
-│  ibge_states          │     └──────────────────────────────────────┘
-│  ibge_cities          │
-│  users                │
-└──────────────────────┘
-```
-
----
-
-## 🔌 APIs Externas Integradas
-
-| API | Dados | Persistência | Chave necessária |
+| API | Dados | Persistência | Chave |
 |---|---|---|---|
-| **BCB** (Banco Central) | CDI, SELIC, IPCA, PTAX, Salário Mínimo | `financial_data_points` | — (pública) |
-| **Alpha Vantage** | Cotações de ações (PETR4, VALE3, AAPL...) | `stock_snapshots` | ✅ gratuita |
-| **Metals Dev** | Ouro, prata, platina, paládio, industriais em BRL | `metal_snapshots` | ✅ gratuita |
-| **CoinGecko** | Top 100 criptos por market cap em BRL | `crypto_snapshots` | — (pública) |
-| **Frankfurter** | Câmbio entre moedas + histórico | — | — (pública) |
-| **IBGE** | Estados e municípios | `ibge_states`, `ibge_cities` | — (pública) |
-| **IPEA Data** | Emprego, renda, desigualdade, macro, preços, população | — | — (pública) |
-| **World Bank** | PIB do Brasil por ano | — | — (pública) |
-| **BrasilAPI** | Lista de bancos brasileiros | `banks` | — (pública) |
-| **ViaCep** | Consulta de endereço por CEP | — | — (pública) |
+| **BCB** (Banco Central) | CDI, SELIC, IPCA, PTAX, salário mínimo | `financial_data_points` | — pública |
+| **IPEA Data** | 45 séries: emprego, renda, desigualdade, macro, preços, população, balança, exportações, impostos, câmbio contratado | — | — pública |
+| **IBGE** | Estados e municípios | `ibge_states`, `ibge_cities` | — pública |
+| **SIDRA** (IBGE) | PIB por unidade da federação | `pib_estadual_snapshots` | — pública |
+| **World Bank** | PIB do Brasil por ano | `pib_snapshots` | — pública |
+| **Frankfurter** | Câmbio entre moedas + histórico | — | — pública |
+| **Alpha Vantage** | Cotações de ações (PETR4, VALE3, AAPL…) | `stock_snapshots` | ✅ gratuita |
+| **Metals Dev** | Ouro, prata, platina, paládio, industriais em BRL | `metal_snapshots`, `lbma_fixings` | ✅ gratuita |
+| **CoinGecko** | Top 100 criptos por market cap em BRL | `crypto_snapshots` | — pública |
+| **CoinMarketCap** | Listagem, busca e métricas globais | `cmc_crypto_snapshots` | ⚪ opcional |
+| **BrasilAPI** | Lista de bancos brasileiros | `banks` | — pública |
+| **ViaCep** | Endereço por CEP e busca reversa | — | — pública |
+
+> **Rotação de chaves Alpha Vantage** via `AtomicInteger` — contorna o limite de 25
+> requisições por dia por chave.
 
 ---
 
-## 📡 Endpoints do Backend
+## 🖥 Páginas
 
-> Documentação interativa: `http://localhost:8080/swagger-ui.html` — **só no perfil
-> `dev`**. Em produção o Swagger é desabilitado, e as únicas rotas que respondem são
-> `/api/**` e `/actuator/health`. `GET /` devolve `404` por design: este serviço é a
-> API, não o site.
+```
+público
+  /                          → landing (Sobre) para quem não está logado
+  /sobre                     → landing
+  /login-usuario             → login          (split-screen com brand panel)
+  /registro-usuario          → cadastro
+  /verificar-email           → código de 6 dígitos
+  /esqueci-senha             → pedido de recuperação
+  /redefinir-senha           → nova senha com código
+  /confirmar-admin/login     → segundo fator do admin
+  /confirmar-admin/senha     → segundo fator da troca de senha
 
-### 🔐 Autenticação — `/api/auth`
-| Método | Rota | Descrição |
+autenticado
+  /dados-perfil              → perfil do usuário
+  /dashboard/economia        → CDI · SELIC · IPCA · PTAX
+  /dashboard/economia/salario   → salário mínimo
+  /dashboard/economia/pib       → PIB — World Bank e SIDRA
+  /dashboard/economia/impostos  → 7 tributos + arrecadação total
+  /dashboard/mercado/acoes      → cotações — Alpha Vantage
+  /dashboard/mercado/metais     → metais — Metals Dev e LBMA
+  /dashboard/moedas/cambio      → câmbio — Frankfurter
+  /dashboard/moedas/cripto      → criptomoedas — CoinGecko e CMC
+  /dashboard/comercio/exportacoes        → composição das exportações
+  /dashboard/comercio/cambioComercial    → câmbio contratado
+  /dashboard/comercio/balancaPagamentos  → balança de pagamentos
+  /dashboard/brasil/ibge        → estados e municípios
+  /dashboard/brasil/ipea        → indicadores sociais
+  /dashboard/brasil/bancos      → bancos — BrasilAPI
+  /dashboard/settings           → conta e segurança
+
+admin
+  /dashboard/admin/usuarios  → promover, rebaixar, listar
+```
+
+Cada rota é um chunk separado (`React.lazy`), então abrir o painel não baixa o gráfico
+de exportações.
+
+### Três modelos de "parte do todo"
+
+Séries econômicas se compõem de maneiras diferentes, e tratar as três como uma só produz
+número errado. O front distingue:
+
+| Modelo | Quando | Visual |
 |---|---|---|
-| `POST` | `/api/auth/register` | Cria o usuário e envia código de verificação por e-mail |
-| `POST` | `/api/auth/verify-email` | Valida o código de 6 dígitos e abre a sessão |
-| `POST` | `/api/auth/resend-code` | Reenvia o código de verificação |
-| `POST` | `/api/auth/login` | Autentica e devolve o cookie de sessão — para **admin**, responde `202` e nenhum cookie |
-| `POST` | `/api/auth/admin/confirm-login` | Conclui o login de admin com o código recebido por e-mail |
-| `POST` | `/api/auth/logout` | Encerra a sessão (apaga o cookie) |
-| `PATCH` | `/api/auth/update-name` | Altera o nome — requer sessão |
-| `PATCH` | `/api/auth/update-password` | Altera a senha — requer sessão; para **admin**, responde `202` e a troca fica retida |
-| `POST` | `/api/auth/admin/confirm-password` | Aplica a troca de senha do admin com o código recebido por e-mail |
-| `POST` | `/api/auth/forgot-password` | Pede o código de recuperação — resposta idêntica exista ou não a conta |
-| `POST` | `/api/auth/reset-password` | Redefine a senha com o código e derruba as sessões abertas |
-| `DELETE` | `/api/auth/delete-account` | Exclui a conta — requer sessão |
+| `AggregatedTotal` | as partes **somam** o total (7 tributos → arrecadação) | barra empilhada |
+| `SharesOfTotal` | cada parte tem série própria e podem se sobrepor | uma barra por parte |
+| `WaterfallBreakdown` | soma algébrica, aceita negativo (balança) | cascata |
 
-> Trocar a senha **invalida todas as sessões abertas**, inclusive em outros
-> dispositivos — ver [Fluxo de Autenticação](#-fluxo-de-autenticação).
-
-> **Segundo fator do admin.** Login e troca de senha da conta ADMIN exigem um código
-> de 6 dígitos enviado ao endereço de `ADMIN_SECURITY_EMAIL`. A senha, sozinha, não
-> dá acesso: o `202` não emite cookie e a troca não toca em `users.password` até a
-> confirmação. `ADMIN_2FA_ENABLED=false` é a válvula de escape se o e-mail falhar —
-> ver armadilha #8 no [DEPLOY.md](DEPLOY.md).
-> Não há fluxo de recuperação de senha por e-mail.
-
-### 👤 Perfil — `/api/profile`
-| Método | Rota | Descrição |
-|---|---|---|
-| `GET` | `/api/profile/options` | Catálogos de preenchimento (áreas, níveis, profissões) |
-| `GET` | `/api/profile/me` | Perfil do usuário autenticado |
-| `PUT` | `/api/profile/me` | Atualiza o perfil |
-
-### 🛡️ Administração — `/api/admin` · requer `ROLE_ADMIN`
-| Método | Rota | Descrição |
-|---|---|---|
-| `GET` | `/api/admin/users` | Lista os usuários |
-| `PUT` | `/api/admin/users/{id}/promote` | Promove a ADMIN |
-| `PUT` | `/api/admin/users/{id}/demote` | Rebaixa a USER |
-| `POST` | `/api/admin/ipea/refresh` | Recarrega as séries do IPEA |
-
-> Um admin não consegue revogar o próprio acesso.
-
-> Login e verificação respondem com `Set-Cookie` (`HttpOnly`). O corpo traz apenas
-> `email`, `role` e `expiresInMs` — **o JWT nunca aparece na resposta**.
-> Após 5 tentativas de login malsucedidas para o mesmo e-mail, a rota devolve `429`
-> por 15 minutos.
-
-### 🏦 Banco Central — `/api/bcb`
-| Método | Rota | Descrição |
-|---|---|---|
-| `GET` | `/api/bcb/cdi` | CDI diário + taxa anualizada (252 d.u.) |
-| `GET` | `/api/bcb/selic` | SELIC diária, mensal, anual e composta 12 meses |
-| `GET` | `/api/bcb/selic/history` | Histórico SELIC — últimos 12 meses |
-| `GET` | `/api/bcb/ipca` | IPCA mensal, acumulado ano, soma e composição 12 meses |
-| `GET` | `/api/bcb/dollar/ptax` | Dólar PTAX (taxa oficial do Banco Central) |
-| `GET` | `/api/bcb/minimum-wage?intervalo=N` | Salário mínimo (N meses, padrão 1) |
-| `GET` | `/api/bcb/minimum-wage/history` | Histórico salário mínimo (20 meses) |
-
-### 📈 Ações — `/api/quote`
-| Método | Rota | Descrição |
-|---|---|---|
-| `GET` | `/api/quote/{symbol}` | Cotação de ação — ex: `PETR4.SA`, `VALE3.SA`, `AAPL` |
-
-### 🥇 Metais — `/api/metals`
-| Método | Rota | Descrição |
-|---|---|---|
-| `GET` | `/api/metals` | Ouro, prata, platina, paládio, cobre, alumínio, níquel, zinco em BRL/toz |
-
-### ₿ Criptomoedas — `/api/coingecko`
-| Método | Rota | Descrição |
-|---|---|---|
-| `GET` | `/api/coingecko` | Top 100 criptomoedas por market cap em BRL |
-| `GET` | `/api/coingecko/{name}` | Preço de cripto específica em BRL — ex: `bitcoin` |
-
-### ₿ Criptomoedas — `/api/coinmarketcap`
-| Método | Rota | Descrição |
-|---|---|---|
-| `GET` | `/api/coinmarketcap` | Listagem por market cap (top 100) |
-| `GET` | `/api/coinmarketcap/global` | Métricas globais do mercado |
-| `GET` | `/api/coinmarketcap/{term}` | Busca por símbolo ou nome |
-
-> Fonte opcional: sem `CMC_API_KEY` ela fica desligada e o painel roda só com o
-> CoinGecko — de propósito, para a aplicação subir sem a chave.
-
-### 💱 Câmbio — `/api/frankfurter`
-| Método | Rota | Descrição |
-|---|---|---|
-| `GET` | `/api/frankfurter?from=USD&to=BRL&amount=1` | Taxa de câmbio atual entre duas moedas |
-| `GET` | `/api/frankfurter/history?from=&to=&startDate=&endDate=` | Histórico por período |
-| `GET` | `/api/frankfurter/last-30-days?from=&to=` | Histórico dos últimos 30 dias |
-
-### 🗺️ IBGE — `/api/ibge`
-| Método | Rota | Descrição |
-|---|---|---|
-| `GET` | `/api/ibge` | Todos os estados com região |
-| `GET` | `/api/ibge/states/{state}/cities` | Municípios por estado (sigla ou ID IBGE) |
-| `GET` | `/api/ibge/states/{state}/cities?filtro=` | Municípios filtrados por nome |
-
-### 📊 IPEA — `/api/ipea`
-| Método | Rota | Descrição |
-|---|---|---|
-| `GET` | `/api/ipea/emprego` | Taxa de desocupação e nível de ocupação |
-| `GET` | `/api/ipea/renda` | Salário mínimo real, PPC e renda per capita |
-| `GET` | `/api/ipea/desigualdade` | Coeficiente de Gini e taxa de pobreza |
-| `GET` | `/api/ipea/macro` | PIB, investimento, Selic, reservas, arrecadação |
-| `GET` | `/api/ipea/precos` | INPC e IGP-M |
-| `GET` | `/api/ipea/populacao` | População total e projeções até 2070 |
-
-### 📉 SIDRA — `/api/sidra`
-| Método | Rota | Descrição |
-|---|---|---|
-| `GET` | `/api/sidra/pib-estados` | PIB por unidade da federação |
-
-### 🌍 World Bank — `/api/worldbank`
-| Método | Rota | Descrição |
-|---|---|---|
-| `GET` | `/api/worldbank` | PIB do Brasil mais recente |
-| `GET` | `/api/worldbank/{year}` | PIB do Brasil por ano |
-
-### 🏛️ Bancos — `/api/banks`
-| Método | Rota | Descrição |
-|---|---|---|
-| `GET` | `/api/banks` | Lista de todos os bancos (código + nome) |
-| `GET` | `/api/banks/{code}` | Banco pelo código COMPE |
-
-### 📍 CEP — `/api/viacep`
-| Método | Rota | Descrição |
-|---|---|---|
-| `GET` | `/api/viacep/{cep}` | Endereço completo por CEP |
+O cálculo é do cliente (`frontend/src/components/indicators/Helpers.ts`), com
+correspondência estrita de mês de referência: parte sem ponto naquele mês entra em
+`omitted[]` em vez de virar zero.
 
 ---
 
-## 🗄 Banco de Dados
+## ⚡ Cache em duas camadas
 
-### Tabelas
+As duas existem por motivos diferentes e não se substituem.
 
-```
-financial_series              financial_data_points
-────────────────              ─────────────────────
-id (PK)                       id (PK)
-code          ◄── "12"=CDI    series_id  (FK → financial_series)
-name              "432"=SELIC reference_date
-source            "BCB"       value
-unit                          secondary_value   ← ex: CDI anualizado
-description                   fetched_at
-created_at / updated_at
+### Cliente — TanStack Query
 
-stock_snapshots               metal_snapshots              crypto_snapshots
-───────────────               ───────────────              ────────────────
-id (PK)                       id (PK)                      id (PK)
-symbol                        reference_ts (unique)        coin_id
-trading_day                   currency                     symbol / name
-open / high / low / price     gold / silver                image_url
-previous_close                platinum / palladium         current_price
-change / change_percent       copper / aluminum            market_cap
-volume                        nickel / zinc                price_change_24h
-fetched_at                    fetched_at                   currency / fetched_at
+Economiza **rede para aquele usuário**. Os tempos vêm de
+`frontend/src/constants/queryTimes.ts`, agrupados pela natureza do dado:
 
-banks                         ibge_states                  ibge_cities
-─────                         ───────────                  ───────────
-id (PK)                       id (PK — IBGE)               id (PK — IBGE)
-code (unique)                 sigla / nome                 nome
-name / full_name              regiao_id / sigla / nome     state_id (FK)
-ispb / synced_at              synced_at                    synced_at
+| Tier | `staleTime` | Refetch | Fontes |
+|---|---|---|---|
+| `STATIC` | 24 h | — | ViaCep · IBGE · bancos |
+| `HISTORICAL` | 24 h | — | IPEA · World Bank |
+| `DAILY` | 1 h | — | BCB (SELIC, IPCA, CDI, PTAX) |
+| `FINANCIAL` | 15 min | 15 min | Alpha Vantage · Metals Dev |
+| `MARKET` | 5 min | 5 min | Frankfurter (padrão do `QueryClient`) |
+| `REALTIME` | 2 min | 2 min | CoinGecko |
 
-users                         user_profiles                email_outbox
-─────                         ─────────────                ────────────
-id (UUID, PK)                 id (PK)                      id (UUID, PK)
-name                          user_id (FK → users)         recipient
-email (unique)                área / subárea               email_type
-password (BCrypt)             nível de educação            status
-role  (USER | ADMIN)          nível profissional           attempts
-verified                                                   next_attempt_at
-verification_code                                          last_error
-verification_code_expires_at                               created_at
-password_changed_at  ← V5                                  completed_at
-created_at
+### Servidor — Caffeine
 
-knowledge_areas · knowledge_subareas · education_levels · profession_levels
-──────────────────────────────────────────────────────────────────────────
-Catálogos do perfil — populados por migration, servidos em /api/profile/options
-
-cmc_crypto_snapshots · cmc_credit_usage · lbma_fixings
-metal_history · pib_snapshots · pib_estadual_snapshots
-─────────────────────────────────────────────────────
-Séries e snapshots das fontes adicionais
-```
-
-**21 tabelas ao todo**, todas criadas pelo Flyway. As migrations vivem em
-`backend/backend/src/main/resources/db/migration/`:
-
-| Migration | O que faz |
-|---|---|
-| `V1__baseline.sql` | Schema inicial — 15 tabelas e 17 índices |
-| `V2__bank_ispb.sql` | Coluna `ispb` em `banks` |
-| `V3__user_profile.sql` | `user_profiles` + os quatro catálogos |
-| `V4__email_outbox.sql` | Fila de e-mail com índices de drenagem |
-| `V5__user_password_changed_at.sql` | `users.password_changed_at` |
-
-### Estratégia de persistência
-
-| Tabela | Quando persiste | Deduplicação |
-|---|---|---|
-| `financial_data_points` | A cada fetch BCB (CDI, PTAX, Salário) | `series_id + reference_date` |
-| `stock_snapshots` | A cada cotação Alpha Vantage | `symbol + trading_day` |
-| `metal_snapshots` | A cada fetch Metals Dev | `reference_ts` (único por horário) |
-| `crypto_snapshots` | A cada fetch CoinGecko (100 registros) | Histórico completo sem dedup |
-| `banks` | Startup — se tabela vazia | Idempotente por `code` |
-| `ibge_states` | Startup — se tabela vazia | Idempotente por `id` IBGE |
-| `ibge_cities` | Primeira consulta por estado (lazy) | Idempotente por estado |
-| `email_outbox` | No cadastro/reenvio, antes de responder | — (uma linha por envio) |
-
-### Fila de e-mail
-
-O envio **não acontece na thread da requisição**. O cadastro grava uma linha em
-`email_outbox` e responde na hora; o `EmailOutboxScheduler` drena a cada 10 segundos,
-com retry e backoff exponencial. Falha de SMTP não derruba o cadastro — a entrada
-fica `PENDING` e é retentada.
-
-| Status | Significado |
-|---|---|
-| `PENDING` | aguardando envio, ou a próxima tentativa após falha |
-| `SENT` | entregue ao servidor SMTP sem erro |
-| `FAILED` | esgotou as tentativas; fica no banco para diagnóstico |
-| `OBSOLETE` | descartado — a conta já se verificou ou foi removida no meio do caminho |
-
-Diagnóstico é uma consulta:
-
-```sql
-select status, count(*) from email_outbox group by status;
-```
-
----
-
-## 🖥 Frontend — Páginas
-
-```
-/                        → redirect para /login-usuario
-/login-usuario           → LoginPage       (split-screen com brand panel)
-/registro-usuario        → RegisterPage    (split-screen com brand panel)
-/dados-endereco          → AddressPage     (onboarding — endereço)
-/dados-bancarios         → BankPage        (onboarding — dados bancários)
-
-/dashboard/economia      → EconomiaPage    CDI · SELIC · IPCA · PTAX
-/dashboard/pib           → PibPage         PIB — World Bank
-/dashboard/salario       → SalarioPage     Salário Mínimo
-/dashboard/acoes         → AcoesPage       Cotações — Alpha Vantage
-/dashboard/metais        → MetaisPage      Metais — Metals Dev
-/dashboard/cambio        → CambioPage      Câmbio — Frankfurter
-/dashboard/cripto        → CriptoPage      Criptomoedas — CoinGecko
-/dashboard/ibge          → IbgePage        Estados e municípios — IBGE
-/dashboard/bancos        → BancosPage      Bancos — BrasilAPI
-/dashboard/ipea          → IpeaPage        Indicadores sociais — IPEA
-```
-
----
-
-## 🔑 Fluxo de Autenticação
-
-O JWT vive **exclusivamente num cookie `HttpOnly`** — inacessível ao JavaScript e,
-portanto, imune a exfiltração por XSS.
-
-```
-  Navegador                Backend                    BD
-    │                         │                        │
-    │── POST  register ──────►│                        │
-    │                         │── INSERT UserEntity ──►│
-    │◄── 201 + código por e-mail                       │
-    │                         │                        │
-    │── POST  verify-email ──►│  valida código          │
-    │                         │  gera JWT (HS256)       │
-    │◄── 200 + Set-Cookie ────│                        │
-    │    HttpOnly; SameSite=Lax; Path=/                │
-    │    corpo: { email, role, expiresInMs }           │
-    │                         │                        │
-    │── GET /api/bcb/selic ──►│                        │
-    │    Cookie: token=…  (anexado pelo navegador)     │
-    │                         │  JwtFilter lê o cookie  │
-    │                         │── GET api.bcb.gov.br ─────────►
-    │◄── 200 { selic } ───────│                        │
-    │                         │                        │
-    │── POST  logout ────────►│                        │
-    │◄── 204 + Set-Cookie Max-Age=0                    │
-```
-
-**Estado no cliente.** Como o token não pode ser lido, o frontend guarda em
-`localStorage` apenas um *hint* de sessão — `{ email, role, exp }`. Ele não
-autentica nada: serve só para decidir o que renderizar e manter as funções de
-guarda síncronas. Toda autorização real acontece no servidor.
-
-O cookie é a **única** via de autenticação. O header `Authorization: Bearer` era
-aceito como segundo canal e deixou de ser: header de requisição aparece em log de
-proxy, de CDN e de ferramenta de diagnóstico, onde um cookie `HttpOnly` não costuma
-parar. Nenhum cliente dependia dele — o projeto não declara `SecurityScheme` e o
-Swagger vem desligado por padrão.
-
-### Invalidação de sessão ao trocar a senha
-
-JWT é stateless — não há store de sessão para limpar, então o token anterior seguiria
-válido até expirar, mesmo depois de a vítima trocar a senha justamente para expulsar
-quem invadiu.
-
-`users.password_changed_at` resolve isso: o `JwtService` recusa todo token cujo `iat`
-seja anterior a esse instante. **Uma coluna substitui o store de sessão que o JWT não
-tem.** A coluna é anulável de propósito — `NULL` significa "senha nunca trocada", e aí
-não há nada a invalidar.
-
-A comparação trunca para segundos, porque o `iat` do JWT tem precisão de segundo (é o
-que a especificação define) e o timestamp do banco tem microssegundos. Sem truncar, o
-token emitido logo **depois** da troca pareceria anterior a ela, e o usuário cairia
-para fora ao logar em seguida. O preço é uma janela de um segundo, documentada no
-javadoc e coberta por teste.
-
----
-
-## ⚡ Cache
-
-São **73 caches**, cada um com TTL e capacidade próprios, agrupados por cadência de
-atualização da fonte:
+Economiza **cota para todos**. São **77 caches**, cada um com TTL e capacidade próprios,
+em seis tiers ajustáveis por perfil em `app.cache.ttl.*`:
 
 | Tier | TTL | Exemplos |
 |---|---|---|
 | `staticData` | 7 dias | `ibge-states` · `ibge-cities` · `ibge-states-ranking` |
-| `daily` | 24h | as ~55 séries do IPEA · `worldbank-*` · `sidra-pib-estados` · `viacep` |
-| `halfDay` | 12h | `banks` · `bank-by-code` · `metals-history` · `lbma-fixing` · `stock-history` |
-| `hourly` | 60min | `selic` · `bcb-ipca` · `bcb-ptax` · `bcb-cdi` · `metals` · `frank-furter` |
-| `intraday` | 15min | `stocks` (cota diária da AlphaVantage) |
-| `realtime` | 5min | `crypto-list` · `crypto-by-name` (free tier do CoinGecko) |
+| `daily` | 24 h | as ~50 séries do IPEA · `worldbank-*` · `sidra-pib-estados` · `viacep` |
+| `halfDay` | 12 h | `banks` · `metals-history` · `lbma-fixing` · `stock-history` |
+| `hourly` | 60 min | `selic` · `bcb-ipca` · `bcb-ptax` · `bcb-cdi` · `metals` · `frank-furter` |
+| `intraday` | 15 min | `stocks` |
+| `realtime` | 5 min | `crypto-list` · `cmc-*` |
 
-Implementado com **Caffeine** (in-memory), dividido em quatro arquivos:
-
-| Arquivo | Papel |
-|---|---|
-| `CacheConfig` | Monta o `CacheManager` |
-| `CacheCatalog` | Catálogo declarativo dos 73 caches, agrupado por fonte |
-| `CacheSpec` | `record (name, ttl, maximumSize)` com validação |
-| `CacheTtlProperties` | Os 6 tiers, ajustáveis por perfil em `app.cache.ttl.*` |
+Quatro arquivos em `config/cache/`: `CacheConfig` monta o `CacheManager`, `CacheCatalog`
+é o catálogo declarativo, `CacheSpec` é o `record (name, ttl, maximumSize)` com validação
+e `CacheTtlProperties` guarda os seis tiers.
 
 > Usa `SimpleCacheManager` de propósito: ele **não** cria caches sob demanda, então um
 > nome errado em `@Cacheable` falha na primeira chamada em vez de criar silenciosamente
@@ -505,116 +399,89 @@ Implementado com **Caffeine** (in-memory), dividido em quatro arquivos:
 
 ---
 
-## 📁 Estrutura do Projeto
+## 📁 Estrutura do projeto
 
 ```
 brasil_panel/
 │
-├── frontend/                        # React 19 + TypeScript + Vite
-│   └── src/
-│       ├── assets/app/              # SVGs: logo tricolor, ícone vertical
-│       ├── components/
-│       │   ├── brand/               # BrandLogo (4 variantes SVG inline)
-│       │   └── forms/               # FormField · SubmitButton · AuthBrandPanel
-│       ├── hooks/                   # useEconomy (CDI · SELIC · IPCA · PTAX)
-│       ├── layouts/                 # DashboardLayout · OnboardingLayout
-│       ├── pages/
-│       │   ├── auth/                # LoginPage · RegisterPage
-│       │   ├── onboarding/          # AddressPage · BankPage
-│       │   └── dashboard/
-│       │       ├── economia/        # EconomiaPage · PibPage · SalarioPage
-│       │       ├── mercado/         # AcoesPage · MetaisPage
-│       │       ├── moedas/          # CambioPage · CriptoPage
-│       │       └── brasil/          # IbgePage · BancosPage · IpeaPage
-│       └── types/                   # Tipos TypeScript por domínio
+├── docs/
+│   ├── API.md                       # referência dos 96 endpoints
+│   ├── BANCO.md                     # schema, migrations, fila de e-mail
+│   └── img/                         # imagens do README
 │
-└── backend/                         # Spring Boot 3.5 · Java 21
-    └── src/main/java/com/brasilpanel/backend/
-        ├── config/
-        │   ├── cache/               # CacheConfig · CacheCatalog · CacheSpec
-        │   │                        # CacheTtlProperties
-        │   ├── cors/                # CorsConfig
-        │   ├── jwt/                 # JwtFilter · JwtService
-        │   ├── ratelimit/           # ApiRateLimiter · RateLimitFilter
-        │   │                        # RateLimitProperties
-        │   ├── scheduler/           # EmailOutboxScheduler
-        │   ├── seed/                # AdminSeeder · FinancialSeriesSeeder
-        │   │                        # StaticDataSeeder
-        │   ├── securityConfig/      # SecurityConfig
-        │   └── webConfig/           # WebConfig (RestClient, HTTP/1.1 forçado)
-        ├── controller/
-        │   ├── api/                 # BcbController · AlphaVantageController
-        │   │                        # MetalsController · CryptoCoinGeckoController
-        │   │                        # FrankfurterController · IbgeController
-        │   │                        # IpeaController · WorldBankController
-        │   │                        # BrasilApiController · ViaCepController
-        │   │                        # SidraController · CryptoCoinMarketCapController
-        │   │                        # AdminController · IpeaAdminController
-        │   ├── auth/                # AuthController
-        │   └── profile/             # ProfileController
-        ├── dto/                     # Records de transferência por API
-        ├── exception/               # Exceptions customizadas + GlobalExceptionHandler
-        ├── model/                   # UserEntity · FinancialSeries · FinancialDataPoint
-        │                            # StockSnapshot · MetalSnapshot · CryptoSnapshot
-        │                            # Bank · IbgeState · IbgeCity
-        ├── repository/
-        │   ├── financial/           # FinancialSeriesRepository · FinancialDataPointRepository
-        │   ├── snapshot/            # StockSnapshotRepository · MetalSnapshotRepository
-        │   │                        # CryptoSnapshotRepository
-        │   ├── static_data/         # BankRepository · IbgeStateRepository · IbgeCityRepository
-        │   └── user/                # UserRepository
-        ├── service/
-        │   ├── api/                 # Um service por API externa (10 services)
-        │   ├── auth/                # AuthService · LoginAttemptLimiter
-        │   ├── email/               # EmailService · EmailOutboxService
-        │   │                        # EmailOutboxDispatcher
-        │   ├── financial/           # FinancialDataService · SnapshotService
-        │   ├── static_data/         # StaticDataService
-        │   └── userDetails/         # UserDetailsServiceImpl
-        ├── validators/              # Validadores por domínio + @ValidCep
-        └── mappers/                 # UserMapper
-
-    src/main/resources/db/migration/  # V1 … V5 — o schema é versionado aqui
-    Dockerfile                        # build multi-estágio (Maven → JRE 21)
+├── frontend/                        # React 19 + TypeScript + Vite 8
+│   ├── vercel.json                  # rewrite /api/* + CSP e headers de segurança
+│   └── src/
+│       ├── api/client · services/   # axios + um service por domínio
+│       ├── assets/                  # SVGs e imagens com hash no bundle
+│       ├── components/
+│       │   ├── brand/               # BrandLogo (variantes SVG inline)
+│       │   ├── forms/               # FormField · SubmitButton · AuthBrandPanel
+│       │   └── indicators/          # cartões, gráficos e os três modelos de composição
+│       ├── constants/               # specs por domínio + queryTimes
+│       ├── hooks/                   # um hook por fonte (useEconomy, useIpea, …)
+│       ├── layouts/                 # DashboardLayout · OnboardingLayout
+│       ├── lib/                     # auth · errors · query · validation
+│       ├── pages/
+│       │   ├── About/               # landing
+│       │   ├── auth/ · onboarding/
+│       │   ├── dashboard/           # economia · mercado · moedas · comercio · brasil
+│       │   └── errors/              # 404 (vaga-lume)
+│       └── types/                   # tipos por domínio
+│
+└── backend/backend/                 # Spring Boot 3.5 · Java 21 · 215 classes
+    ├── Dockerfile                   # multi-estágio (Maven → JRE 21, usuário não-root)
+    └── src/main/
+        ├── java/com/brasilpanel/backend/
+        │   ├── config/
+        │   │   ├── cache/           # CacheConfig · CacheCatalog · CacheSpec · CacheTtlProperties
+        │   │   ├── cors/ · jwt/     # CorsConfig · JwtFilter · JwtService
+        │   │   ├── ratelimit/       # ApiRateLimiter · RateLimitFilter
+        │   │   ├── scheduler/       # EmailOutboxScheduler e demais rotinas
+        │   │   ├── seed/            # AdminSeeder · FinancialSeriesSeeder · StaticDataSeeder
+        │   │   ├── securityConfig/  # SecurityConfig
+        │   │   └── webConfig/       # RestClient (HTTP/1.1 forçado)
+        │   ├── controller/          # api/ · auth/ · profile/ — 16 controllers
+        │   ├── dto/ · mappers/      # records de transferência
+        │   ├── exception/           # GlobalExceptionHandler
+        │   ├── model/ · repository/ # entidades e repositórios JPA
+        │   ├── service/             # api/ · auth/ · email/ · financial/ · static_data/
+        │   └── validators/          # validadores por domínio + @ValidCep
+        └── resources/db/migration/  # V1 … V8 — o schema é versionado aqui
 ```
 
 ---
 
-## 🚀 Como Executar
+## 🚀 Como executar
 
 ### Pré-requisitos
-- Java 21+
-- Node.js 20+
-- Docker (com container PostgreSQL)
-- Maven 3.9+ (ou use o `./mvnw` incluso)
+- Java 21+ · Node.js 20+ · Docker · Maven 3.9+ (ou o `./mvnw` incluso)
 
-### 1. Banco de dados (Docker)
+### 1. Banco de dados
 
 ```bash
 cd backend/backend
 docker compose up -d
 ```
 
-Só isso. O `compose.yaml` já cria o banco `brasil_panel`, o usuário e as permissões
-— não é preciso rodar nenhum `psql` manualmente.
+Só isso. O `compose.yaml` já cria o banco `brasil_panel`, o usuário e as permissões — não
+é preciso rodar nenhum `psql` manualmente.
 
 | | Valor |
 |---|---|
-| Banco | `brasil_panel` |
-| Usuário | `brasil_panel` |
-| Senha | `brasil_panel` |
+| Banco / usuário / senha | `brasil_panel` |
 | Porta | `5432` |
 
-> Credenciais de desenvolvimento local, propositalmente simples: o container não
-> é exposto para fora da máquina. Em produção tudo vem de variáveis de ambiente
-> — ver [DEPLOY.md](DEPLOY.md).
+> Credenciais de desenvolvimento local, propositalmente simples: o container não é
+> exposto para fora da máquina. Em produção tudo vem de variáveis de ambiente — ver
+> [DEPLOY.md](DEPLOY.md).
 
-### 2. Criar `application-dev.yml`
+### 2. `application-dev.yml`
 
 Criar em `backend/backend/src/main/resources/application-dev.yml` (**não commitado**):
 
 ```yaml
-# Obrigatório: não há mais valor padrão versionado para o secret.
+# Obrigatório: não há valor padrão versionado para o secret.
 # Gere com um RNG criptográfico (mínimo 32 bytes):
 #   $b = New-Object byte[] 48
 #   [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b)
@@ -630,7 +497,7 @@ spring:
     password: brasil_panel
   jpa:
     hibernate:
-      ddl-auto: validate     # o schema vem do Flyway, não do Hibernate
+      ddl-auto: validate        # o schema vem do Flyway, não do Hibernate
     show-sql: true
     open-in-view: false
     properties:
@@ -653,12 +520,11 @@ cd backend/backend
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
-Na primeira inicialização o **Flyway** cria todo o schema (o Hibernate roda com
-`ddl-auto: validate` e nunca altera nada), e em seguida os seeders executam
-automaticamente:
-- ✅ 9 séries financeiras do BCB inseridas em `financial_series`
-- ✅ ~260 bancos da BrasilAPI inseridos em `banks`
-- ✅ 27 estados do IBGE inseridos em `ibge_states`
+Na primeira inicialização o **Flyway** cria todo o schema e os seeders rodam em seguida:
+
+- ✅ 9 séries financeiras do BCB em `financial_series`
+- ✅ ~260 bancos da BrasilAPI em `banks`
+- ✅ 27 estados do IBGE em `ibge_states`
 - ✅ admin criado — **apenas se `ADMIN_PASSWORD` estiver definida**; sem ela o seeder
   registra um aviso e não cria nada
 
@@ -674,16 +540,23 @@ npm run dev
 
 > 🌐 App: `http://localhost:5173`
 
+### Testes
+
+```bash
+cd frontend && npm test          # Vitest
+cd backend/backend && ./mvnw test
+```
+
 ---
 
 ## 🌐 Produção
 
 | Camada | Onde | Observação |
 |---|---|---|
+| Frontend | **Vercel** | Estático na CDN; reescreve `/api/*` para o backend |
 | Backend | **Render** — container Docker | Free hiberna após ~15 min sem requisição |
-| Banco | **Neon** — PostgreSQL 18.6 | Serverless; suspende e acorda em ~1s |
+| Banco | **Neon** — PostgreSQL 18.6 | Serverless; suspende e acorda em ~1 s |
 | E-mail | **Resend** — SMTP, domínio verificado | Fila assíncrona via `email_outbox` |
-| Frontend | Vercel / Cloudflare Pages | Reescreve `/api/*` para o backend |
 
 ```
 API     https://brasil-panel-utilities-api.onrender.com
@@ -697,63 +570,71 @@ processo roda como usuário não-root).
 **Duas características do plano gratuito que afetam o comportamento observável:**
 
 - **Cold start de ~150 segundos.** A instância hiberna após ~15 min ociosa, e o boot
-  completo do Spring Boot na CPU compartilhada do Free leva esse tempo. O primeiro
-  acesso depois da hibernação é lento — o frontend precisa tolerar isso, com timeout
-  compatível e um estado de carregamento, em vez de tratar como erro.
+  completo do Spring Boot na CPU compartilhada do Free leva esse tempo. O primeiro acesso
+  depois da hibernação é lento — o frontend precisa tolerar isso, com timeout compatível
+  e um estado de carregamento, em vez de tratar como erro.
 - **SMTP na porta 587 é bloqueado na saída.** Por isso `MAIL_PORT=2587`, a porta
   alternativa do Resend.
 
-> 📘 Runbook completo — variáveis de ambiente, armadilhas de boot, verificação
-> pós-deploy e semântica de rollback com migrations: **[DEPLOY.md](DEPLOY.md)**
+> 📘 Runbook completo — variáveis de ambiente, armadilhas de boot, verificação pós-deploy
+> e semântica de rollback com migrations: **[DEPLOY.md](DEPLOY.md)**
 
 ---
 
-## 🔒 Segurança e Credenciais
+## 🔒 Segurança
 
-- Autenticação via **JWT em cookie `HttpOnly`** — inacessível ao JavaScript. `SameSite=Lax`
-  cobre CSRF; a flag `Secure` é controlada por `COOKIE_SECURE` (`true` em produção)
+- **JWT em cookie `HttpOnly`** — inacessível ao JavaScript. `SameSite=Lax` cobre CSRF; a
+  flag `Secure` é controlada por `COOKIE_SECURE` (`true` em produção)
 - `JwtFilter` lê **apenas** o cookie. O fallback para `Authorization: Bearer` foi
-  removido: era um segundo canal para a mesma credencial, e que vaza com facilidade
-  em log de proxy e de CDN
+  removido: era um segundo canal para a mesma credencial, e que vaza com facilidade em log
+  de proxy e de CDN
 - O token declara `aud` (`brasil-panel-api`) e o `JwtService` o exige na validação
-- Senhas armazenadas com **BCrypt**
-- **Trocar a senha invalida todas as sessões abertas** — `users.password_changed_at`
-  faz o `JwtService` recusar tokens emitidos antes da troca
-- **Rate limiting** no login: 5 tentativas por e-mail a cada 15 minutos, depois `429`.
-  O contador é por instância (Caffeine em memória) — com múltiplas réplicas o limite
-  efetivo é multiplicado
-- **`JWT_SECRET` é obrigatório**: sem a variável de ambiente a aplicação não sobe. Não
-  existe valor padrão versionado — um default no repositório seria uma chave pública
-- Rotas públicas: dados econômicos, `register`, `verify-email`, `resend-code`, `login`
-  e `logout`. As demais exigem sessão; `/api/admin/**` exige `ROLE_ADMIN`
-- **Swagger só no perfil `dev`** — desabilitado em produção
+- **Logout revoga o token de verdade** — denylist de `jti` em `revoked_token` (`V8`), com
+  expurgo diário. Sair num aparelho não desconecta os outros
+- **Trocar a senha invalida todas as sessões** — `users.password_changed_at` (`V5`) faz o
+  `JwtService` recusar tokens emitidos antes da troca
+- **Segundo fator do admin** por e-mail para login e troca de senha (`V6`/`V7`). A senha,
+  sozinha, não dá acesso
+- Senhas com **BCrypt**
+- **Rate limiting** no login: 5 tentativas por e-mail a cada 15 minutos, depois `429`. O
+  contador é por instância (Caffeine em memória) — com múltiplas réplicas o limite efetivo
+  é multiplicado
 - **Rate limit de e-mail**: teto por cliente em `/auth/register` e `/auth/resend-code`,
-  mais um teto global diário da instância, dimensionado abaixo da cota do provedor —
-  sem ele um pico estouraria a cota e os envios passariam a ser recusados
-- **O health check não depende de serviço externo.** O `MailHealthIndicator` do Spring
-  Boot é desligado de propósito: ele abre uma conexão SMTP a cada checagem, e como a
-  plataforma usa `/actuator/health` para decidir se a instância está viva, um provedor
-  de e-mail fora do ar derrubava a API inteira. O health só deve refletir o que impede
-  a aplicação de servir requisição
-- **O schema é versionado pelo Flyway** (`src/main/resources/db/migration/`). Os três
-  perfis usam `ddl-auto: validate` — o Hibernate nunca altera schema em lugar nenhum.
-  Alterar entidade exige a migration `V2__`, `V3__`… no mesmo commit; o CI roda as
-  migrations em banco limpo e valida contra as entidades, então o desencontro aparece
-  no pull request e não no deploy
-- `application-dev.yml` está no `.gitignore` — **nunca commitado**
-- `application-prod.yml` usa exclusivamente variáveis de ambiente (`${DATABASE_URL}`,
-  `${ALPHA_KEYS}`, `${METALS_KEY}`, `${JWT_SECRET}`, `${COOKIE_SECURE}`)
+  mais um teto global diário dimensionado abaixo da cota do provedor
+- **`JWT_SECRET` é obrigatório**: sem a variável a aplicação não sobe. Não existe valor
+  padrão versionado — um default no repositório seria uma chave pública
+- **CSP e headers de segurança** no `vercel.json`: `script-src 'self'`, `frame-ancestors
+  'none'`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy` e HSTS
+- **Swagger só no perfil `dev`**
+- **O health check não depende de serviço externo.** O `MailHealthIndicator` é desligado
+  de propósito: ele abre uma conexão SMTP a cada checagem, e como a plataforma usa
+  `/actuator/health` para decidir se a instância está viva, um provedor de e-mail fora do
+  ar derrubava a API inteira
+- **O schema é versionado pelo Flyway.** Os três perfis usam `ddl-auto: validate`; alterar
+  entidade exige a migration no mesmo commit
+- `application-dev.yml` está no `.gitignore` — **nunca commitado**;
+  `application-prod.yml` usa exclusivamente variáveis de ambiente
 
-> 📘 Checklist completo de publicação, variáveis de ambiente e armadilhas de boot:
-> **[DEPLOY.md](DEPLOY.md)**
+### Acessibilidade
 
-### Observações técnicas
+- Skip link como primeiro alvo do Tab; `<main id="conteudo">`
+- `RouteAnnouncer` foca o `<h1>` da nova rota e anuncia em `aria-live="polite"`
+- Sidebar em overlay fecha no `Escape`; backdrop marcado `aria-hidden`
+- Contraste do texto terciário elevado a **5,03:1** (`--color-fg-dim`), acima do mínimo
+  4,5:1 da WCAG 2.2 AA
+- `eslint-plugin-jsx-a11y` no lint, com a ressalva de que ele não vê contraste, ordem de
+  foco nem anúncio de rota
 
-- **HTTP/1.1 forçado** no `RestClient` — Azure WAF do BCB rejeita HTTP/2 com 502
-- **CDI anualizado** pela convenção brasileira: `(1 + diária/100)^252 − 1`
-- **Rotação de chaves Alpha Vantage** via `AtomicInteger` — contorna o limite de 25 req/dia por chave
-- **SVGs inline como JSX** — sem SVGR plugin, suporta filtros CSS e animações
-- **Lazy seeding de municípios** — evita 27 chamadas no startup; carrega por estado sob demanda
+---
+
+## 📚 Documentação detalhada
+
+| Documento | O que tem |
+|---|---|
+| **[docs/API.md](docs/API.md)** | Os 96 endpoints por grupo, o fluxo de autenticação e a invalidação de sessão |
+| **[docs/BANCO.md](docs/BANCO.md)** | As 23 tabelas, as 8 migrations com o porquê de cada uma, persistência e fila de e-mail |
+| **[DEPLOY.md](DEPLOY.md)** | Runbook de publicação: variáveis, armadilhas de boot, verificação e rollback |
+| **[docs/img/LEIA-ME.md](docs/img/LEIA-ME.md)** | Onde vive cada tipo de imagem do projeto |
 
 ---
 
