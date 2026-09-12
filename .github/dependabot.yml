@@ -1,0 +1,80 @@
+# Atualização de versões pelas mãos do Dependabot.
+#
+# ATENÇÃO: este arquivo É o interruptor. Diferente dos alertas de segurança, que
+# se ligam nas configurações do repositório, as atualizações de VERSÃO passam a
+# valer no momento em que este arquivo entra na main. Não existe "commitar agora
+# e ligar depois".
+#
+# Por isso as quatro travas abaixo. Sem elas, 400+ pacotes entre Maven e npm
+# viram enxurrada de PR, e cada uma dispara a CI inteira: 462 testes no backend,
+# build do frontend e varredura do Trivy. O que se ganha em atualização se perde
+# em ruído, e o ruído é pior — some dentro dele o alerta que importava.
+#
+# Nada aqui substitui os alertas de segurança. Aqueles agem quando existe
+# vulnerabilidade publicada; este é higiene de manutenção, que é outra coisa.
+
+version: 2
+updates:
+
+  # ── Backend (Maven) ───────────────────────────────────────────────────────
+  - package-ecosystem: maven
+    directory: /backend/backend
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/Sao_Paulo
+    # TRAVA 1 — teto de PRs abertas ao mesmo tempo. Sem isto, uma semana de
+    # folga acumula dezenas esperando revisão.
+    open-pull-requests-limit: 3
+    # TRAVA 2 — tudo o que vencer na semana vira UMA PR, não uma por pacote.
+    groups:
+      backend:
+        patterns: ["*"]
+        update-types: [minor, patch]
+    # TRAVA 3 — major fica de fora. É onde mora a quebra de compatibilidade, e
+    # subir o Spring Boot de 3 para 4 não é coisa que se faça por PR automática.
+    ignore:
+      - dependency-name: "*"
+        update-types: [version-update:semver-major]
+    commit-message:
+      prefix: "chore(deps)"
+    labels: [dependencies, backend]
+
+  # ── Frontend (npm) ────────────────────────────────────────────────────────
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/Sao_Paulo
+    open-pull-requests-limit: 3
+    groups:
+      frontend:
+        patterns: ["*"]
+        update-types: [minor, patch]
+    ignore:
+      - dependency-name: "*"
+        update-types: [version-update:semver-major]
+    commit-message:
+      prefix: "chore(deps)"
+    labels: [dependencies, frontend]
+
+  # ── Actions dos workflows ─────────────────────────────────────────────────
+  # Incluído porque já custou caro: a #46 quebrou por uma versão de action que
+  # não existia, e eu só descobri executando. Aqui as atualizações são poucas e
+  # raras, então major entra — uma action subindo de major não derruba produção,
+  # derruba a CI, que é onde se quer descobrir.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+      timezone: America/Sao_Paulo
+    open-pull-requests-limit: 2
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: "chore(ci)"
+    labels: [dependencies, ci]
