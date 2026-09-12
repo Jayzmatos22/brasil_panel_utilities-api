@@ -61,9 +61,9 @@ export const ChartPanel = memo(function ChartPanel({
             {icon}
           </span>
           <div>
-            <h4 className="text-base font-semibold tracking-tight text-slate-100">
+            <h2 className="text-base font-semibold tracking-tight text-slate-100">
               {title}
-            </h4>
+            </h2>
             <p className="text-[11px] uppercase tracking-[0.18em] text-fg-dim">
               {subtitle}
             </p>

@@ -301,9 +301,9 @@ const ComparativoGrid = memo(function ComparativoGrid({
             <Layers size={18} />
           </span>
           <div>
-            <h4 className="text-base font-semibold tracking-tight text-slate-100">
+            <h2 className="text-base font-semibold tracking-tight text-slate-100">
               Comparativo — últimos 12 meses
-            </h4>
+            </h2>
             <p className="text-[11px] uppercase tracking-[0.18em] text-fg-dim">
               {series.length} séries · escalas independentes
             </p>
@@ -383,9 +383,9 @@ const PeriodExplorerWithSelector = memo(function PeriodExplorerWithSelector({
             <Filter size={18} />
           </span>
           <div>
-            <h4 className="text-base font-semibold tracking-tight text-slate-100">
+            <h2 className="text-base font-semibold tracking-tight text-slate-100">
               Explorador por Período
-            </h4>
+            </h2>
             <p className="text-[11px] uppercase tracking-[0.18em] text-fg-dim">
               Selecione a série · depois ano e mês
             </p>

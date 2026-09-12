@@ -236,6 +236,22 @@ export default function DashboardLayout() {
     // uma rolagem fantasma do tamanho exato da barra — a faixa que sobra embaixo
     // fica fora de qualquer camada pintada. `100svh` cabe sempre.
     <div className="app-shell flex flex-col bg-smoke-abyss">
+      {/* ── Pular navegação ──────────────────────────────────────────────
+          Primeiro alvo de Tab, visível só quando focado (WCAG 2.2 AA, 2.4.1).
+
+          Aqui pesa mais que na landing, onde o padrão já existia: a sidebar tem
+          17 links e o header mais 4. Sem este atalho, chegar ao conteúdo pelo
+          teclado custa 21 tabulações — a cada troca de página. */}
+      <a
+        href="#conteudo"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60]
+                   focus:rounded-control focus:bg-amber-400 focus:px-4 focus:py-2 focus:text-sm
+                   focus:font-semibold focus:text-slate-950 focus:outline-none
+                   focus-visible:ring-2 focus-visible:ring-amber-300"
+      >
+        Pular para o conteúdo
+      </a>
+
       {/* ── Header ───────────────────────────────────────────────────────── */}
       {/* px-gutter (era px-5) alinha o padding do header ao do <main>, de modo
           que a logo passa a ficar na mesma coluna do conteúdo. */}
@@ -462,7 +478,7 @@ export default function DashboardLayout() {
             `@container/main` publica a largura real do conteúdo para que os
             componentes respondam ao espaço que ocupam, e não ao viewport — que
             aqui mente em 280px por causa da sidebar. */}
-        <main className="flex-1 min-w-0 p-gutter overflow-y-auto w-full relative z-0 @container/main">
+        <main id="conteudo" className="flex-1 min-w-0 p-gutter overflow-y-auto w-full relative z-0 @container/main">
           {/* As páginas são carregadas sob demanda (lazy). O Suspense fica aqui,
               e não acima do layout, para que a sidebar e o header permaneçam na
               tela enquanto o chunk da página é baixado.
