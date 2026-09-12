@@ -18,6 +18,7 @@ em uma interface limpa e rápida.
 ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite_8-646CFF?style=for-the-badge&logo=vite&logoColor=white)
 ![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS_4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![Licença](https://img.shields.io/badge/licen%C3%A7a-c%C3%B3digo%20vis%C3%ADvel%20%C2%B7%20direitos%20reservados-8B0000?style=for-the-badge)
 
 <br/>
 
@@ -42,6 +43,7 @@ em uma interface limpa e rápida.
 - [Produção](#-produção)
 - [Segurança](#-segurança)
 - [Documentação detalhada](#-documentação-detalhada)
+- [Licença](#️-licença)
 
 ---
 
@@ -639,6 +641,27 @@ processo roda como usuário não-root).
 | **[docs/BANCO.md](docs/BANCO.md)** | As 23 tabelas, as 8 migrations com o porquê de cada uma, persistência e fila de e-mail |
 | **[DEPLOY.md](DEPLOY.md)** | Runbook de publicação: variáveis, armadilhas de boot, verificação e rollback |
 | **[docs/img/LEIA-ME.md](docs/img/LEIA-ME.md)** | Onde vive cada tipo de imagem do projeto |
+| **[LICENSE](LICENSE)** | Os termos completos de uso do código |
+
+---
+
+## ⚖️ Licença
+
+**Código visível, direitos reservados.** Este repositório é público para leitura —
+não é software livre nem open source.
+
+Pode ler o código, estudar, citar trechos com atribuição e rodar localmente para
+avaliar o trabalho. **Não pode** usar, copiar, modificar, redistribuir ou hospedar,
+em todo ou em parte, comercialmente ou não, sem autorização prévia por escrito.
+
+Fork é permitido pelos Termos de Serviço do GitHub e não está sob controle do autor —
+mas não concede nenhum desses direitos: um fork continua sujeito à mesma licença.
+
+As bibliotecas de terceiros mantêm suas próprias licenças, e os dados econômicos
+pertencem às fontes públicas que os publicam (IPEA, IBGE, Banco Central e demais
+listadas acima). Os termos completos estão em **[LICENSE](LICENSE)**.
+
+> Para pedir autorização de uso, abra uma issue descrevendo a finalidade.
 
 ---
 

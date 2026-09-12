@@ -1,0 +1,89 @@
+Copyright (c) 2026 Jailton Matos. Todos os direitos reservados.
+All rights reserved.
+
+                    LICENÇA DE CÓDIGO VISÍVEL — BRASIL PANEL
+                   (source-available, direitos reservados)
+
+Este repositório é público para leitura. Isso NÃO o torna software livre nem
+open source: nenhum direito de uso é concedido além dos descritos abaixo.
+
+
+1. O QUE VOCÊ PODE FAZER
+
+   a) Ler, navegar e estudar o código-fonte.
+   b) Citar trechos curtos em resenhas, artigos, aulas ou avaliações técnicas,
+      desde que com atribuição ao autor e link para este repositório.
+   c) Executar o projeto localmente, sem modificações, com a finalidade
+      exclusiva de avaliar o trabalho do autor.
+
+
+2. O QUE VOCÊ NÃO PODE FAZER SEM AUTORIZAÇÃO PRÉVIA E POR ESCRITO
+
+   a) Usar este código, no todo ou em parte, em qualquer produto, serviço,
+      projeto pessoal, acadêmico ou comercial.
+   b) Copiar, modificar, adaptar, traduzir ou criar obra derivada.
+   c) Redistribuir, publicar, sublicenciar, vender ou hospedar, ainda que
+      gratuitamente e ainda que com atribuição.
+   d) Remover ou alterar avisos de autoria, de copyright ou esta licença.
+
+   O fork no GitHub é permitido pelos Termos de Serviço da plataforma e não
+   está sob o controle do autor. Ele não concede nenhum dos direitos da
+   cláusula 2: um fork continua sujeito a esta licença.
+
+
+3. AUTORIZAÇÃO
+
+   Qualquer uso fora da cláusula 1 depende de autorização prévia e por escrito
+   do titular. Para solicitar, abra uma issue no repositório descrevendo o uso
+   pretendido.
+
+
+4. DEPENDÊNCIAS DE TERCEIROS
+
+   Esta licença cobre apenas o código escrito pelo autor. As bibliotecas de
+   terceiros declaradas em `frontend/package.json` e em
+   `backend/backend/pom.xml` permanecem sob suas próprias licenças, e nada aqui
+   restringe os direitos que elas concedem.
+
+   Os dados exibidos pela aplicação são públicos e pertencem às suas fontes
+   originais — IPEA, IBGE, Banco Central do Brasil, World Bank e demais APIs
+   listadas no README. Esta licença não reivindica direito algum sobre eles.
+
+
+5. MARCAS E IDENTIDADE VISUAL
+
+   O nome "Brasil Panel", o logotipo, as ilustrações e as demais peças de
+   identidade visual não estão licenciados por este documento e não podem ser
+   usados sem autorização, mesmo em uso que fosse permitido pela cláusula 1.
+
+
+6. AUSÊNCIA DE GARANTIA
+
+   O SOFTWARE É FORNECIDO "NO ESTADO EM QUE SE ENCONTRA", SEM GARANTIA DE
+   QUALQUER NATUREZA, EXPRESSA OU IMPLÍCITA, INCLUINDO MAS NÃO SE LIMITANDO ÀS
+   GARANTIAS DE COMERCIABILIDADE, ADEQUAÇÃO A UMA FINALIDADE ESPECÍFICA E NÃO
+   VIOLAÇÃO. EM NENHUMA HIPÓTESE O AUTOR SERÁ RESPONSÁVEL POR QUALQUER
+   RECLAMAÇÃO, DANO OU OUTRA RESPONSABILIDADE DECORRENTE DO SOFTWARE OU DE SEU
+   USO.
+
+   Os indicadores econômicos exibidos são reproduções de fontes públicas e não
+   constituem recomendação de investimento.
+
+
+7. LEI APLICÁVEL
+
+   Esta licença é regida pelas leis da República Federativa do Brasil, em
+   especial a Lei nº 9.609/1998 (Programa de Computador) e a Lei nº 9.610/1998
+   (Direitos Autorais).
+
+
+────────────────────────────────────────────────────────────────────────────
+ENGLISH SUMMARY (non-binding; the Portuguese text above prevails)
+
+Source-available, all rights reserved. You may read and study this code, quote
+short excerpts with attribution, and run it locally to evaluate the author's
+work. You may NOT use, copy, modify, redistribute or host it — in whole or in
+part, commercially or not — without prior written permission. Forking is
+allowed by GitHub's Terms of Service and grants none of these rights.
+Third-party dependencies keep their own licenses; the economic data belongs to
+its public sources.
