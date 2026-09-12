@@ -41,10 +41,14 @@ export const ChartGridPanel = memo(function ChartGridPanel({
       />
       <div className="relative mb-3 flex items-start justify-between gap-2">
         <div>
-          <h5 className="text-sm font-semibold tracking-tight text-slate-100">
+          {/* h3 e não h5: estes cartões são subseções do painel que os
+              contém, e aquele título é h2. Pular de h2 para h5 quebra o
+              critério 1.3.1 da WCAG — quem navega por títulos perde a noção de
+              profundidade. O tamanho continua vindo da classe, não da tag. */}
+          <h3 className="text-sm font-semibold tracking-tight text-slate-100">
             {title}
-          </h5>
-          <p className="text-[10px] uppercase tracking-[0.16em] text-slate-500">
+          </h3>
+          <p className="text-[10px] uppercase tracking-[0.16em] text-fg-dim">
             {subtitle}
           </p>
         </div>
@@ -57,7 +61,7 @@ export const ChartGridPanel = memo(function ChartGridPanel({
       </div>
 
       {points.length === 0 ? (
-        <div className="flex h-40 items-center justify-center text-center text-[11px] text-slate-500">
+        <div className="flex h-40 items-center justify-center text-center text-[11px] text-fg-dim">
           {emptyHint}
         </div>
       ) : (

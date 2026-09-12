@@ -137,10 +137,10 @@ export const PeriodExplorer = memo(function PeriodExplorer({
             <Filter size={18} />
           </span>
           <div>
-            <h4 className="text-base font-semibold tracking-tight text-slate-100">
+            <h2 className="text-base font-semibold tracking-tight text-slate-100">
               Explorador por Período
-            </h4>
-            <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
+            </h2>
+            <p className="text-[11px] uppercase tracking-[0.18em] text-fg-dim">
               Ano inteiro ou intervalo entre anos
             </p>
           </div>
@@ -177,7 +177,7 @@ export const PeriodExplorer = memo(function PeriodExplorer({
 
           {/* Select(s) de ano conforme o modo */}
           {mode === "single" ? (
-            <label className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-slate-500">
+            <label className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-fg-dim">
               <span>Ano</span>
               <select
                 value={selectedYear}
@@ -194,7 +194,7 @@ export const PeriodExplorer = memo(function PeriodExplorer({
             </label>
           ) : (
             <>
-              <label className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-slate-500">
+              <label className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-fg-dim">
                 <span>De</span>
                 <select
                   value={startYear}
@@ -209,7 +209,7 @@ export const PeriodExplorer = memo(function PeriodExplorer({
                   ))}
                 </select>
               </label>
-              <label className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-slate-500">
+              <label className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-fg-dim">
                 <span>Até</span>
                 <select
                   value={endYear}
@@ -232,17 +232,17 @@ export const PeriodExplorer = memo(function PeriodExplorer({
       {/* Stats do período filtrado */}
       <div className="relative mb-4 flex flex-wrap items-center gap-2 text-xs">
         <span className="inline-flex items-center gap-1.5 rounded-md border border-white/5 bg-white/3 px-2.5 py-1 font-mono">
-          <span className="text-slate-500">Período:</span>
+          <span className="text-fg-dim">Período:</span>
           <span className="text-slate-100">{periodLabel}</span>
         </span>
         {periodStats ? (
           <>
             <span className="inline-flex items-center gap-1.5 rounded-md border border-white/5 bg-white/3 px-2.5 py-1 font-mono">
-              <span className="text-slate-500">Pts:</span>
+              <span className="text-fg-dim">Pts:</span>
               <span className="text-slate-100">{periodStats.count}</span>
             </span>
             <span className="inline-flex items-center gap-1.5 rounded-md border border-white/5 bg-white/3 px-2.5 py-1 font-mono">
-              <span className="text-slate-500">Var:</span>
+              <span className="text-fg-dim">Var:</span>
               <span
                 className={
                   periodStats.ret >= 0 ? "text-emerald-300" : "text-red-300"
@@ -252,32 +252,32 @@ export const PeriodExplorer = memo(function PeriodExplorer({
               </span>
             </span>
             <span className="inline-flex items-center gap-1.5 rounded-md border border-white/5 bg-white/3 px-2.5 py-1 font-mono">
-              <span className="text-slate-500">Máx:</span>
+              <span className="text-fg-dim">Máx:</span>
               <span className="text-slate-100">
                 {valueFormatter
                   ? valueFormatter(periodStats.hi.value)
                   : fmtPts(periodStats.hi.value)}
               </span>
-              <span className="text-slate-600">·</span>
-              <span className="text-slate-500">
+              <span className="text-fg-dim">·</span>
+              <span className="text-fg-dim">
                 {fmtBRDate(periodStats.hi.date)}
               </span>
             </span>
             <span className="inline-flex items-center gap-1.5 rounded-md border border-white/5 bg-white/3 px-2.5 py-1 font-mono">
-              <span className="text-slate-500">Mín:</span>
+              <span className="text-fg-dim">Mín:</span>
               <span className="text-slate-100">
                 {valueFormatter
                   ? valueFormatter(periodStats.lo.value)
                   : fmtPts(periodStats.lo.value)}
               </span>
-              <span className="text-slate-600">·</span>
-              <span className="text-slate-500">
+              <span className="text-fg-dim">·</span>
+              <span className="text-fg-dim">
                 {fmtBRDate(periodStats.lo.date)}
               </span>
             </span>
           </>
         ) : (
-          <span className="rounded-md border border-white/5 bg-white/3 px-2.5 py-1 font-mono text-slate-500">
+          <span className="rounded-md border border-white/5 bg-white/3 px-2.5 py-1 font-mono text-fg-dim">
             {filteredPoints.length === 0
               ? "Sem dados neste recorte."
               : `${filteredPoints.length} ponto(s) — insuficiente para métricas.`}
@@ -286,7 +286,7 @@ export const PeriodExplorer = memo(function PeriodExplorer({
       </div>
 
       {filteredPoints.length === 0 ? (
-        <div className="flex h-75 items-center justify-center text-center text-xs text-slate-500">
+        <div className="flex h-75 items-center justify-center text-center text-xs text-fg-dim">
           Sem dados válidos para o período selecionado.
         </div>
       ) : (

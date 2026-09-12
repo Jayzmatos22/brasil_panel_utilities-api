@@ -84,7 +84,7 @@ export default function ForgotPasswordPage() {
             <button
               type="button"
               onClick={() => navigate('/login-usuario')}
-              className="text-slate-500 hover:text-slate-300 text-sm transition-colors cursor-pointer rounded-control px-2 coarse:min-h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60"
+              className="text-fg-dim hover:text-slate-300 text-sm transition-colors cursor-pointer rounded-control px-2 coarse:min-h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60"
             >
               Voltar para o login
             </button>

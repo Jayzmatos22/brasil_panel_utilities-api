@@ -168,7 +168,7 @@ export default function AdminConfirmPage({ modo }: { modo: Modo }) {
           />
 
           <div className="flex flex-col items-center gap-2 text-sm">
-            <p className="text-slate-500 text-xs text-center max-w-xs">
+            <p className="text-fg-dim text-xs text-center max-w-xs">
               Não pediu este código? Alguém acertou a senha de administrador —
               troque-a assim que possível.
             </p>
@@ -178,7 +178,7 @@ export default function AdminConfirmPage({ modo }: { modo: Modo }) {
                 clearPendingAdminLogin();
                 navigate('/login-usuario', { replace: true });
               }}
-              className="text-slate-600 hover:text-slate-400 text-xs transition-colors cursor-pointer mt-1"
+              className="text-fg-dim hover:text-slate-400 text-xs transition-colors cursor-pointer mt-1"
             >
               Cancelar e voltar
             </button>

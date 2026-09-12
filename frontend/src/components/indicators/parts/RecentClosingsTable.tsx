@@ -44,10 +44,10 @@ export const RecentClosingsTable = memo(function RecentClosingsTable({
           <Calendar size={16} aria-hidden />
         </span>
         <div>
-          <h4 className="text-base font-semibold tracking-tight text-slate-100">
+          <h2 className="text-base font-semibold tracking-tight text-slate-100">
             {title}
-          </h4>
-          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
+          </h2>
+          <p className="text-[11px] uppercase tracking-[0.18em] text-fg-dim">
             {subtitle}
           </p>
         </div>
@@ -60,7 +60,7 @@ export const RecentClosingsTable = memo(function RecentClosingsTable({
       <div className="overflow-x-auto overscroll-x-contain px-2 pb-2">
         <table className="w-full min-w-96 border-collapse text-sm">
           <thead>
-            <tr className="text-left text-[11px] uppercase tracking-wider text-slate-500">
+            <tr className="text-left text-[11px] uppercase tracking-wider text-fg-dim">
               <th className="px-4 py-2 font-medium">Data</th>
               <th className="px-4 py-2 text-right font-medium">Valor</th>
               <th className="px-4 py-2 text-right font-medium">Variação</th>
@@ -71,7 +71,7 @@ export const RecentClosingsTable = memo(function RecentClosingsTable({
               <tr>
                 <td
                   colSpan={3}
-                  className="px-4 py-6 text-center text-xs text-slate-500"
+                  className="px-4 py-6 text-center text-xs text-fg-dim"
                 >
                   Sem dados disponíveis.
                 </td>

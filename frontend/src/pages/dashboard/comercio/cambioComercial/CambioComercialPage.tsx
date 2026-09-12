@@ -265,10 +265,10 @@ const ComparativoGrid = memo(function ComparativoGrid({
             <Layers size={18} />
           </span>
           <div>
-            <h4 className="text-base font-semibold tracking-tight text-slate-100">
+            <h2 className="text-base font-semibold tracking-tight text-slate-100">
               Comparativo — últimos 12 meses
-            </h4>
-            <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
+            </h2>
+            <p className="text-[11px] uppercase tracking-[0.18em] text-fg-dim">
               {series.length} séries · escalas independentes
             </p>
           </div>
@@ -339,15 +339,15 @@ const PeriodExplorerWithSelector = memo(function PeriodExplorerWithSelector({
             <Filter size={18} />
           </span>
           <div>
-            <h4 className="text-base font-semibold tracking-tight text-slate-100">
+            <h2 className="text-base font-semibold tracking-tight text-slate-100">
               Explorador por Período
-            </h4>
-            <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
+            </h2>
+            <p className="text-[11px] uppercase tracking-[0.18em] text-fg-dim">
               Selecione a série · depois ano e mês
             </p>
           </div>
         </div>
-        <label className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-slate-500">
+        <label className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-fg-dim">
           <span>Série</span>
           <select
             value={selectedKey}
@@ -371,7 +371,7 @@ const PeriodExplorerWithSelector = memo(function PeriodExplorerWithSelector({
           valueFormatter={fmt}
         />
       ) : (
-        <div className="flex h-75 items-center justify-center text-center text-xs text-slate-500">
+        <div className="flex h-75 items-center justify-center text-center text-xs text-fg-dim">
           Sem dados válidos para {selectedSpec.shortName}.
         </div>
       )}

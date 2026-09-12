@@ -171,7 +171,7 @@ export default function ResetPasswordPage() {
             <button
               type="button"
               onClick={() => navigate('/esqueci-senha', { replace: true })}
-              className="text-slate-500 hover:text-slate-300 text-sm transition-colors cursor-pointer rounded-control px-2 coarse:min-h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60"
+              className="text-fg-dim hover:text-slate-300 text-sm transition-colors cursor-pointer rounded-control px-2 coarse:min-h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60"
             >
               Não recebeu? Pedir outro código
             </button>

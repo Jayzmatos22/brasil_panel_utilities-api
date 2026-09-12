@@ -229,7 +229,7 @@ export default function BancosPage() {
           <div className="relative w-full sm:w-auto">
             <Search
               size={14}
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-fg-dim"
             />
             <input
               value={search}
@@ -255,13 +255,13 @@ export default function BancosPage() {
             <table className="w-full min-w-md text-sm">
               <thead className="sticky top-0 bg-slate-950/90 max-lg:bg-slate-950 backdrop-blur-sm z-10">
                 <tr className="border-b border-white/10">
-                  <th className="text-left py-3 px-4 text-slate-500 font-medium w-24 text-xs uppercase tracking-wider">
+                  <th className="text-left py-3 px-4 text-fg-dim font-medium w-24 text-xs uppercase tracking-wider">
                     Código
                   </th>
-                  <th className="text-left py-3 px-4 text-slate-500 font-medium text-xs uppercase tracking-wider">
+                  <th className="text-left py-3 px-4 text-fg-dim font-medium text-xs uppercase tracking-wider">
                     Nome
                   </th>
-                  <th className="text-left py-3 px-4 text-slate-500 font-medium hidden md:table-cell text-xs uppercase tracking-wider">
+                  <th className="text-left py-3 px-4 text-fg-dim font-medium hidden md:table-cell text-xs uppercase tracking-wider">
                     ISPB
                   </th>
                 </tr>
@@ -278,7 +278,7 @@ export default function BancosPage() {
                     <td className="py-3 px-4 text-slate-300 group-hover/row:text-white transition-colors font-medium">
                       {bank.name}
                     </td>
-                    <td className="py-3 px-4 text-slate-600 font-mono text-xs hidden md:table-cell group-hover/row:text-slate-400 transition-colors">
+                    <td className="py-3 px-4 text-fg-dim font-mono text-xs hidden md:table-cell group-hover/row:text-slate-400 transition-colors">
                       {bank.ispb}
                     </td>
                   </tr>
@@ -286,7 +286,7 @@ export default function BancosPage() {
               </tbody>
             </table>
             {filtered.length === 0 && (
-              <p className="text-slate-500 text-sm text-center py-12">
+              <p className="text-fg-dim text-sm text-center py-12">
                 Nenhuma instituição encontrada.
               </p>
             )}

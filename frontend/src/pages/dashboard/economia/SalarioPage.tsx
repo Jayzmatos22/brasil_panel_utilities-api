@@ -234,7 +234,7 @@ export default function SalarioPage() {
                   <AnimatedNumber value={latest.valor} format={brl} />
                 </p>
               </div>
-              <span className="text-slate-500 text-xs font-mono">
+              <span className="text-fg-dim text-xs font-mono">
                 Vigência {latest.data}
               </span>
             </div>
@@ -328,7 +328,7 @@ export default function SalarioPage() {
             </div>
           </>
         ) : (
-          <p className="text-slate-500 text-sm text-center py-8">
+          <p className="text-fg-dim text-sm text-center py-8">
             Sem dados suficientes para o gráfico.
           </p>
         )}

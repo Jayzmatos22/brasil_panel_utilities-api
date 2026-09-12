@@ -103,6 +103,49 @@ function useKeyframes(): void {
 const rgba = (c: readonly [number, number, number], a: number): string =>
   `rgba(${c[0]},${c[1]},${c[2]},${a})`;
 
+/**
+ * Carrega a Instrument Serif — e só quando esta tela existe.
+ *
+ * Ela morava no <head> do index.html como `<link rel="stylesheet">`, o que a
+ * tornava recurso BLOQUEANTE de renderização em TODAS as rotas: o navegador
+ * abria duas conexões (googleapis para o CSS, gstatic para o arquivo) e
+ * segurava a primeira pintura, para uma fonte que só esta página usa.
+ *
+ * Injetada aqui, o custo fica onde o benefício está. Quem nunca cai num 404 —
+ * a maioria — não paga nada.
+ *
+ * O <link> não é removido na desmontagem de propósito: uma vez baixada, a fonte
+ * está no cache do navegador, e tirar a regra faria o texto voltar para a
+ * Georgia do fallback se o componente remontasse. Custa um <link> ocioso no
+ * <head> e evita um pisca-pisca de tipografia.
+ *
+ * `display=swap` mantido: o lockup aparece na hora com a serifa de sistema e
+ * troca quando a fonte chega, em vez de ficar invisível esperando.
+ */
+const ID_FONTE = 'fonte-instrument-serif';
+
+function useInstrumentSerif(): void {
+  useEffect(() => {
+    if (document.getElementById(ID_FONTE)) return;
+
+    const pre1 = document.createElement('link');
+    pre1.rel = 'preconnect';
+    pre1.href = 'https://fonts.googleapis.com';
+
+    const pre2 = document.createElement('link');
+    pre2.rel = 'preconnect';
+    pre2.href = 'https://fonts.gstatic.com';
+    pre2.crossOrigin = '';
+
+    const css = document.createElement('link');
+    css.id = ID_FONTE;
+    css.rel = 'stylesheet';
+    css.href = 'https://fonts.googleapis.com/css2?family=Instrument+Serif&display=swap';
+
+    document.head.append(pre1, pre2, css);
+  }, []);
+}
+
 export default function Erro404({
   size = 96,
   label = 'Erro',
@@ -112,6 +155,7 @@ export default function Erro404({
   style,
 }: Erro404Props): React.JSX.Element {
   useKeyframes();
+  useInstrumentSerif();
 
   const g = Math.max(0, Math.min(1, glow));
   const halo = size * 3.4;

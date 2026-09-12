@@ -77,8 +77,8 @@ export const WaterfallPanel = memo(function WaterfallPanel({
             <GitCommitHorizontal size={18} />
           </span>
           <div>
-            <h4 className="text-base font-semibold tracking-tight text-slate-100">{title}</h4>
-            <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">{subtitle}</p>
+            <h2 className="text-base font-semibold tracking-tight text-slate-100">{title}</h2>
+            <p className="text-[11px] uppercase tracking-[0.18em] text-fg-dim">{subtitle}</p>
           </div>
         </div>
         <span
@@ -90,7 +90,7 @@ export const WaterfallPanel = memo(function WaterfallPanel({
       </div>
 
       {!breakdown ? (
-        <div className="flex h-32 items-center justify-center text-sm text-slate-500">
+        <div className="flex h-32 items-center justify-center text-sm text-fg-dim">
           Sem dados no mês de referência.
         </div>
       ) : (
@@ -126,7 +126,7 @@ export const WaterfallPanel = memo(function WaterfallPanel({
                       {/* O resíduo não é medido, é diferença — e quem lê precisa
                           saber disso para não tratá-lo como série do IPEA. */}
                       {st.isResidual && (
-                        <span className="text-[10px] uppercase tracking-wider text-slate-600">
+                        <span className="text-[10px] uppercase tracking-wider text-fg-dim">
                           por diferença
                         </span>
                       )}
@@ -166,7 +166,7 @@ export const WaterfallPanel = memo(function WaterfallPanel({
           </div>
 
           {breakdown.omitted.length > 0 && (
-            <p className="text-[11px] leading-relaxed text-slate-500">
+            <p className="text-[11px] leading-relaxed text-fg-dim">
               Sem dado em {breakdown.referenceMonth.replace('-', '/')}:{' '}
               <span className="text-slate-400">{breakdown.omitted.join(', ')}</span>. Por
               isso a diferença até o saldo não é exibida — ela absorveria estas séries.

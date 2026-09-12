@@ -9,6 +9,7 @@ import { PrivateRoute } from './components/PrivateRoute';
 import { AdminRoute }   from './components/AdminRoute';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { PublicOnly }    from './components/PublicOnly';
+import { RouteAnnouncer } from './components/RouteAnnouncer';
 
 // Auth (standalone — split-screen)
 import RegisterPage    from './pages/auth/RegisterPage';
@@ -234,6 +235,7 @@ export default function App() {
           success: { duration: 4000 },
         }}
       />
+      <RouteAnnouncer />
       <AppRoutes />
       </BrowserRouter>
     </MotionConfig>

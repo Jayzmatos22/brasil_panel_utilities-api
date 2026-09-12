@@ -45,6 +45,25 @@ function timeAgo(iso?: string): string | null {
   return `há ${Math.floor(diffMin / 60)} h`;
 }
 
+
+/**
+ * Instanciado UMA vez, no módulo.
+ *
+ * Estava dentro do componente e criava um `Intl.NumberFormat` novo a cada
+ * chamada — e a chamada é por linha, numa tabela de até 100 criptomoedas. São
+ * até 100 objetos de formatação por render, jogados fora em seguida.
+ *
+ * Construir um NumberFormat é a parte cara da API (carrega dados de locale); o
+ * `.format()` depois é barato. Por isso a constante mora aqui fora e não numa
+ * `useMemo`: o formatador não depende de nada do componente, e memoizar dentro
+ * dele só pagaria o custo de comparar dependências para chegar ao mesmo lugar.
+ */
+const COMPACTO_BRL = new Intl.NumberFormat('pt-BR', {
+  style: 'currency',
+  currency: 'BRL',
+  notation: 'compact',
+});
+
 export default function CriptoPage() {
   const [search, setSearch] = useState('');
   const [debounced, setDebounced] = useState('');
@@ -121,9 +140,7 @@ export default function CriptoPage() {
       : '—';
 
   const compact = (v: number | null | undefined) =>
-    typeof v === 'number'
-      ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact' }).format(v)
-      : '—';
+    typeof v === 'number' ? COMPACTO_BRL.format(v) : '—';
 
   // Delega ao formatador da camada de gráficos. O `toFixed(2)` que existia
   // aqui tinha dois problemas: produzia ponto decimal ("+2.00%") numa interface
@@ -348,7 +365,7 @@ export default function CriptoPage() {
 
                       {isCmc && (
                         <td className={`hidden @3xl/page:table-cell py-2 px-3 text-right font-mono ${
-                          typeof coin.percentChange1h !== 'number' ? 'text-slate-500'
+                          typeof coin.percentChange1h !== 'number' ? 'text-fg-dim'
                             : coin.percentChange1h >= 0 ? 'text-green-400' : 'text-red-400'
                         }`}>
                           {typeof coin.percentChange1h === 'number' ? pct(coin.percentChange1h) : '—'}
@@ -359,7 +376,7 @@ export default function CriptoPage() {
                           tabela: a célula deixa de participar da largura da
                           coluna. Vai para um <span> interno. */}
                       <td className={`py-2 px-3 text-right font-mono ${
-                        !hasPriceChange ? 'text-slate-500' : up ? 'text-green-400' : 'text-red-400'
+                        !hasPriceChange ? 'text-fg-dim' : up ? 'text-green-400' : 'text-red-400'
                       }`}>
                         <span className="flex items-center justify-end gap-1">
                           {hasPriceChange ? (
@@ -377,7 +394,7 @@ export default function CriptoPage() {
 
                       {isCmc && (
                         <td className={`hidden @3xl/page:table-cell py-2 px-3 text-right font-mono ${
-                          typeof coin.percentChange7d !== 'number' ? 'text-slate-500'
+                          typeof coin.percentChange7d !== 'number' ? 'text-fg-dim'
                             : coin.percentChange7d >= 0 ? 'text-green-400' : 'text-red-400'
                         }`}>
                           {typeof coin.percentChange7d === 'number' ? pct(coin.percentChange7d) : '—'}

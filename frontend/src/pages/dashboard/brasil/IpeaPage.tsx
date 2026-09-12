@@ -157,8 +157,8 @@ const SerieCard = memo(function SerieCard({ serie, accent }: SerieCardProps) {
   if (!stats) {
     return (
       <div className="rounded-xl border border-white/10 bg-white/2 p-4">
-        <p className="text-slate-500 text-sm">{serie.nome}</p>
-        <p className="text-slate-600 text-xs mt-1">Sem dados válidos.</p>
+        <p className="text-fg-dim text-sm">{serie.nome}</p>
+        <p className="text-fg-dim text-xs mt-1">Sem dados válidos.</p>
       </div>
     );
   }
@@ -195,7 +195,7 @@ const SerieCard = memo(function SerieCard({ serie, accent }: SerieCardProps) {
             <span className="text-slate-100 text-sm font-medium leading-tight line-clamp-2">
               {serie.nome}
             </span>
-            <span className="text-slate-600 text-[10px] font-mono uppercase tracking-wider">
+            <span className="text-fg-dim text-[10px] font-mono uppercase tracking-wider">
               {serie.codigo}
             </span>
           </div>
@@ -220,7 +220,7 @@ const SerieCard = memo(function SerieCard({ serie, accent }: SerieCardProps) {
             >
               {lastValueStr}
             </span>
-            <span className="flex items-center gap-1 text-slate-500 text-[11px] font-mono">
+            <span className="flex items-center gap-1 text-fg-dim text-[11px] font-mono">
               <Calendar size={10} aria-hidden />
               {lastDateStr}
             </span>
@@ -243,7 +243,7 @@ const SerieCard = memo(function SerieCard({ serie, accent }: SerieCardProps) {
       {/* Gráfico sempre visível — scroll horizontal se muitos pontos */}
       {points.length >= 2 ? (
         <div className="border-t border-white/5 bg-inset">
-          <div className="px-4 pt-3 pb-1 flex items-center justify-between text-[10px] uppercase tracking-wider text-slate-500">
+          <div className="px-4 pt-3 pb-1 flex items-center justify-between text-[10px] uppercase tracking-wider text-fg-dim">
             <span>Série histórica completa</span>
           </div>
           {/* O aviso saiu daqui e passou a viver dentro do ScrollHint, que o
@@ -294,7 +294,7 @@ const SerieCard = memo(function SerieCard({ serie, accent }: SerieCardProps) {
         </div>
       ) : (
         <div className="border-t border-white/5 p-4">
-          <p className="text-slate-500 text-xs">
+          <p className="text-fg-dim text-xs">
             Série sem pontos suficientes para o gráfico.
           </p>
         </div>
@@ -306,14 +306,14 @@ const SerieCard = memo(function SerieCard({ serie, accent }: SerieCardProps) {
 const StatBox = memo(
   ({ label, value, hint }: { label: string; value: string; hint?: string }) => (
     <div className="rounded-lg border border-white/5 bg-white/2 px-3 py-2">
-      <span className="block text-[10px] uppercase tracking-wider text-slate-500">
+      <span className="block text-[10px] uppercase tracking-wider text-fg-dim">
         {label}
       </span>
       <span className="block font-mono text-sm font-semibold text-slate-200 mt-0.5">
         {value}
       </span>
       {hint && (
-        <span className="block text-[10px] text-slate-600 font-mono mt-0.5">
+        <span className="block text-[10px] text-fg-dim font-mono mt-0.5">
           {hint}
         </span>
       )}
@@ -414,11 +414,11 @@ const CategoryHeader = memo(function CategoryHeader({
                 {count} séries
               </span>
             </div>
-            <p className="text-slate-500 text-xs mt-1 max-w-xl leading-relaxed">
+            <p className="text-fg-dim text-xs mt-1 max-w-xl leading-relaxed">
               {spec.description}
             </p>
             {lastUpdate && (
-              <p className="flex items-center gap-1 text-slate-600 text-[11px] font-mono mt-1.5">
+              <p className="flex items-center gap-1 text-fg-dim text-[11px] font-mono mt-1.5">
                 <Calendar size={10} aria-hidden />
                 Última atualização: {fmtBRDate(lastUpdate)}
               </p>
@@ -430,7 +430,7 @@ const CategoryHeader = memo(function CategoryHeader({
         <div className="relative flex-1 min-w-0 sm:min-w-50 max-w-xs">
           <Search
             size={14}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-dim pointer-events-none"
             aria-hidden
           />
           <input
@@ -441,14 +441,14 @@ const CategoryHeader = memo(function CategoryHeader({
             }
             placeholder="Buscar série..."
             className="w-full h-10 coarse:min-h-11 pl-9 pr-9 rounded-lg bg-inset border border-white/10
-                       text-slate-200 text-sm placeholder:text-slate-600
+                       text-slate-200 text-sm placeholder:text-fg-dim
                        focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50
                        hover:border-white/20 transition-colors"
           />
           {filter && (
             <button
               onClick={() => onFilterChange("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-dim hover:text-slate-300 transition-colors"
               aria-label="Limpar filtro"
             >
               <X size={14} />
@@ -489,7 +489,7 @@ const TabContent = memo(function TabContent({
     return (
       <div className="text-center py-12">
         <p className="text-red-400 text-sm">Erro ao carregar dados.</p>
-        <p className="text-slate-600 text-xs mt-1 font-mono">
+        <p className="text-fg-dim text-xs mt-1 font-mono">
           {error instanceof Error ? error.message : "Erro desconhecido"}
         </p>
       </div>
@@ -509,7 +509,7 @@ const TabContent = memo(function TabContent({
   if (filtered.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-slate-500 text-sm">
+        <p className="text-fg-dim text-sm">
           {data.length === 0
             ? "Nenhuma série disponível nesta categoria."
             : `Nenhuma série encontrada para "${filter}".`}

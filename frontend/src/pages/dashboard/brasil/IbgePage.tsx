@@ -91,7 +91,7 @@ const CepField = ({
   if (value === null || value === undefined || value === "") return null;
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="text-slate-500 text-[10px] font-medium uppercase tracking-wider">
+      <span className="text-fg-dim text-[10px] font-medium uppercase tracking-wider">
         {label}
       </span>
       <span
@@ -293,7 +293,7 @@ export default function IbgePage() {
               <div className="relative">
                 <Search
                   size={15}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-fg-dim"
                 />
                 <input
                   id="city-filter"
@@ -323,7 +323,7 @@ export default function IbgePage() {
           <div className="relative">
             <MapPinned
               size={15}
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-fg-dim"
             />
             <input
               id="cep-input"
@@ -445,7 +445,7 @@ export default function IbgePage() {
               />
             </div>
           ) : (
-            <p className="text-slate-500 text-sm py-8 text-center">
+            <p className="text-fg-dim text-sm py-8 text-center">
               Sem dados para o ranking.
             </p>
           )}
@@ -493,7 +493,7 @@ export default function IbgePage() {
                       {cities.length}
                     </span>
                   ) : (
-                    <span className="text-slate-500">—</span>
+                    <span className="text-fg-dim">—</span>
                   )}
                 </div>
               </div>
@@ -503,8 +503,8 @@ export default function IbgePage() {
               variants={item}
               className="relative bg-white/2 border border-dashed border-white/10 rounded-2xl p-6 flex flex-col items-center justify-center text-center gap-2"
             >
-              <MapPin size={24} className="text-slate-600" />
-              <p className="text-slate-500 text-sm">
+              <MapPin size={24} className="text-fg-dim" />
+              <p className="text-fg-dim text-sm">
                 Selecione um estado para detalhes
               </p>
             </motion.div>
@@ -530,7 +530,7 @@ export default function IbgePage() {
                 Municípios
               </h2>
               {cities && !loadingCities && (
-                <span className="text-slate-500 text-xs font-mono">
+                <span className="text-fg-dim text-xs font-mono">
                   {cities.length} resultados
                 </span>
               )}
@@ -558,7 +558,7 @@ export default function IbgePage() {
               </div>
             ) : (
               <div className="py-8 text-center">
-                <p className="text-slate-500 text-sm">
+                <p className="text-fg-dim text-sm">
                   Nenhum município encontrado para este filtro.
                 </p>
               </div>
@@ -588,7 +588,7 @@ export default function IbgePage() {
               <div className="relative w-full sm:w-72">
                 <Search
                   size={14}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-fg-dim"
                 />
                 <input
                   aria-label={`Buscar rua em ${selectedCity}`}
@@ -612,7 +612,7 @@ export default function IbgePage() {
             {erroBuscaRua ? (
               <VisualErrorState message="Não foi possível consultar os CEPs desta rua." />
             ) : rua.trim().length < 3 ? (
-              <p className="text-slate-500 text-sm py-8 text-center">
+              <p className="text-fg-dim text-sm py-8 text-center">
                 Digite ao menos 3 letras do nome da rua — é o mínimo aceito pela
                 base dos Correios.
               </p>
@@ -627,7 +627,7 @@ export default function IbgePage() {
                 {/* A origem limita em 50 resultados: dizer isso evita que a
                     lista truncada pareça a resposta completa. */}
                 {cepsDaRua.length >= 50 && (
-                  <p className="text-slate-500 text-xs mb-3">
+                  <p className="text-fg-dim text-xs mb-3">
                     Exibindo os 50 primeiros resultados — refine a busca para
                     ver outros.
                   </p>
@@ -636,13 +636,13 @@ export default function IbgePage() {
                   <table className="w-full min-w-md text-sm">
                     <thead className="sticky top-0 bg-slate-950/90 max-lg:bg-slate-950 backdrop-blur-sm z-10">
                       <tr className="border-b border-white/10">
-                        <th className="text-left py-3 px-4 text-slate-500 font-medium w-28 text-xs uppercase tracking-wider">
+                        <th className="text-left py-3 px-4 text-fg-dim font-medium w-28 text-xs uppercase tracking-wider">
                           CEP
                         </th>
-                        <th className="text-left py-3 px-4 text-slate-500 font-medium text-xs uppercase tracking-wider">
+                        <th className="text-left py-3 px-4 text-fg-dim font-medium text-xs uppercase tracking-wider">
                           Logradouro
                         </th>
-                        <th className="text-left py-3 px-4 text-slate-500 font-medium hidden md:table-cell text-xs uppercase tracking-wider">
+                        <th className="text-left py-3 px-4 text-fg-dim font-medium hidden md:table-cell text-xs uppercase tracking-wider">
                           Bairro
                         </th>
                       </tr>
@@ -659,12 +659,12 @@ export default function IbgePage() {
                           <td className="py-3 px-4 text-slate-300 group-hover/row:text-white transition-colors font-medium">
                             {e.logradouro}
                             {e.complemento && (
-                              <span className="text-slate-500 text-xs block">
+                              <span className="text-fg-dim text-xs block">
                                 {e.complemento}
                               </span>
                             )}
                           </td>
-                          <td className="py-3 px-4 text-slate-500 text-xs hidden md:table-cell group-hover/row:text-slate-400 transition-colors">
+                          <td className="py-3 px-4 text-fg-dim text-xs hidden md:table-cell group-hover/row:text-slate-400 transition-colors">
                             {e.bairro}
                           </td>
                         </tr>
@@ -674,7 +674,7 @@ export default function IbgePage() {
                 </div>
               </>
             ) : (
-              <p className="text-slate-500 text-sm py-8 text-center">
+              <p className="text-fg-dim text-sm py-8 text-center">
                 Nenhuma rua com esse nome em {selectedCity}.
               </p>
             )}

@@ -220,6 +220,24 @@ export default function DashboardLayout() {
     if (!isDocked) setSidebarOpen(false);
   };
 
+  // Esc fecha a sidebar em modo overlay.
+  //
+  // Faltava: até aqui a única saída era clicar no backdrop ou achar o botão de
+  // fechar — as duas de mouse. Com a sidebar aberta sobre o conteúdo, quem
+  // navega por teclado ficava sem a saída que todo menu sobreposto deve ter.
+  //
+  // Só em overlay: com a sidebar ancorada (>= 1024px) ela é parte do layout, e
+  // não há nada a fechar. Sem essa guarda, o Esc colapsaria a navegação no
+  // desktop sem que ninguém tivesse pedido.
+  useEffect(() => {
+    if (isDocked || !sidebarOpen) return;
+    const aoTeclar = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSidebarOpen(false);
+    };
+    document.addEventListener('keydown', aoTeclar);
+    return () => document.removeEventListener('keydown', aoTeclar);
+  }, [isDocked, sidebarOpen]);
+
   return (
     // O fundo vive aqui e não nas páginas: nenhuma das dez declara fundo
     // próprio, todas herdam deste container. Um ponto para trocar, um para
@@ -236,6 +254,22 @@ export default function DashboardLayout() {
     // uma rolagem fantasma do tamanho exato da barra — a faixa que sobra embaixo
     // fica fora de qualquer camada pintada. `100svh` cabe sempre.
     <div className="app-shell flex flex-col bg-smoke-abyss">
+      {/* ── Pular navegação ──────────────────────────────────────────────
+          Primeiro alvo de Tab, visível só quando focado (WCAG 2.2 AA, 2.4.1).
+
+          Aqui pesa mais que na landing, onde o padrão já existia: a sidebar tem
+          17 links e o header mais 4. Sem este atalho, chegar ao conteúdo pelo
+          teclado custa 21 tabulações — a cada troca de página. */}
+      <a
+        href="#conteudo"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60]
+                   focus:rounded-control focus:bg-amber-400 focus:px-4 focus:py-2 focus:text-sm
+                   focus:font-semibold focus:text-slate-950 focus:outline-none
+                   focus-visible:ring-2 focus-visible:ring-amber-300"
+      >
+        Pular para o conteúdo
+      </a>
+
       {/* ── Header ───────────────────────────────────────────────────────── */}
       {/* px-gutter (era px-5) alinha o padding do header ao do <main>, de modo
           que a logo passa a ficar na mesma coluna do conteúdo. */}
@@ -269,7 +303,7 @@ export default function DashboardLayout() {
           <BrandLogo variant="sidebar" />
         </div>
 
-        <span className="hidden md:block text-slate-500 text-xs font-medium tracking-wide">
+        <span className="hidden md:block text-fg-dim text-xs font-medium tracking-wide">
           {pageTitle}
         </span>
 
@@ -290,7 +324,7 @@ export default function DashboardLayout() {
             onClick={() => navigate("/dashboard/settings")}
             aria-label="Configurações da conta"
             className="inline-flex items-center justify-center p-2 -m-2 rounded-control
-                       text-slate-500 hover:text-amber-400 transition-colors
+                       text-fg-dim hover:text-amber-400 transition-colors
                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60
                        coarse:min-h-11 coarse:min-w-11"
           >
@@ -300,7 +334,7 @@ export default function DashboardLayout() {
             onClick={handleLogout}
             aria-label="Sair da conta"
             className="inline-flex items-center justify-center p-2 -m-2 rounded-control
-                       text-slate-500 hover:text-rose-400 transition-colors
+                       text-fg-dim hover:text-rose-400 transition-colors
                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/60
                        coarse:min-h-11 coarse:min-w-11"
           >
@@ -314,7 +348,15 @@ export default function DashboardLayout() {
         {/* Backdrop do modo overlay — agora até lg (era md), acompanhando a
             sidebar. Z-45 */}
         {sidebarOpen && (
+          /* O backdrop é DECORATIVO, e o clique nele é atalho de mouse — não a
+             única saída. A saída de teclado é o Esc (efeito acima) e o próprio
+             botão de fechar da sidebar, que continua no fluxo de Tab.
+             Dar papel e foco a este div criaria uma parada de Tab que não leva
+             a lugar nenhum; o certo é marcá-lo como invisível à árvore de
+             acessibilidade — o que basta para as regras de lint pararem de
+             acusar, sem precisar de exceção. */
           <div
+            aria-hidden="true"
             className="fixed inset-0 bg-black/80 backdrop-blur-md z-45 lg:hidden"
             onClick={() => setSidebarOpen(false)}
           />
@@ -462,7 +504,7 @@ export default function DashboardLayout() {
             `@container/main` publica a largura real do conteúdo para que os
             componentes respondam ao espaço que ocupam, e não ao viewport — que
             aqui mente em 280px por causa da sidebar. */}
-        <main className="flex-1 min-w-0 p-gutter overflow-y-auto w-full relative z-0 @container/main">
+        <main id="conteudo" className="flex-1 min-w-0 p-gutter overflow-y-auto w-full relative z-0 @container/main">
           {/* As páginas são carregadas sob demanda (lazy). O Suspense fica aqui,
               e não acima do layout, para que a sidebar e o header permaneçam na
               tela enquanto o chunk da página é baixado.
@@ -473,7 +515,7 @@ export default function DashboardLayout() {
           <ErrorBoundary>
             <Suspense
               fallback={
-                <div className="flex items-center justify-center py-24 text-slate-500">
+                <div className="flex items-center justify-center py-24 text-fg-dim">
                   <LoaderCircle className="animate-spin" size={28} />
                 </div>
               }

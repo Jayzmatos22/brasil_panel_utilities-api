@@ -47,7 +47,7 @@ export class ErrorBoundary extends Component<Props, State> {
           <h2 className="text-lg font-semibold text-white">
             Não foi possível carregar esta página
           </h2>
-          <p className="text-sm text-slate-500 max-w-md">
+          <p className="text-sm text-fg-dim max-w-md">
             Algo falhou ao montar a tela. Recarregar costuma resolver — se o
             problema persistir, tente novamente em alguns minutos.
           </p>
