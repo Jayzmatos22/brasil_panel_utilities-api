@@ -30,16 +30,18 @@ O padrão é `<assunto>-<viewport>.<ext>`.
 
 ### Diagrama
 
-    arquitetura.png        1400 x 560   IMG-5 — o desenho da arquitetura
-    arquitetura.fonte.html      —       o HTML que gera a imagem
+    arquitetura.png        2000 x 800   IMG-5 — o desenho da arquitetura
+    arquitetura.fonte.html      —        o HTML que gera a imagem
 
-O diagrama não é print: é uma página HTML renderizada em Chromium headless a 2x.
+O diagrama não é print: é uma página HTML de 1400 x 560 renderizada em
+Chromium headless a 1,43x — 2000px é o dobro da coluna de ~1000px em que o
+GitHub exibe, e mais que isso só engorda o arquivo.
 A fonte fica versionada ao lado da imagem justamente para que um número mudado no
 projeto (rotas, classes, fontes) possa ser corrigido no HTML e re-renderizado, em
 vez de exigir refazer a arte do zero:
 
     node -e "…" # ou o mesmo Playwright usado para og-capa.png
-    # viewport 1400x560, deviceScaleFactor 2, screenshot de arquitetura.fonte.html
+    # viewport 1400x560, deviceScaleFactor 1.4286, screenshot de arquitetura.fonte.html
 
 Se o acabamento for refeito no Figma, o PNG passa a ser o produto e o HTML vira
 só o rascunho de origem — vale manter os dois assim mesmo.
