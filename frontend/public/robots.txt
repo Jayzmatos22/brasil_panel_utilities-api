@@ -1,0 +1,18 @@
+# Só duas rotas são indexáveis, e servem o mesmo conteúdo: "/" e "/sobre".
+# O canonical do index.html resolve a duplicação apontando para "/".
+User-agent: *
+Allow: /$
+Allow: /sobre
+
+# Telas de sessão. Não é proteção — é evitar que o índice encha de páginas que,
+# para um crawler, são a casca vazia do SPA.
+Disallow: /dashboard/
+Disallow: /login-usuario
+Disallow: /registro-usuario
+Disallow: /dados-perfil
+Disallow: /verificar-email
+Disallow: /esqueci-senha
+Disallow: /redefinir-senha
+Disallow: /confirmar-admin/
+
+Sitemap: https://brasilpanel.com.br/sitemap.xml

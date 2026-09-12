@@ -5,6 +5,52 @@
     <link rel="icon" type="image/svg+xml" href="/only_icon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+    <!-- ── Identidade da página e cartão de compartilhamento ────────────────
+         Estático, e não por rota, porque só DUAS rotas são indexáveis — "/" e
+         "/sobre" — e as duas servem o MESMO elemento (App.tsx:165 e :204). Meta
+         por rota aqui só duplicaria o mesmo texto em dois lugares.
+
+         O canonical aponta para "/" justamente por causa dessa duplicação: sem
+         ele, o buscador vê dois endereços com conteúdo idêntico e divide o
+         sinal entre eles. As demais rotas ficam fora do índice pelo robots.txt
+         — são telas de sessão, que devolveriam a casca vazia ao crawler.
+
+         ATENÇÃO ao limite disto: o SPA entrega <div id="root"></div> e mais
+         nada a quem não executa JavaScript. O Googlebot renderiza e alcança o
+         conteúdo; WhatsApp e LinkedIn NÃO renderizam, e é por isso que estas
+         metas precisam estar no HTML servido, e não declaradas em componente.
+         Enquanto não houver pré-render, elas são a única coisa que o
+         compartilhamento de link enxerga. -->
+    <meta
+      name="description"
+      content="Painel dos principais índices econômicos e sociais do Brasil — séries do IPEA, IBGE e Banco Central, tratadas e apresentadas em gráficos claros."
+    />
+    <link rel="canonical" href="https://brasilpanel.com.br/" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Brasil Panel" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:url" content="https://brasilpanel.com.br/" />
+    <meta property="og:title" content="Brasil Panel — a economia do Brasil em dados oficiais" />
+    <meta
+      property="og:description"
+      content="Séries do IPEA, IBGE e Banco Central, tratadas e publicadas num formato que se entende em segundos."
+    />
+    <meta property="og:image" content="https://brasilpanel.com.br/og-capa.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Brasil Panel — série econômica ascendente sobre fundo escuro" />
+
+    <!-- summary_large_image e não summary: o cartão grande é o que faz a capa
+         aparecer inteira, em vez de virar miniatura quadrada ao lado do texto. -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Brasil Panel — a economia do Brasil em dados oficiais" />
+    <meta
+      name="twitter:description"
+      content="Séries do IPEA, IBGE e Banco Central, tratadas e publicadas num formato que se entende em segundos."
+    />
+    <meta name="twitter:image" content="https://brasilpanel.com.br/og-capa.png" />
+
     <!-- Instrument Serif — usada SÓ pela palavra "Erro" do lockup do 404
          (pages/errors/Erro404Vagalume.tsx). É a única fonte externa do
          projeto; todo o resto roda no stack do sistema.

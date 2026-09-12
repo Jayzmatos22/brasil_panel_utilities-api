@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Só a raiz. "/sobre" serve o mesmo elemento e tem canonical para cá — listar
+  as duas pediria ao buscador que indexasse conteúdo duplicado.
+
+  As rotas do painel não entram: exigem sessão, e o que um crawler receberia
+  delas é <div id="root"></div>.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://brasilpanel.com.br/</loc>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>
