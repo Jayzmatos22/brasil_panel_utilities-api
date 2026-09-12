@@ -11,14 +11,23 @@
 	<groupId>com.brasilpanel</groupId>
 	<artifactId>backend</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name/>
-	<description/>
-	<url/>
+	<name>Brasil Panel — backend</name>
+	<description>API de dados econômicos e financeiros do Brasil</description>
+	<url>https://github.com/Jayzmatos22/brasil_panel_utilities-api</url>
 	<licenses>
-		<license/>
+		<!-- Código visível, direitos reservados: não é open source. Os termos
+		     estão no LICENSE, na raiz do repositório. -->
+		<license>
+			<name>Código visível — direitos reservados</name>
+			<url>https://github.com/Jayzmatos22/brasil_panel_utilities-api/blob/main/LICENSE</url>
+			<distribution>manual</distribution>
+		</license>
 	</licenses>
 	<developers>
-		<developer/>
+		<developer>
+			<name>Jailton Matos</name>
+			<url>https://github.com/Jayzmatos22</url>
+		</developer>
 	</developers>
 	<scm>
 		<connection/>
