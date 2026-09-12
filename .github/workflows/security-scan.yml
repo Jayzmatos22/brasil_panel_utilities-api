@@ -38,7 +38,7 @@ jobs:
     if: github.event_name == 'pull_request'
     steps:
       - name: Baixar código do repositório
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # REPROVA de verdade. Compara a base com a head e falha se a PR INTRODUZIR
       # dependência com vulnerabilidade conhecida de severidade alta ou crítica.
@@ -52,7 +52,7 @@ jobs:
       # action responde "not supported on this repository" e a verificação ficaria
       # vermelha para sempre sem nunca ter olhado nada.
       - name: Revisar dependências adicionadas
-        uses: actions/dependency-review-action@v4
+        uses: actions/dependency-review-action@v5
         with:
           fail-on-severity: high
           comment-summary-in-pr: on-failure
@@ -73,10 +73,10 @@ jobs:
       security-events: write
     steps:
       - name: Baixar código do repositório
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Configurar Java 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           java-version: '21'
           distribution: 'temurin'
@@ -136,14 +136,14 @@ jobs:
       # triar item a item, marcar falso positivo e acompanhar o que sobrou.
       # Um log de job não serve para isso: some na próxima execução.
       - name: Publicar resultado do backend
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: trivy-backend.sarif
           category: trivy-backend
 
       - name: Publicar resultado do frontend
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: trivy-frontend.sarif
@@ -151,7 +151,7 @@ jobs:
 
       # Cópia bruta para quem quiser ler sem abrir a aba Security.
       - name: Guardar relatórios
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: trivy-sarif
