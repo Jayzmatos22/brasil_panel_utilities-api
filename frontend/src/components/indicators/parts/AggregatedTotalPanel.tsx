@@ -64,7 +64,7 @@ export const AggregatedTotalPanel = memo(function AggregatedTotalPanel({
           </span>
           <div>
             <h4 className="text-base font-semibold tracking-tight text-slate-100">{title}</h4>
-            <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">{subtitle}</p>
+            <p className="text-[11px] uppercase tracking-[0.18em] text-fg-dim">{subtitle}</p>
           </div>
         </div>
         <span
@@ -76,7 +76,7 @@ export const AggregatedTotalPanel = memo(function AggregatedTotalPanel({
       </div>
 
       {!aggregate ? (
-        <div className="flex h-32 items-center justify-center text-sm text-slate-500">
+        <div className="flex h-32 items-center justify-center text-sm text-fg-dim">
           Sem dados para agregar.
         </div>
       ) : (
@@ -94,7 +94,7 @@ export const AggregatedTotalPanel = memo(function AggregatedTotalPanel({
           {/* Variações M/M e YoY lado a lado */}
           <div className="grid-auto-cards gap-2 [--card-min:12rem]">
             <div className="rounded-lg border border-white/5 bg-white/2 px-4 py-3">
-              <p className="text-[10px] uppercase tracking-wider text-slate-500">Variação M/M</p>
+              <p className="text-[10px] uppercase tracking-wider text-fg-dim">Variação M/M</p>
               <p
                 className={`font-mono text-lg font-semibold ${
                   aggregate.variationMM === null
@@ -108,7 +108,7 @@ export const AggregatedTotalPanel = memo(function AggregatedTotalPanel({
               </p>
             </div>
             <div className="rounded-lg border border-white/5 bg-white/2 px-4 py-3">
-              <p className="text-[10px] uppercase tracking-wider text-slate-500">Variação YoY</p>
+              <p className="text-[10px] uppercase tracking-wider text-fg-dim">Variação YoY</p>
               <p
                 className={`font-mono text-lg font-semibold ${
                   aggregate.variationYoY === null
@@ -125,7 +125,7 @@ export const AggregatedTotalPanel = memo(function AggregatedTotalPanel({
 
           {/* Barra de participação — 1 fatia por série, cor vem do mapa */}
           <div className="flex flex-col gap-2">
-            <p className="text-[10px] uppercase tracking-wider text-slate-500">Participação no total</p>
+            <p className="text-[10px] uppercase tracking-wider text-fg-dim">Participação no total</p>
             <div className="flex h-3 w-full overflow-hidden rounded-full border border-white/10 bg-inset">
               {aggregate.shares.map((sh) => (
                 <div

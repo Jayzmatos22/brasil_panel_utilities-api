@@ -174,7 +174,7 @@ export default function AdminUsersPage() {
       >
         {isLoading ? (
           <div className="flex items-center justify-center gap-2.5 py-20 text-slate-400 text-sm">
-            <LoaderCircle size={16} className="animate-spin text-slate-500" />
+            <LoaderCircle size={16} className="animate-spin text-fg-dim" />
             <span>Carregando usuários…</span>
           </div>
         ) : users && users.length > 0 ? (
@@ -182,10 +182,10 @@ export default function AdminUsersPage() {
             <table className="w-full min-w-lg text-sm" role="table">
               <thead>
                 <tr className="border-b border-white/10">
-                  <th scope="col" className="text-left py-3 px-4 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Usuário</th>
-                  <th scope="col" className="text-left py-3 px-4 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Função</th>
-                  <th scope="col" className="text-left py-3 px-4 text-[11px] font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">Criado em</th>
-                  <th scope="col" className="text-right py-3 px-4 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Ações</th>
+                  <th scope="col" className="text-left py-3 px-4 text-[11px] font-semibold text-fg-dim uppercase tracking-wider">Usuário</th>
+                  <th scope="col" className="text-left py-3 px-4 text-[11px] font-semibold text-fg-dim uppercase tracking-wider">Função</th>
+                  <th scope="col" className="text-left py-3 px-4 text-[11px] font-semibold text-fg-dim uppercase tracking-wider hidden md:table-cell">Criado em</th>
+                  <th scope="col" className="text-right py-3 px-4 text-[11px] font-semibold text-fg-dim uppercase tracking-wider">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
@@ -203,7 +203,7 @@ export default function AdminUsersPage() {
                               <span className="text-sm font-medium text-white truncate">{u.name}</span>
                               {isMe && (<span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide bg-surface-3 text-slate-400 px-1.5 py-0.5 rounded">você</span>)}
                             </div>
-                            <p className="text-xs text-slate-500 truncate">{u.email}</p>
+                            <p className="text-xs text-fg-dim truncate">{u.email}</p>
                           </div>
                         </div>
                       </td>
@@ -213,10 +213,10 @@ export default function AdminUsersPage() {
                           {u.role === 'ADMIN' ? 'Admin' : 'Usuário'}
                         </span>
                       </td>
-                      <td className="py-3.5 px-4 text-slate-500 text-xs tabular-nums hidden md:table-cell">{formatDate(u.createdAt)}</td>
+                      <td className="py-3.5 px-4 text-fg-dim text-xs tabular-nums hidden md:table-cell">{formatDate(u.createdAt)}</td>
                       <td className="py-3.5 px-4 text-right">
                         {isMe ? (
-                          <span className="inline-flex items-center gap-1 text-[11px] text-slate-600" title="Você não pode alterar sua própria função"><span className="w-1.5 h-1.5 rounded-full bg-white/20" />Sem ação</span>
+                          <span className="inline-flex items-center gap-1 text-[11px] text-fg-dim" title="Você não pode alterar sua própria função"><span className="w-1.5 h-1.5 rounded-full bg-white/20" />Sem ação</span>
                         ) : u.role === 'USER' ? (
                           <button onClick={() => promote(u.id)} disabled={promoting || demoting} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-emerald-400 bg-emerald-400/8 hover:bg-emerald-400/15 hover:text-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/40 focus-visible:ring-offset-1 focus-visible:ring-offset-slate-950 disabled:opacity-30 disabled:pointer-events-none transition-all duration-150 cursor-pointer">
                             <ShieldCheck size={13} /><span className="hidden sm:inline">Promover</span>
@@ -234,11 +234,11 @@ export default function AdminUsersPage() {
             </table>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center gap-3 py-20 text-slate-500">
-            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-surface-3"><Users size={20} className="text-slate-600" /></div>
+          <div className="flex flex-col items-center justify-center gap-3 py-20 text-fg-dim">
+            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-surface-3"><Users size={20} className="text-fg-dim" /></div>
             <div className="text-center">
               <p className="text-sm font-medium text-slate-400">Nenhum usuário encontrado</p>
-              <p className="mt-0.5 text-xs text-slate-600">Novos membros aparecerão aqui assim que se cadastrarem.</p>
+              <p className="mt-0.5 text-xs text-fg-dim">Novos membros aparecerão aqui assim que se cadastrarem.</p>
             </div>
           </div>
         )}

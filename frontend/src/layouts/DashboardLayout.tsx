@@ -269,7 +269,7 @@ export default function DashboardLayout() {
           <BrandLogo variant="sidebar" />
         </div>
 
-        <span className="hidden md:block text-slate-500 text-xs font-medium tracking-wide">
+        <span className="hidden md:block text-fg-dim text-xs font-medium tracking-wide">
           {pageTitle}
         </span>
 
@@ -290,7 +290,7 @@ export default function DashboardLayout() {
             onClick={() => navigate("/dashboard/settings")}
             aria-label="Configurações da conta"
             className="inline-flex items-center justify-center p-2 -m-2 rounded-control
-                       text-slate-500 hover:text-amber-400 transition-colors
+                       text-fg-dim hover:text-amber-400 transition-colors
                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60
                        coarse:min-h-11 coarse:min-w-11"
           >
@@ -300,7 +300,7 @@ export default function DashboardLayout() {
             onClick={handleLogout}
             aria-label="Sair da conta"
             className="inline-flex items-center justify-center p-2 -m-2 rounded-control
-                       text-slate-500 hover:text-rose-400 transition-colors
+                       text-fg-dim hover:text-rose-400 transition-colors
                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/60
                        coarse:min-h-11 coarse:min-w-11"
           >
@@ -473,7 +473,7 @@ export default function DashboardLayout() {
           <ErrorBoundary>
             <Suspense
               fallback={
-                <div className="flex items-center justify-center py-24 text-slate-500">
+                <div className="flex items-center justify-center py-24 text-fg-dim">
                   <LoaderCircle className="animate-spin" size={28} />
                 </div>
               }

@@ -107,6 +107,29 @@
   --color-fg-muted: #9ba1a6;  /* texto secundário — 7.4:1 sobre --color-ink */
   --color-accent: #00d188;    /* verde-esmeralda: número, link, detalhe */
 
+  /* Texto TERCIÁRIO — rótulo pequeno, legenda, unidade, referência.
+     Existe porque o nível terciário era `text-slate-500` (#64748b), que mede
+     3,87:1 sobre a superfície do painel (bg-white/2 sobre #0b0f1a) e reprova o
+     mínimo de 4,5:1 da WCAG 2.2 AA, critério 1.4.3. Não era caso isolado: 132
+     usos, sendo 49 deles em fonte de 10 a 11px — justamente onde o critério
+     exige mais, não menos.
+
+     Trocar tudo por slate-400 passaria, mas apagaria um nível inteiro da
+     hierarquia: slate-400 já carrega 116 usos como texto SECUNDÁRIO, e os dois
+     papéis viraram o mesmo cinza.
+
+     #77879d é slate-500 puxado 40% na direção do slate-400. Mede 5,03:1 — passa
+     com folga, e não no limite — e continua visivelmente mais apagado que o
+     secundário (7,19:1), que é o trabalho que o terciário precisa fazer.
+
+     Os três níveis, medidos sobre o pior caso do gradiente do painel:
+       slate-300  12,41:1   destaque
+       slate-400   7,19:1   secundário
+       este        5,03:1   terciário
+       slate-500   3,87:1   REPROVA — não usar como texto
+       slate-600   2,43:1   REPROVA em qualquer tamanho */
+  --color-fg-dim: #77879d;
+
   /* ── Raio ─────────────────────────────────────────────────────────────────
      Nomeia a hierarquia que o código já segue de forma aproximada. */
   --radius-panel: 1rem;      /* era rounded-2xl — painel de página */

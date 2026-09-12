@@ -47,7 +47,7 @@ export const ErrorState = memo(({ error, refetch }: ErrorStateProps) => (
     <AlertCircle size={24} className="text-red-400/80" aria-hidden="true" />
     <div>
       <p className="text-red-300 text-sm font-medium">Falha ao carregar dados</p>
-      <p className="text-slate-500 text-xs mt-1">{error?.message || 'Erro de conexão'}</p>
+      <p className="text-fg-dim text-xs mt-1">{error?.message || 'Erro de conexão'}</p>
     </div>
     {refetch && (
       <button

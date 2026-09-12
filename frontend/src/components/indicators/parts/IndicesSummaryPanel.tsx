@@ -46,7 +46,7 @@ export const IndicesSummaryPanel = memo(function IndicesSummaryPanel({
         </span>
         <div>
           <h4 className="text-base font-semibold tracking-tight text-slate-100">{title}</h4>
-          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">{subtitle}</p>
+          <p className="text-[11px] uppercase tracking-[0.18em] text-fg-dim">{subtitle}</p>
         </div>
       </div>
 
@@ -58,7 +58,7 @@ export const IndicesSummaryPanel = memo(function IndicesSummaryPanel({
             key={item.key}
             className="flex flex-col gap-1 rounded-lg border border-white/5 bg-white/2 px-3 py-2.5"
           >
-            <span className="text-[10px] uppercase tracking-wider text-slate-500 truncate">
+            <span className="text-[10px] uppercase tracking-wider text-fg-dim truncate">
               {item.label}
             </span>
             {item.latest ? (
@@ -83,7 +83,7 @@ export const IndicesSummaryPanel = memo(function IndicesSummaryPanel({
                 </div>
               </>
             ) : (
-              <span className="font-mono text-sm text-slate-600">—</span>
+              <span className="font-mono text-sm text-fg-dim">—</span>
             )}
           </div>
         ))}

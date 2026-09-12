@@ -78,7 +78,7 @@ function SectionCard({
               {title}
             </h2>
             {subtitle && (
-              <p className="mt-0.5 text-xs text-slate-500 truncate">
+              <p className="mt-0.5 text-xs text-fg-dim truncate">
                 {subtitle}
               </p>
             )}
@@ -627,11 +627,11 @@ export default function PibPage() {
                     value={year}
                     onChange={handleYearChange}
                     placeholder="ex: 2024"
-                    className="w-full h-11 px-3 pr-9 rounded-lg bg-inset text-white placeholder:text-slate-600 border border-emerald-900/50 outline-none focus:ring-2 focus:ring-emerald-400/40 focus:border-emerald-400/50 transition-all text-base font-mono tabular-nums"
+                    className="w-full h-11 px-3 pr-9 rounded-lg bg-inset text-white placeholder:text-fg-dim border border-emerald-900/50 outline-none focus:ring-2 focus:ring-emerald-400/40 focus:border-emerald-400/50 transition-all text-base font-mono tabular-nums"
                   />
                   <CalendarSearch
                     size={14}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-dim pointer-events-none"
                   />
                 </div>
                 {isPibLoading && (
@@ -668,7 +668,7 @@ export default function PibPage() {
                   value={compareYear}
                   onChange={handleCompareYearChange}
                   placeholder="ex: 2010"
-                  className="w-full h-11 px-3 pr-9 rounded-lg bg-inset text-white placeholder:text-slate-600 border border-[#FFDF00]/20 outline-none focus:ring-2 focus:ring-[#FFDF00]/40 focus:border-[#FFDF00]/50 transition-all text-base font-mono tabular-nums"
+                  className="w-full h-11 px-3 pr-9 rounded-lg bg-inset text-white placeholder:text-fg-dim border border-[#FFDF00]/20 outline-none focus:ring-2 focus:ring-[#FFDF00]/40 focus:border-[#FFDF00]/50 transition-all text-base font-mono tabular-nums"
                 />
                 <CalendarSearch
                   size={14}
@@ -739,7 +739,7 @@ export default function PibPage() {
                   <h2 className="text-sm font-medium text-white mt-0.5">
                     {monthlyDataForCompareYear ? (
                       <>
-                        {year} <span className="text-slate-500 mx-1">vs</span>{" "}
+                        {year} <span className="text-fg-dim mx-1">vs</span>{" "}
                         {compareYear}
                       </>
                     ) : (
@@ -754,7 +754,7 @@ export default function PibPage() {
                     {monthlyDataForYear.length} meses
                   </span>
                   {monthlyDataForCompareYear && (
-                    <span className="inline-flex items-center gap-1.5 rounded-md border border-white/10 bg-surface-1 px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider text-slate-500">
+                    <span className="inline-flex items-center gap-1.5 rounded-md border border-white/10 bg-surface-1 px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider text-fg-dim">
                       {monthlyDataForCompareYear.length} meses
                     </span>
                   )}
@@ -826,7 +826,7 @@ export default function PibPage() {
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-[10px] text-slate-500 uppercase tracking-wider">
+                      <p className="text-[10px] text-fg-dim uppercase tracking-wider">
                         Variação Absoluta
                       </p>
                       <p
@@ -879,7 +879,7 @@ export default function PibPage() {
                       /* ── TABELA COMPARAÇÃO MENSAL ── */
                       <div className="flex min-w-lg flex-col divide-y divide-white/5">
                         {/* Cabeçalho da Tabela */}
-                        <div className="grid grid-cols-4 gap-4 pb-3 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                        <div className="grid grid-cols-4 gap-4 pb-3 text-[10px] font-semibold uppercase tracking-wider text-fg-dim">
                           <span>Mês</span>
                           <span className="text-right">{compareYear}</span>
                           <span className="text-right">{year}</span>
@@ -897,7 +897,7 @@ export default function PibPage() {
                               <span className="text-sm font-medium text-slate-300">
                                 {row.month}
                               </span>
-                              <span className="text-sm text-slate-500 tabular-nums text-right">
+                              <span className="text-sm text-fg-dim tabular-nums text-right">
                                 {compactBrl(row.compareValue)}
                               </span>
                               <span className="text-sm text-slate-100 tabular-nums text-right font-medium">
@@ -983,7 +983,7 @@ export default function PibPage() {
                     key={idx}
                     className={`rounded-lg border px-4 py-3 ${block.isVar ? block.bgClass : "bg-surface-2 border-white/10"}`}
                   >
-                    <p className="text-[10px] uppercase tracking-[0.14em] text-slate-500 flex items-center gap-1.5">
+                    <p className="text-[10px] uppercase tracking-[0.14em] text-fg-dim flex items-center gap-1.5">
                       {block.icon} {block.label}
                     </p>
                     <p

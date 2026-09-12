@@ -165,9 +165,9 @@ export default function VerifyEmailPage() {
 
           {/* Reenviar */}
           <div className="flex flex-col items-center gap-2 text-sm">
-            <span className="text-slate-500">Não recebeu o código?</span>
+            <span className="text-fg-dim">Não recebeu o código?</span>
             {cooldown > 0 ? (
-              <span className="text-slate-600 text-xs">
+              <span className="text-fg-dim text-xs">
                 Reenviar em {cooldown}s…
               </span>
             ) : (
@@ -187,7 +187,7 @@ export default function VerifyEmailPage() {
             <button
               type="button"
               onClick={() => navigate('/login-usuario')}
-              className="text-slate-600 hover:text-slate-400 text-xs transition-colors cursor-pointer mt-1"
+              className="text-fg-dim hover:text-slate-400 text-xs transition-colors cursor-pointer mt-1"
             >
               Já tenho conta — fazer login
             </button>

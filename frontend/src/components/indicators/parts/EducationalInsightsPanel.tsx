@@ -40,7 +40,7 @@ const InsightItem = memo(({ label, value, tone }: InsightKPI) => {
         : "text-slate-200";
   return (
     <div className="flex flex-col gap-0.5 rounded-lg border border-white/5 bg-white/2 px-3 py-2">
-      <span className="text-[10px] uppercase tracking-wider text-slate-500">
+      <span className="text-[10px] uppercase tracking-wider text-fg-dim">
         {label}
       </span>
       <span className={`font-mono text-sm font-semibold ${toneCls}`}>
@@ -75,7 +75,7 @@ export const EducationalInsightsPanel = memo(function EducationalInsightsPanel({
           <h4 className="text-base font-semibold tracking-tight text-slate-100">
             Insights Educacionais
           </h4>
-          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-fg-dim">
             Leitura dinâmica dos dados · sem recomendação
           </p>
         </div>

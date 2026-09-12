@@ -64,7 +64,7 @@ export const ChartPanel = memo(function ChartPanel({
             <h4 className="text-base font-semibold tracking-tight text-slate-100">
               {title}
             </h4>
-            <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
+            <p className="text-[11px] uppercase tracking-[0.18em] text-fg-dim">
               {subtitle}
             </p>
           </div>
@@ -78,7 +78,7 @@ export const ChartPanel = memo(function ChartPanel({
       </div>
 
       {points.length === 0 ? (
-        <div className="flex h-chart items-center justify-center text-center text-xs text-slate-500">
+        <div className="flex h-chart items-center justify-center text-center text-xs text-fg-dim">
           {emptyHint}
         </div>
       ) : (

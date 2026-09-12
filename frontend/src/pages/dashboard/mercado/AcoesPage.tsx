@@ -168,13 +168,13 @@ export default function AcoesPage() {
               color="#3b82f6"
             />
           ) : (
-            <p className="text-slate-500 text-sm">Sem histórico disponível para {symbol}.</p>
+            <p className="text-fg-dim text-sm">Sem histórico disponível para {symbol}.</p>
           )}
         </motion.div>
       )}
 
       {!symbol && (
-        <p className="text-slate-500 text-sm">Digite um símbolo para buscar a cotação.</p>
+        <p className="text-fg-dim text-sm">Digite um símbolo para buscar a cotação.</p>
       )}
 
     </motion.div>

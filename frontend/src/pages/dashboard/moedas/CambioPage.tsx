@@ -123,7 +123,7 @@ export default function CambioPage() {
                     {currencyOptions.map((c) => <option key={c.code} value={c.code}>{c.label}</option>)}
                   </select>
                 </div>
-                <span className="text-slate-500 font-bold text-xl mt-5">→</span>
+                <span className="text-fg-dim font-bold text-xl mt-5">→</span>
                 <div className="flex flex-col gap-1.5 flex-1 sm:flex-none">
                   <label className="text-slate-400 text-xs font-medium uppercase tracking-wider">Para</label>
                   <select value={to} onChange={(e) => setTo(e.target.value)} className={`${glassSelect} w-full sm:w-48`}>
@@ -138,7 +138,7 @@ export default function CambioPage() {
             ) : rate && rate.rates[to] != null ? (
               <div className="mt-2">
                 <p className="text-metric font-bold text-emerald-300"><AnimatedNumber value={rate.rates[to]} format={fmt} /> <span className="text-xl text-emerald-500">{to}</span></p>
-                <p className="text-slate-500 text-xs mt-2 font-mono">Referência: {rate.date}</p>
+                <p className="text-fg-dim text-xs mt-2 font-mono">Referência: {rate.date}</p>
               </div>
             ) : null}
           </div>
@@ -207,7 +207,7 @@ export default function CambioPage() {
               <LineChartEcharts points={stats.points} color="#06b6d4" />
             </div>
           </div>
-        ) : <p className="text-slate-500 text-sm py-4">Selecione um período para consultar.</p>}
+        ) : <p className="text-fg-dim text-sm py-4">Selecione um período para consultar.</p>}
       </motion.section>
     </motion.div>
   );

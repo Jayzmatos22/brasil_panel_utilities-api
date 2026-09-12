@@ -348,7 +348,7 @@ export default function CriptoPage() {
 
                       {isCmc && (
                         <td className={`hidden @3xl/page:table-cell py-2 px-3 text-right font-mono ${
-                          typeof coin.percentChange1h !== 'number' ? 'text-slate-500'
+                          typeof coin.percentChange1h !== 'number' ? 'text-fg-dim'
                             : coin.percentChange1h >= 0 ? 'text-green-400' : 'text-red-400'
                         }`}>
                           {typeof coin.percentChange1h === 'number' ? pct(coin.percentChange1h) : '—'}
@@ -359,7 +359,7 @@ export default function CriptoPage() {
                           tabela: a célula deixa de participar da largura da
                           coluna. Vai para um <span> interno. */}
                       <td className={`py-2 px-3 text-right font-mono ${
-                        !hasPriceChange ? 'text-slate-500' : up ? 'text-green-400' : 'text-red-400'
+                        !hasPriceChange ? 'text-fg-dim' : up ? 'text-green-400' : 'text-red-400'
                       }`}>
                         <span className="flex items-center justify-end gap-1">
                           {hasPriceChange ? (
@@ -377,7 +377,7 @@ export default function CriptoPage() {
 
                       {isCmc && (
                         <td className={`hidden @3xl/page:table-cell py-2 px-3 text-right font-mono ${
-                          typeof coin.percentChange7d !== 'number' ? 'text-slate-500'
+                          typeof coin.percentChange7d !== 'number' ? 'text-fg-dim'
                             : coin.percentChange7d >= 0 ? 'text-green-400' : 'text-red-400'
                         }`}>
                           {typeof coin.percentChange7d === 'number' ? pct(coin.percentChange7d) : '—'}

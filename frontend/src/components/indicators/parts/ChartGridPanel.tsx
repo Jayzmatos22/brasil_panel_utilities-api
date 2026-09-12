@@ -44,7 +44,7 @@ export const ChartGridPanel = memo(function ChartGridPanel({
           <h5 className="text-sm font-semibold tracking-tight text-slate-100">
             {title}
           </h5>
-          <p className="text-[10px] uppercase tracking-[0.16em] text-slate-500">
+          <p className="text-[10px] uppercase tracking-[0.16em] text-fg-dim">
             {subtitle}
           </p>
         </div>
@@ -57,7 +57,7 @@ export const ChartGridPanel = memo(function ChartGridPanel({
       </div>
 
       {points.length === 0 ? (
-        <div className="flex h-40 items-center justify-center text-center text-[11px] text-slate-500">
+        <div className="flex h-40 items-center justify-center text-center text-[11px] text-fg-dim">
           {emptyHint}
         </div>
       ) : (

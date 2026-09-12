@@ -73,7 +73,7 @@ export const SharesOfTotalPanel = memo(function SharesOfTotalPanel({
           </span>
           <div>
             <h4 className="text-base font-semibold tracking-tight text-slate-100">{title}</h4>
-            <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">{subtitle}</p>
+            <p className="text-[11px] uppercase tracking-[0.18em] text-fg-dim">{subtitle}</p>
           </div>
         </div>
         <span
@@ -85,7 +85,7 @@ export const SharesOfTotalPanel = memo(function SharesOfTotalPanel({
       </div>
 
       {!shares ? (
-        <div className="flex h-32 items-center justify-center text-sm text-slate-500">
+        <div className="flex h-32 items-center justify-center text-sm text-fg-dim">
           Sem dados no mês de referência.
         </div>
       ) : (
@@ -116,7 +116,7 @@ export const SharesOfTotalPanel = memo(function SharesOfTotalPanel({
                       {p.label}
                     </span>
                     <span className="flex items-baseline gap-2 font-mono">
-                      <span className="text-slate-500">{valueFormatter(p.value)}</span>
+                      <span className="text-fg-dim">{valueFormatter(p.value)}</span>
                       <span className="font-semibold text-slate-200">
                         {p.pct.toFixed(1)}%
                       </span>
@@ -147,7 +147,7 @@ export const SharesOfTotalPanel = memo(function SharesOfTotalPanel({
               silêncio seria pior: sem esta linha, uma categoria sumida da lista
               pareceria valer zero. */}
           {shares.omitted.length > 0 && (
-            <p className="text-[11px] leading-relaxed text-slate-500">
+            <p className="text-[11px] leading-relaxed text-fg-dim">
               Fora do cálculo por não terem dado em{' '}
               {shares.referenceMonth.replace('-', '/')}:{' '}
               <span className="text-slate-400">{shares.omitted.join(', ')}</span>.

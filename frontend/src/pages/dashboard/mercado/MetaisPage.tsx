@@ -103,7 +103,7 @@ function SectionHeader({
           {title}
         </h2>
         {description && (
-          <p className="mt-0.5 text-xs text-slate-500">{description}</p>
+          <p className="mt-0.5 text-xs text-fg-dim">{description}</p>
         )}
       </div>
       {right && <div className="flex items-center gap-2">{right}</div>}
@@ -126,7 +126,7 @@ function StatePanel({
     tone === "error"
       ? "ring-rose-400/15 bg-rose-400/5"
       : "ring-white/10 bg-surface-2";
-  const iconTone = tone === "error" ? "text-rose-400" : "text-slate-500";
+  const iconTone = tone === "error" ? "text-rose-400" : "text-fg-dim";
   const titleTone = tone === "error" ? "text-rose-300" : "text-slate-300";
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-14">
@@ -138,7 +138,7 @@ function StatePanel({
       <div className="text-center">
         <p className={`text-sm font-medium ${titleTone}`}>{title}</p>
         {description && (
-          <p className="mt-1 text-xs text-slate-500 max-w-xs">{description}</p>
+          <p className="mt-1 text-xs text-fg-dim max-w-xs">{description}</p>
         )}
       </div>
     </div>
@@ -152,7 +152,7 @@ function LoadingRow({ label }: { label: string }) {
       aria-live="polite"
       className="flex items-center justify-center gap-2.5 py-14 text-slate-400 text-sm"
     >
-      <LoaderCircle size={15} className="animate-spin text-slate-500" />
+      <LoaderCircle size={15} className="animate-spin text-fg-dim" />
       <span>{label}</span>
     </div>
   );
@@ -249,8 +249,8 @@ export default function MetaisPage() {
             </div>
           </div>
           {metals && (
-            <div className="flex items-center gap-1.5 text-xs text-slate-500 tabular-nums">
-              <Clock size={12} className="text-slate-600" />
+            <div className="flex items-center gap-1.5 text-xs text-fg-dim tabular-nums">
+              <Clock size={12} className="text-fg-dim" />
               <span>
                 Atualizado{" "}
                 {new Date(metals.lastUpdated).toLocaleString("pt-BR")}
@@ -357,7 +357,7 @@ export default function MetaisPage() {
                 <p className="relative text-white font-semibold text-[19px] sm:text-xl tabular-nums tracking-tight">
                   <AnimatedNumber value={metals[key]} format={brl} />
                 </p>
-                <p className="relative text-slate-500 text-[10px] uppercase tracking-[0.12em] font-medium">
+                <p className="relative text-fg-dim text-[10px] uppercase tracking-[0.12em] font-medium">
                   BRL / troy oz
                 </p>
               </motion.button>
@@ -430,7 +430,7 @@ export default function MetaisPage() {
 
                       <div className="flex flex-col gap-1.5 text-xs">
                         <div className="flex justify-between">
-                          <span className="text-slate-500 tabular-nums">
+                          <span className="text-fg-dim tabular-nums">
                             {first.date}
                           </span>
                           <span className="text-slate-400 font-mono tabular-nums">
@@ -438,7 +438,7 @@ export default function MetaisPage() {
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-500 tabular-nums">
+                          <span className="text-fg-dim tabular-nums">
                             {last.date}
                           </span>
                           <span className="text-white font-mono font-medium tabular-nums">
@@ -452,7 +452,7 @@ export default function MetaisPage() {
                       >
                         {up ? "+" : ""}
                         {usd(diff)}{" "}
-                        <span className="text-slate-500 font-sans">
+                        <span className="text-fg-dim font-sans">
                           no período
                         </span>
                       </div>
@@ -525,8 +525,8 @@ export default function MetaisPage() {
             description="Fixing AM/PM em USD por troy ounce"
             right={
               lbma ? (
-                <div className="flex items-center gap-1.5 text-xs text-slate-500 tabular-nums">
-                  <Clock size={12} className="text-slate-600" />
+                <div className="flex items-center gap-1.5 text-xs text-fg-dim tabular-nums">
+                  <Clock size={12} className="text-fg-dim" />
                   {new Date(lbma.timestamp).toLocaleString("pt-BR")}
                 </div>
               ) : null
@@ -557,7 +557,7 @@ export default function MetaisPage() {
                     </div>
                     <div className="flex flex-col gap-2 pt-1">
                       <div className="flex items-center justify-between text-sm border-b border-white/5 pb-2">
-                        <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-[0.14em]">
+                        <span className="text-[10px] font-semibold text-fg-dim uppercase tracking-[0.14em]">
                           AM
                         </span>
                         <span className="text-white font-mono tabular-nums">
@@ -565,7 +565,7 @@ export default function MetaisPage() {
                         </span>
                       </div>
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-[0.14em]">
+                        <span className="text-[10px] font-semibold text-fg-dim uppercase tracking-[0.14em]">
                           PM
                         </span>
                         <span className="text-white font-mono tabular-nums">
@@ -588,7 +588,7 @@ export default function MetaisPage() {
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-sm pt-1">
-                    <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-[0.14em]">
+                    <span className="text-[10px] font-semibold text-fg-dim uppercase tracking-[0.14em]">
                       Fixing
                     </span>
                     <span className="text-white font-mono tabular-nums">
