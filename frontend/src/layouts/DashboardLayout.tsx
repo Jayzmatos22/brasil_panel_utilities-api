@@ -220,6 +220,24 @@ export default function DashboardLayout() {
     if (!isDocked) setSidebarOpen(false);
   };
 
+  // Esc fecha a sidebar em modo overlay.
+  //
+  // Faltava: até aqui a única saída era clicar no backdrop ou achar o botão de
+  // fechar — as duas de mouse. Com a sidebar aberta sobre o conteúdo, quem
+  // navega por teclado ficava sem a saída que todo menu sobreposto deve ter.
+  //
+  // Só em overlay: com a sidebar ancorada (>= 1024px) ela é parte do layout, e
+  // não há nada a fechar. Sem essa guarda, o Esc colapsaria a navegação no
+  // desktop sem que ninguém tivesse pedido.
+  useEffect(() => {
+    if (isDocked || !sidebarOpen) return;
+    const aoTeclar = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSidebarOpen(false);
+    };
+    document.addEventListener('keydown', aoTeclar);
+    return () => document.removeEventListener('keydown', aoTeclar);
+  }, [isDocked, sidebarOpen]);
+
   return (
     // O fundo vive aqui e não nas páginas: nenhuma das dez declara fundo
     // próprio, todas herdam deste container. Um ponto para trocar, um para
@@ -330,7 +348,15 @@ export default function DashboardLayout() {
         {/* Backdrop do modo overlay — agora até lg (era md), acompanhando a
             sidebar. Z-45 */}
         {sidebarOpen && (
+          /* O backdrop é DECORATIVO, e o clique nele é atalho de mouse — não a
+             única saída. A saída de teclado é o Esc (efeito acima) e o próprio
+             botão de fechar da sidebar, que continua no fluxo de Tab.
+             Dar papel e foco a este div criaria uma parada de Tab que não leva
+             a lugar nenhum; o certo é marcá-lo como invisível à árvore de
+             acessibilidade — o que basta para as regras de lint pararem de
+             acusar, sem precisar de exceção. */
           <div
+            aria-hidden="true"
             className="fixed inset-0 bg-black/80 backdrop-blur-md z-45 lg:hidden"
             onClick={() => setSidebarOpen(false)}
           />

@@ -324,6 +324,14 @@ export function SelectField({
               const isSelected = item.value === value;
               const isActive = i === activeIndex;
               return (
+                /* A regra pede listener de teclado em cada opção, e aqui isso
+                   seria errado: no padrão ARIA APG "Select-Only Combobox" o
+                   foco do DOM NUNCA sai do gatilho — a opção corrente é
+                   anunciada por aria-activedescendant, e todo o teclado vive no
+                   onKeyDown do gatilho (linha 291, com Escape, setas, Home/End
+                   e digitação). Um <li> que nunca recebe foco não tem como
+                   receber tecla. O onClick é o atalho de mouse, e só. */
+                // eslint-disable-next-line jsx-a11y/click-events-have-key-events
                 <li
                   key={item.value || '__placeholder'}
                   id={optionId(i)}

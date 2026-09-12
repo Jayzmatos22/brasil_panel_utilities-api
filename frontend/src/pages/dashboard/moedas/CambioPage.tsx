@@ -112,21 +112,21 @@ export default function CambioPage() {
 
             <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4">
               <div className="flex flex-col gap-1.5 w-full sm:w-auto">
-                <label className="text-slate-400 text-xs font-medium uppercase tracking-wider">Valor</label>
-                <input type="number" min={0} value={amount} onChange={(e) => setAmount(Number(e.target.value))} className={`${glassInput} font-mono w-full sm:w-32`} />
+                <label htmlFor="cambio-valor" className="text-slate-400 text-xs font-medium uppercase tracking-wider">Valor</label>
+                <input id="cambio-valor" type="number" min={0} value={amount} onChange={(e) => setAmount(Number(e.target.value))} className={`${glassInput} font-mono w-full sm:w-32`} />
               </div>
 
               <div className="flex items-center gap-3 w-full sm:w-auto">
                 <div className="flex flex-col gap-1.5 flex-1 sm:flex-none">
-                  <label className="text-slate-400 text-xs font-medium uppercase tracking-wider">De</label>
-                  <select value={from} onChange={(e) => setFrom(e.target.value)} className={`${glassSelect} w-full sm:w-48`}>
+                  <label htmlFor="cambio-de" className="text-slate-400 text-xs font-medium uppercase tracking-wider">De</label>
+                  <select id="cambio-de" value={from} onChange={(e) => setFrom(e.target.value)} className={`${glassSelect} w-full sm:w-48`}>
                     {currencyOptions.map((c) => <option key={c.code} value={c.code}>{c.label}</option>)}
                   </select>
                 </div>
                 <span className="text-fg-dim font-bold text-xl mt-5">→</span>
                 <div className="flex flex-col gap-1.5 flex-1 sm:flex-none">
-                  <label className="text-slate-400 text-xs font-medium uppercase tracking-wider">Para</label>
-                  <select value={to} onChange={(e) => setTo(e.target.value)} className={`${glassSelect} w-full sm:w-48`}>
+                  <label htmlFor="cambio-para" className="text-slate-400 text-xs font-medium uppercase tracking-wider">Para</label>
+                  <select id="cambio-para" value={to} onChange={(e) => setTo(e.target.value)} className={`${glassSelect} w-full sm:w-48`}>
                     {currencyOptions.map((c) => <option key={c.code} value={c.code}>{c.label}</option>)}
                   </select>
                 </div>
@@ -173,12 +173,12 @@ export default function CambioPage() {
         <h2 className="text-white font-semibold text-sm uppercase tracking-wider mb-6 flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-yellow-400 animate-pulse" />Histórico por Período</h2>
         <div className="flex items-end gap-4 flex-wrap mb-8">
           <div className="flex flex-col gap-1.5">
-            <label className="text-slate-400 text-xs font-medium uppercase tracking-wider">Data inicial</label>
-            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={`${glassInput} scheme-dark`} />
+            <label htmlFor="cambio-data-inicial" className="text-slate-400 text-xs font-medium uppercase tracking-wider">Data inicial</label>
+            <input id="cambio-data-inicial" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={`${glassInput} scheme-dark`} />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-slate-400 text-xs font-medium uppercase tracking-wider">Data final</label>
-            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={`${glassInput} scheme-dark`} />
+            <label htmlFor="cambio-data-final" className="text-slate-400 text-xs font-medium uppercase tracking-wider">Data final</label>
+            <input id="cambio-data-final" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={`${glassInput} scheme-dark`} />
           </div>
         </div>
 
