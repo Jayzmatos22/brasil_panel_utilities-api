@@ -45,6 +45,25 @@ function timeAgo(iso?: string): string | null {
   return `há ${Math.floor(diffMin / 60)} h`;
 }
 
+
+/**
+ * Instanciado UMA vez, no módulo.
+ *
+ * Estava dentro do componente e criava um `Intl.NumberFormat` novo a cada
+ * chamada — e a chamada é por linha, numa tabela de até 100 criptomoedas. São
+ * até 100 objetos de formatação por render, jogados fora em seguida.
+ *
+ * Construir um NumberFormat é a parte cara da API (carrega dados de locale); o
+ * `.format()` depois é barato. Por isso a constante mora aqui fora e não numa
+ * `useMemo`: o formatador não depende de nada do componente, e memoizar dentro
+ * dele só pagaria o custo de comparar dependências para chegar ao mesmo lugar.
+ */
+const COMPACTO_BRL = new Intl.NumberFormat('pt-BR', {
+  style: 'currency',
+  currency: 'BRL',
+  notation: 'compact',
+});
+
 export default function CriptoPage() {
   const [search, setSearch] = useState('');
   const [debounced, setDebounced] = useState('');
@@ -121,9 +140,7 @@ export default function CriptoPage() {
       : '—';
 
   const compact = (v: number | null | undefined) =>
-    typeof v === 'number'
-      ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact' }).format(v)
-      : '—';
+    typeof v === 'number' ? COMPACTO_BRL.format(v) : '—';
 
   // Delega ao formatador da camada de gráficos. O `toFixed(2)` que existia
   // aqui tinha dois problemas: produzia ponto decimal ("+2.00%") numa interface
