@@ -10,6 +10,7 @@ import {
   grid,
   splitLine,
   tooltip,
+  usaEscalaLog,
 } from './chartTheme';
 
 export interface LinePoint {
@@ -33,6 +34,7 @@ export function LineChartEcharts({
 }: LineChartEchartsProps) {
   const option = useMemo<EChartsOption>(() => {
     const fmt = valueFormatter ?? formatNumber;
+    const log = usaEscalaLog(points);
 
     return {
       backgroundColor: 'transparent',
@@ -46,9 +48,16 @@ export function LineChartEcharts({
         axisLabel: axisLabel(),
       },
       yAxis: {
-        type: 'value',
+        type: log ? 'log' : 'value',
+        // `scale` só existe no eixo linear; no log a base já define o
+        // enquadramento e a opção é ignorada.
         scale: true,
         splitLine,
+        // Eixo log sem aviso é gráfico que mente: a mesma distância vertical
+        // passa a valer multiplicação, não soma. O nome fica no topo do eixo,
+        // onde é lido antes da curva.
+        name: log ? 'escala log' : undefined,
+        nameTextStyle: { color: '#77879d', fontSize: 10, align: 'left' },
         // O eixo de valor formata sempre em número cheio, mesmo quando a série
         // tem formatter próprio: `valueFormatter` costuma trazer unidade (R$,
         // %) que no eixo repetiria a informação a cada tick.

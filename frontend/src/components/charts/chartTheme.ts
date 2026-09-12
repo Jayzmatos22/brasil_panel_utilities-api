@@ -130,3 +130,41 @@ export const areaGradient = (color: string, alpha = 0.25) => ({
     { offset: 1, color: `rgba(${hexToRgb(color)},0)` },
   ],
 });
+
+/**
+ * A partir de quantas ordens de grandeza entre o menor e o maior valor a série
+ * deixa de caber num eixo linear. Três é folgado de propósito: séries normais
+ * do painel ficam bem abaixo disso (a Selic pós-Real vai de ~7 a ~25, o salário
+ * mínimo nominal desde 1994 multiplica por ~23), então o eixo log só aparece
+ * onde o linear de fato não funciona.
+ */
+const ORDENS_PARA_LOG = 3;
+
+/**
+ * Séries que atravessam a hiperinflação não cabem num eixo linear: a Selic
+ * overnight anualizada do IPEA (PAN12_TJOVER12) vai de ~1,9 hoje a mais de
+ * 100.000 em 1993. Num eixo linear os últimos trinta anos viram uma reta
+ * colada no zero — o gráfico existe, mas não informa nada.
+ *
+ * Não é caso de cortar o histórico: a aba do IPEA existe justamente para
+ * explorar a série inteira. O eixo logarítmico mantém todos os pontos e torna
+ * as duas eras legíveis ao mesmo tempo.
+ *
+ * A decisão sai dos dados, não do nome da série — o mesmo problema aparece no
+ * IGP-M, no INPC mensal e no câmbio em cruzeiros. Exige `min > 0` porque log de
+ * zero ou de negativo não existe, e o eixo linear segue sendo o certo aí.
+ */
+export const usaEscalaLog = (points: ReadonlyArray<{ value: number }>): boolean => {
+  if (points.length < 2) return false;
+
+  let min = Infinity;
+  let max = -Infinity;
+  for (const p of points) {
+    if (!Number.isFinite(p.value)) continue;
+    if (p.value < min) min = p.value;
+    if (p.value > max) max = p.value;
+  }
+
+  if (!Number.isFinite(min) || !Number.isFinite(max) || min <= 0) return false;
+  return max / min >= 10 ** ORDENS_PARA_LOG;
+};

@@ -604,7 +604,11 @@ processo roda como usuário não-root).
 - **`JWT_SECRET` é obrigatório**: sem a variável a aplicação não sobe. Não existe valor
   padrão versionado — um default no repositório seria uma chave pública
 - **CSP e headers de segurança** no `vercel.json`: `script-src 'self'`, `frame-ancestors
-  'none'`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy` e HSTS
+  'none'`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy` e HSTS.
+  `img-src` abre exceção só para os três hosts dos ícones de cripto
+  (`s2.coinmarketcap.com`, `coin-images.coingecko.com`, `assets.coingecko.com`) —
+  imagem não executa, e a alternativa seria passar 100 ícones pelo backend a cada
+  visita. Ao apertar a CSP, conferir a tabela de cripto junto
 - **Swagger só no perfil `dev`**
 - **O health check não depende de serviço externo.** O `MailHealthIndicator` é desligado
   de propósito: ele abre uma conexão SMTP a cada checagem, e como a plataforma usa
