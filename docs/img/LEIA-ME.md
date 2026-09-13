@@ -56,9 +56,10 @@ landing. Aí a rota é outra de propósito.
 
 ## Ao capturar
 
-- Espere o backend acordar. O plano gratuito do Render hiberna após ~15 min, e o
-  primeiro acesso leva cerca de 150 s. Print com "erro ao carregar" na vitrine é
-  pior que vitrine nenhuma.
+- Confira que os dados carregaram antes de disparar o print. Print com "erro ao
+  carregar" na vitrine é pior que vitrine nenhuma. (Isto já foi uma espera de
+  ~150 s pela hibernação do plano gratuito do Render; a instância agora é paga e
+  responde na hora, mas o cuidado com o estado da tela continua valendo.)
 - Mesma rota nos três aparelhos.
 - Sem barra do navegador, sem aba, sem favorito — só o conteúdo.
 - PNG. JPEG borra texto pequeno e o painel é feito de número miúdo.

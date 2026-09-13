@@ -9,11 +9,16 @@ import { Reveal } from '../components/Reveal';
 import { Section } from '../components/Section';
 import { BUTTON_GHOST, BUTTON_PRIMARY, FOCUS_RING } from '../components/styles';
 import { isAuthenticated } from '../../../lib/auth/jwt';
-import { DASHBOARD_CTA, FINAL_CTA, SITE_NAME } from '../data/content';
+import { CONTACT, DASHBOARD_CTA, FINAL_CTA, SITE_NAME } from '../data/content';
 
 const HEADING_ID = 'final-title';
 
 const NAV_LINK = `${FOCUS_RING} rounded-control text-sm text-fg-muted transition-colors duration-200 hover:text-accent`;
+
+// Mesma família visual do NAV_LINK, com espaço para o ícone. `group` existe
+// para o ícone acompanhar a cor no hover do link inteiro, e não só quando o
+// ponteiro cai exatamente sobre ele.
+const CONTACT_LINK = `${FOCUS_RING} group flex items-center gap-2.5 rounded-control text-sm text-fg-muted transition-colors duration-200 hover:text-accent`;
 
 export function FinalCTA() {
   const LegalIcon = FINAL_CTA.legalIcon;
@@ -79,6 +84,45 @@ export function FinalCTA() {
               ))}
             </ul>
           </nav>
+
+          <div className="mt-10">
+            <h3 className="text-eyebrow font-medium uppercase tracking-[0.18em] text-fg-muted">
+              {CONTACT.title}
+            </h3>
+
+            <p className="mt-4 text-sm leading-relaxed text-fg-muted">
+              {CONTACT.description}
+            </p>
+
+            <ul className="mt-5 grid list-none gap-3">
+              {CONTACT.links.map((link) => {
+                const Icon = link.icon;
+                // mailto: abre o cliente de e-mail na própria aba, como se
+                // espera; os dois links externos vão para nova aba, para não
+                // tirar o visitante da página no meio da leitura.
+                const externo = !link.href.startsWith('mailto:');
+
+                return (
+                  <li key={link.href}>
+                    <a
+                      href={link.href}
+                      className={CONTACT_LINK}
+                      {...(externo
+                        ? { target: '_blank', rel: 'noopener noreferrer' }
+                        : {})}
+                    >
+                      <Icon
+                        aria-hidden="true"
+                        strokeWidth={1.5}
+                        className="h-4 w-4 shrink-0 text-fg-muted transition-colors duration-200 group-hover:text-accent"
+                      />
+                      {link.label}
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
         </Reveal>
       </div>
 

@@ -9,7 +9,7 @@ import { FormField } from '../../components/forms/FormField';
 import { SubmitButton } from '../../components/forms/SubmitButton';
 import { AuthBrandPanel } from '../../components/forms/AuthBrandPanel';
 import { AuthBackdrop } from './AuthBackdrop';
-import { AuthTestingNotice, AuthAboutLink } from './AuthNotices';
+import { AuthAboutLink } from './AuthNotices';
 import { saveSession } from '../../lib/auth/jwt';
 import { setPendingAdminLogin } from '../../lib/auth/pendingAdminLogin';
 import { resolveRedirect } from '../../lib/auth/redirect';
@@ -89,7 +89,6 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <AuthTestingNotice />
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <FormField

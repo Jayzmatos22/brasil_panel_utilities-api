@@ -22,7 +22,7 @@ próxima vez.
 | Camada | Onde | Hiberna? |
 |---|---|---|
 | Frontend (build Vite estático) | Vercel ou Cloudflare Pages | Não — arquivos em CDN |
-| Backend (imagem Docker) | Render | Free hiberna após ~15 min; **Starter (~US$ 7/mês) não hiberna** |
+| Backend (imagem Docker) | Render | Não — plano pago, instância sempre ativa |
 | Banco | Neon (PostgreSQL) | Free suspende, mas acorda em ~1s |
 
 > O Postgres do plano free do Render é removido após um período. Por isso o banco
@@ -86,8 +86,9 @@ que torna esse diagnóstico demorado.
 
 ### Tempo de boot e o falso alarme do scan de porta
 
-Na instância **Free**, o boot completo leva **~150 segundos**. Durante quase todo esse
-tempo o Render imprime, repetidamente:
+O boot completo do Spring Boot leva alguns minutos no deploy (era **~150 s** na
+instância Free, na CPU compartilhada). Durante quase todo esse tempo o Render imprime,
+repetidamente:
 
 ```
 ==> No open ports detected, continuing to scan...
@@ -369,8 +370,10 @@ Todas concluídas:
 2. **Pendências da seção 6** — CI verde, CD confiável, health check
 3. **Provisionar** — banco no Neon, variáveis no Render
 4. **Primeiro boot** — o Flyway cria o schema sozinho; nada a fazer
-5. **Upgrade do plano** no Render, se/quando quiser eliminar a hibernação (é só um
-   toggle no dashboard — não muda código)
+5. ~~**Upgrade do plano** no Render para eliminar a hibernação~~ — **feito**. A
+   instância é paga e não hiberna. Consequências no código, já aplicadas: o teto de
+   `VITE_API_TIMEOUT_MS` voltou ao padrão de 15 s e o aviso de espera saiu das telas de
+   entrada. Voltar ao Free exige desfazer as duas.
 
 Fazer a seção 6 antes do S12 gera retrabalho: a URL da API muda quando entra o rewrite.
 
