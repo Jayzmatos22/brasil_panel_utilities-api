@@ -4,11 +4,17 @@ import { clearSession } from '../../lib/auth/jwt';
 
 
 
-// O backend hiberna no plano gratuito do Render e o boot completo leva ~150s.
-// Com um teto de 15s, a primeira visita depois da hibernação falha sempre — o
-// usuário vê "Erro de conexão" num sistema que está apenas acordando. O valor
-// fica configurável para que produção possa tolerar o cold start sem que o
-// desenvolvimento (onde a API responde na hora) espere por um servidor morto.
+// 15s cobre com folga uma resposta normal da API, inclusive as que passam por
+// fonte externa.
+//
+// Já foi configurável por causa da hibernação do plano gratuito do Render, que
+// fazia o primeiro acesso levar ~150s e exigia um teto de 180s em produção. A
+// instância agora é paga e não hiberna, então esse teto não tem mais motivo —
+// e teto alto demais é ruim: faz um backend genuinamente travado prender a
+// interface por minutos em vez de falhar rápido.
+//
+// A variável continua sendo lida para não quebrar um ambiente que ainda a
+// defina, mas produção não deve mais defini-la.
 const DEFAULT_TIMEOUT_MS = 15_000;
 
 const timeoutMs = Number(import.meta.env.VITE_API_TIMEOUT_MS) || DEFAULT_TIMEOUT_MS;

@@ -17,6 +17,9 @@ import {
   Database,
   SlidersHorizontal,
   MonitorCheck,
+  GitBranch,
+  BriefcaseBusiness,
+  Mail,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -134,6 +137,23 @@ export interface FinalCtaContent {
   navLinks: readonly NavLink[];
   legalIcon: LucideIcon;
   legal: string;
+}
+
+export interface ContactLink {
+  /**
+   * O que aparece na tela. Precisa nomear o canal por extenso: o lucide-react
+   * v1 não traz mais ícones de marca, então o ícone ao lado é genérico e não
+   * identifica sozinho se aquilo é GitHub, LinkedIn ou e-mail.
+   */
+  label: string;
+  href: string;
+  icon: LucideIcon;
+}
+
+export interface ContactContent {
+  title: string;
+  description: string;
+  links: readonly ContactLink[];
 }
 
 // ─── Identidade ─────────────────────────────────────────────────────────────
@@ -463,7 +483,44 @@ export const DISCLAIMER: DisclaimerContent = {
   body: 'O conteúdo do Brasil Panel tem finalidade exclusivamente informativa e educacional. Não constitui recomendação de investimento, consultoria financeira, oferta de compra ou venda de ativos, nem análise de valores mobiliários. Rentabilidade passada não garante resultado futuro. Decisões financeiras são de responsabilidade de quem as toma — consulte um profissional certificado antes de investir.',
 };
 
-// ─── 8. Fechamento ──────────────────────────────────────────────────────────
+// ─── 8. Contato ─────────────────────────────────────────────────────────────
+
+/**
+ * Quem fez, e como falar com ele.
+ *
+ * A página inteira fala em primeira pessoa do plural ("reunimos",
+ * "padronizamos"), o que é a voz do produto. Este bloco é o único lugar onde o
+ * autor aparece — e ele precisa aparecer: um painel que pede confiança no dado
+ * tem que dizer quem responde por ele.
+ *
+ * O repositório fica junto de propósito. É a forma mais forte de sustentar o
+ * que a seção de metodologia promete: quem duvidar do tratamento dos dados
+ * pode ler o código que faz o tratamento.
+ */
+export const CONTACT: ContactContent = {
+  title: 'Contato',
+  description:
+    'Projeto desenvolvido e mantido por Jailton Santos. Sugestão, correção de dado ou proposta de trabalho, é por aqui.',
+  links: [
+    {
+      label: 'Código-fonte no GitHub',
+      href: 'https://github.com/Jayzmatos22/brasil_panel_utilities-api',
+      icon: GitBranch,
+    },
+    {
+      label: 'LinkedIn — Jailton Santos',
+      href: 'https://www.linkedin.com/in/jailton-santos-b149752a0',
+      icon: BriefcaseBusiness,
+    },
+    {
+      label: 'jailtonmatos200@gmail.com',
+      href: 'mailto:jailtonmatos200@gmail.com',
+      icon: Mail,
+    },
+  ],
+};
+
+// ─── 9. Fechamento ──────────────────────────────────────────────────────────
 
 export const FINAL_CTA: FinalCtaContent = {
   title: 'Comece pelo indicador que trouxe você até aqui.',

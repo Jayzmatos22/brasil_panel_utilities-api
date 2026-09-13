@@ -232,9 +232,9 @@ sequenceDiagram
 
 Três coisas que esse fluxo esconde e que decidem o comportamento observável:
 
-1. **O primeiro acesso do dia é lento.** O Render Free hiberna após ~15 min ociosa e o
-   boot completo do Spring Boot na CPU compartilhada leva **~150 s**. O frontend trata
-   isso como estado de carregamento, com timeout compatível — não como erro.
+1. **A rota chega antes do dado.** Cada rota é um chunk separado (`React.lazy`), então a
+   página monta e o `RouteAnnouncer` foca o `<h1>` enquanto a requisição ainda está em
+   voo — o estado de carregamento é parte do fluxo normal, não exceção.
 2. **O cache do servidor é o que protege a cota.** O cache do cliente (TanStack Query)
    economiza rede para *aquele* usuário; o do servidor (Caffeine) economiza cota para
    *todos*. São camadas independentes com propósitos diferentes — ver
@@ -556,7 +556,7 @@ cd backend/backend && ./mvnw test
 | Camada | Onde | Observação |
 |---|---|---|
 | Frontend | **Vercel** | Estático na CDN; reescreve `/api/*` para o backend |
-| Backend | **Render** — container Docker | Free hiberna após ~15 min sem requisição |
+| Backend | **Render** — container Docker | Plano pago: instância sempre ativa, sem hibernação |
 | Banco | **Neon** — PostgreSQL 18.6 | Serverless; suspende e acorda em ~1 s |
 | E-mail | **Resend** — SMTP, domínio verificado | Fila assíncrona via `email_outbox` |
 
@@ -569,14 +569,16 @@ O Render não tem runtime Java nativo, por isso o backend é publicado como imag
 `backend/backend/Dockerfile`, build multi-estágio (Maven compila, JRE 21 executa,
 processo roda como usuário não-root).
 
-**Duas características do plano gratuito que afetam o comportamento observável:**
+**Uma característica do Render que afeta o comportamento observável:**
 
-- **Cold start de ~150 segundos.** A instância hiberna após ~15 min ociosa, e o boot
-  completo do Spring Boot na CPU compartilhada do Free leva esse tempo. O primeiro acesso
-  depois da hibernação é lento — o frontend precisa tolerar isso, com timeout compatível
-  e um estado de carregamento, em vez de tratar como erro.
 - **SMTP na porta 587 é bloqueado na saída.** Por isso `MAIL_PORT=2587`, a porta
   alternativa do Resend.
+
+> O projeto rodou no plano gratuito, onde a instância hibernava após ~15 min e o boot
+> completo levava **~150 s** — o que exigia timeout de 180 s no cliente e um aviso de
+> espera nas telas de entrada. Com a migração para o plano pago a instância não hiberna
+> mais: o timeout voltou a 15 s e o aviso saiu. Se algum dia voltar ao Free, os dois
+> precisam voltar juntos.
 
 > 📘 Runbook completo — variáveis de ambiente, armadilhas de boot, verificação pós-deploy
 > e semântica de rollback com migrations: **[DEPLOY.md](DEPLOY.md)**

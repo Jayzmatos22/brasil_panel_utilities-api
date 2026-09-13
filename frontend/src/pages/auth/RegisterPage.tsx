@@ -9,7 +9,7 @@ import { FormField } from '../../components/forms/FormField';
 import { SubmitButton } from '../../components/forms/SubmitButton';
 import { AuthBrandPanel } from '../../components/forms/AuthBrandPanel';
 import { AuthBackdrop } from './AuthBackdrop';
-import { AuthTestingNotice, AuthAboutLink } from './AuthNotices';
+import { AuthAboutLink } from './AuthNotices';
 import { limparNome, nomeValido } from '../../lib/validation/nome';
 import { SENHA_FRACA, senhaForte } from '../../lib/validation/senha';
 
@@ -69,7 +69,6 @@ export default function RegisterPage() {
             </p>
           </div>
 
-          <AuthTestingNotice />
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <FormField
