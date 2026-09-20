@@ -44,6 +44,26 @@ management:
   endpoint:
     health:
       show-details: never
+      group:
+        # Sonda de vida para a plataforma, SEM tocar no banco.
+        #
+        # O /actuator/health completo inclui o DataSourceHealthIndicator, que roda
+        # uma query de validação a cada chamada. Como o Render consulta o health de
+        # minuto em minuto — muito abaixo dos 5 minutos de ociosidade que o Neon
+        # espera para suspender o compute —, aquele endpoint sozinho mantinha o banco
+        # acordado o tempo todo, e o Neon cobra por tempo acordado.
+        #
+        # `ping` é um indicador que só responde "o processo está de pé". Sem
+        # dependência nenhuma, sem consulta, sem custo.
+        #
+        # O health completo continua existindo em /actuator/health, com o banco, para
+        # quem quiser olhar. O que mudou é qual deles a plataforma consulta.
+        #
+        # Há um segundo motivo, que não é custo: com o banco dormindo, um health check
+        # que chegue durante o cold start poderia devolver DOWN e fazer a plataforma
+        # considerar a instância doente. A sonda sem banco não corre esse risco.
+        liveness:
+          include: ping
   health:
     # O MailHealthIndicator abre uma conexão SMTP real a cada checagem de health.
     # Como o health é o que a plataforma usa para decidir se o serviço está vivo,

@@ -84,7 +84,16 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> {
                     // Health check — precisa ser público para o orquestrador
                     // (Render) conseguir verificar se a aplicação subiu.
-                    auth.requestMatchers("/actuator/health").permitAll();
+                    //
+                    // O /** cobre os GRUPOS de health, que são subcaminhos:
+                    // /actuator/health/liveness é o que o Render consulta, e o
+                    // matcher exato de "/actuator/health" NÃO o alcançaria — a sonda
+                    // levaria 401 e o deploy falharia no health check, sem erro
+                    // nenhum no log da aplicação.
+                    //
+                    // Expor os grupos não vaza nada: show-details continua "never",
+                    // então a resposta é só {"status":"UP"}.
+                    auth.requestMatchers("/actuator/health", "/actuator/health/**").permitAll();
 
                     // Rotas admin — somente ROLE_ADMIN
                     auth.requestMatchers("/api/admin/**").hasRole("ADMIN");

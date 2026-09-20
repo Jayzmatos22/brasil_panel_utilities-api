@@ -12,7 +12,8 @@ próxima vez.
 | | |
 |---|---|
 | API | `https://brasil-panel-utilities-api.onrender.com` |
-| Health | `/actuator/health` |
+| Health (sonda do Render) | `/actuator/health/liveness` |
+| Health completo (com banco) | `/actuator/health` |
 | Banco | Neon — PostgreSQL 18.6, região `us-east-2` |
 
 ---
@@ -68,7 +69,7 @@ Ao criar o Web Service:
 | **Root Directory** | `backend/backend` |
 | Runtime / Language | **Docker** |
 | Dockerfile Path | `./Dockerfile` (relativo ao Root Directory) |
-| **Health Check Path** | `/actuator/health` |
+| **Health Check Path** | `/actuator/health/liveness` |
 
 O **Root Directory** é o campo que mais causa erro: o `pom.xml` não está na raiz do
 repositório, e sem apontar para `backend/backend` o build não encontra nada para
@@ -314,6 +315,23 @@ normalmente.
 `application.yaml` desliga esse indicador (`management.health.mail.enabled: false`).
 O envio aqui é assíncrono: a mensagem vai para o outbox e é drenada pelo scheduler,
 então indisponibilidade do provedor atrasa e-mails, não impede a API de atender.
+
+### #7b — Health check acordando o banco e virando custo
+
+O indicador de DataSource **roda uma query de validação a cada chamada** de
+`/actuator/health`. O Neon suspende o compute após 5 minutos ocioso e cobra por
+tempo acordado; como o Render consulta o health com frequência muito maior que isso,
+aquele endpoint sozinho mantinha o banco acordado o tempo todo.
+
+A saída não foi desligar o indicador — pela regra abaixo, o banco *é* uma dependência
+que torna a aplicação incapaz de servir. Foi **separar as sondas**: o Render passa a
+consultar `/actuator/health/liveness`, um grupo que contém apenas `ping` e não toca em
+nada. O `/actuator/health` completo, com banco, continua existindo para diagnóstico.
+
+> ⚠️ Ao trocar o Health Check Path, confira o matcher de segurança. O
+> `requestMatchers("/actuator/health")` exato **não** alcança os grupos, que são
+> subcaminhos: a sonda levaria 401 e o deploy falharia no health check, sem erro
+> nenhum no log da aplicação. O `SecurityConfig` cobre `/actuator/health/**`.
 
 A regra geral, ao adicionar qualquer health indicator daqui em diante: **o health
 check só deve refletir o que torna a aplicação incapaz de servir requisição.**
