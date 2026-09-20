@@ -7,6 +7,7 @@ import com.brasilpanel.backend.repository.email.EmailOutboxRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Limit;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,6 +42,7 @@ public class EmailOutboxService {
 
     private final EmailOutboxRepository outboxRepository;
     private final EmailOutboxDispatcher dispatcher;
+    private final ApplicationEventPublisher eventos;
 
     // ── Produção ─────────────────────────────────────────────────────────────
 
@@ -59,6 +61,7 @@ public class EmailOutboxService {
                 .nextAttemptAt(LocalDateTime.now())
                 .build());
 
+        eventos.publishEvent(new EmailEnqueuedEvent());
         log.debug("[Outbox] Envio enfileirado para '{}'.", recipient);
     }
 
@@ -80,6 +83,7 @@ public class EmailOutboxService {
                 .nextAttemptAt(LocalDateTime.now())
                 .build());
 
+        eventos.publishEvent(new EmailEnqueuedEvent());
         log.debug("[Outbox] Desafio enfileirado para '{}'.", recipient);
     }
 

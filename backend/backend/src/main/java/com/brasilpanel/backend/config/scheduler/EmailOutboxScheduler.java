@@ -36,11 +36,24 @@ public class EmailOutboxScheduler {
     private int retencaoFalhas;
 
     /**
-     * fixedDelay, não fixedRate: conta a partir do FIM da rodada anterior. Com um SMTP
-     * lento, fixedRate empilharia rodadas sobrepostas disputando as mesmas entradas.
+     * Rede de segurança, não o caminho normal.
+     *
+     * <p>Quem envia no caso comum é o {@code EmailOutboxDrainListener}, disparado pelo
+     * evento de enfileiramento. Esta varredura existe para o que o evento não cobre:
+     * retentativas com backoff, e qualquer entrada deixada para trás por uma falha no
+     * caminho assíncrono.
+     *
+     * <p><b>Por que de hora em hora, e não a cada 10 segundos como antes.</b> O Neon
+     * cobra por tempo com o banco acordado e só suspende após 5 minutos ocioso. Uma
+     * varredura a cada 10 segundos impedia qualquer suspensão — o banco ficava acordado
+     * 24 h por dia para atender um punhado de e-mails. Note que qualquer intervalo
+     * MENOR que os 5 minutos de ociosidade tem o mesmo efeito: acorda o banco
+     * exatamente quando ele ia dormir.
+     *
+     * <p>Alinhada ao minuto zero de propósito, junto dos schedulers de dados: três
+     * tarefas no mesmo instante acordam o banco UMA vez; espalhadas, acordariam três.
      */
-    @Scheduled(fixedDelayString = "${app.mail.outbox.drain-interval-ms:10000}",
-               initialDelayString = "${app.mail.outbox.drain-interval-ms:10000}")
+    @Scheduled(cron = "${app.mail.outbox.drain-cron:0 0 * * * *}", zone = "America/Sao_Paulo")
     public void drenarFila() {
         try {
             outboxService.drain();

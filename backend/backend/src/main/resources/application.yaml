@@ -165,7 +165,11 @@ app:
     # O envio sai da thread da requisição e passa por uma tabela, drenada pelo
     # EmailOutboxScheduler. Ver V4__email_outbox.sql para o porquê.
     outbox:
-      drain-interval-ms: ${MAIL_OUTBOX_DRAIN_MS:10000}
+      # Varredura de RETENTATIVA, não o caminho normal: quem envia no caso comum é
+      # o evento de enfileiramento. Nunca ponha abaixo de 5 minutos — é o tempo de
+      # ociosidade que o Neon espera para suspender o compute, e um intervalo menor
+      # impede qualquer suspensão, que é o que gerava a conta alta.
+      drain-cron: ${MAIL_OUTBOX_DRAIN_CRON:0 0 * * * *}
       max-attempts:      ${MAIL_OUTBOX_MAX_ATTEMPTS:5}
       retry-backoff:     ${MAIL_OUTBOX_BACKOFF:PT1M}
       retention:
@@ -173,6 +177,14 @@ app:
         failed-days: ${MAIL_OUTBOX_RETENTION_FAILED:30}
 
   # ── Contas ────────────────────────────────────────────────────────────────
+  # ── Agendamento das fontes de dados ───────────────────────────────────────
+  # De hora em hora e alinhados ao minuto zero: três tarefas no mesmo instante
+  # acordam o banco UMA vez; espalhadas, acordariam três. Voltar ao intervalo
+  # curto é mudar a variável de ambiente, sem deploy de código.
+  scheduler:
+    cmc-cron:    ${CMC_REFRESH_CRON:0 0 * * * *}
+    crypto-cron: ${CRYPTO_REFRESH_CRON:0 0 * * * *}
+
   accounts:
     # Dias que um cadastro NÃO verificado sobrevive antes de ser apagado.
     # Generoso de propósito: não é janela de segurança, é higiene de retenção,
