@@ -26,8 +26,14 @@ public class CryptoScheduler {
     private final CacheManager cacheManager;
 
     // ── Top 100 criptomoedas (BRL) ───────────────────────────────────────────
-    // A cada 15 minutos, 24 horas por dia
-    @Scheduled(cron = "0 */15 * * * *")
+    /**
+     * De hora em hora. Era a cada 15 minutos. Mesma razão do CoinMarketCapScheduler:
+     * a rodada grava no banco, e no Neon isso é tempo de compute acordado.
+     *
+     * <p>Alinhada ao minuto zero para compartilhar a mesma janela de atividade das
+     * outras tarefas. Configurável por {@code CRYPTO_REFRESH_CRON}.
+     */
+    @Scheduled(cron = "${app.scheduler.crypto-cron:0 0 * * * *}", zone = "America/Sao_Paulo")
     public void refreshCryptoList() {
         log.info("[CryptoScheduler] Iniciando refresh da lista de criptomoedas...");
         try {

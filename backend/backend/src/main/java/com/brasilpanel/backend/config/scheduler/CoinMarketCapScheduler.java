@@ -28,7 +28,18 @@ public class CoinMarketCapScheduler {
     private final CmcCreditGuard creditGuard;
     private final CacheManager cacheManager;
 
-    @Scheduled(cron = "0 */10 * * * *")
+    /**
+     * De hora em hora. Era a cada 10 minutos.
+     *
+     * <p>Cotação de cripto num painel econômico não muda de decisão em 10 minutos, e
+     * cada rodada grava no banco — o que, no Neon, significa manter o compute acordado
+     * e pagar por isso. Alinhada ao minuto zero junto das outras tarefas para o banco
+     * acordar uma vez por hora, e não três.
+     *
+     * <p>Configurável: {@code CMC_REFRESH_CRON} volta ao intervalo anterior sem
+     * precisar de deploy de código.
+     */
+    @Scheduled(cron = "${app.scheduler.cmc-cron:0 0 * * * *}", zone = "America/Sao_Paulo")
     public void refreshListings() {
         if (!coinMarketCapService.isEnabled()) {
             return;   // fonte desligada — sem chave configurada
