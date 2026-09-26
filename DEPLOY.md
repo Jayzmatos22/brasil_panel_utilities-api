@@ -338,6 +338,37 @@ check só deve refletir o que torna a aplicação incapaz de servir requisição
 Incluir uma dependência opcional ali converte uma degradação em queda total, e ainda
 por cima com reinício em loop.
 
+### #7c — O pool de conexões mantinha o banco acordado (a causa de verdade)
+
+Corrigir as tarefas agendadas e o health check **não baixou a conta**. O custo nunca
+foi o volume de query: era o pool.
+
+O Neon não considera ocioso um banco com conexão aberta. Os defaults do Spring Boot,
+desenhados para banco sempre ligado, fazem o oposto do que um banco que dorme precisa:
+
+| propriedade | default | efeito no Neon |
+|---|---|---|
+| `minimumIdle` | = `maximumPoolSize` (10) | dez conexões abertas para sempre |
+| `maxLifetime` | 30 min | as dez recriadas a cada 30 minutos |
+
+Com dez conexões penduradas o compute **nunca** suspende, mesmo sem ninguém usar o
+site. O histórico de operações do Neon não registrou um único `Suspend compute` entre
+8 e 24 de setembro de 2026 — ~16 dias de compute ligado a 0,25 CU, que é praticamente
+a cota gratuita inteira de 100 CU-h.
+
+A correção está em `application-prod.yml`: `minimum-idle: 0` com `idle-timeout` de
+1 minuto, para o pool esvaziar antes da janela de 5 minutos do Neon, e
+`keepalive-time: 0`, porque o ping de keepalive contaria como atividade. O teto
+(`maximum-pool-size`) fica no default de 10 — conexão que não é aberta não custa nada,
+e o `IpeaService` faz fan-out de 8 threads contando com esse número.
+
+Os valores são literais, sem `${VAR:default}`: uma variável ausente cairia no default
+do Hikari e ressuscitaria a conta em silêncio. `ConnectionPoolCostTest` é a trava.
+
+**Como verificar em produção**, depois do deploy: deixe o site parado por ~10 minutos
+e, no painel do Neon, abra **Monitoring → System operations**. Tem que aparecer um
+`Suspend compute` novo. Se não aparecer, sobrou algo segurando conexão.
+
 Vale notar que os timeouts de SMTP em `application-prod.yml` são o que manteve isso
 diagnosticável: os três timeouts do JavaMail são **infinitos** por padrão e o Spring
 Boot não os preenche, então sem eles a thread do health check ficaria pendurada para

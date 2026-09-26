@@ -21,6 +21,55 @@ spring:
     username: ${DATABASE_USERNAME}
     password: ${DATABASE_PASSWORD}
 
+    # ── Pool de conexões ─────────────────────────────────────────────────────
+    # Estes três valores existem por causa da cobrança do Neon, não por
+    # desempenho. O Neon cobra por TEMPO DE COMPUTE ACORDADO e suspende o banco
+    # após 5 minutos de ociosidade — e ele não considera ocioso um banco com
+    # conexão aberta. Enquanto o pool segurar uma conexão, o compute nunca
+    # suspende, mesmo que ninguém faça uma única query.
+    #
+    # Os defaults do Spring Boot são desenhados para banco sempre ligado e fazem
+    # exatamente o contrário do que este banco precisa:
+    #
+    #   minimumIdle = maximumPoolSize = 10  → dez conexões abertas para sempre
+    #   maxLifetime = 30 min                → as dez recriadas a cada 30 minutos
+    #
+    # Foi o que manteve o compute ACORDADO de 8 a 24 de setembro sem uma única
+    # suspensão — ~16 dias × 24 h × 0,25 CU ≈ 96 CU-h, que é a cota gratuita
+    # inteira. O histórico de operações do Neon não registra nenhum "Suspend
+    # compute" nesse intervalo, e o pg_stat_statements mostrava ~23 conexões
+    # novas por hora (o `SET application_name` do driver), que é o recicla-dez-a-
+    # cada-30-min do Hikari. Reduzir a frequência das tarefas (#66) e tirar o
+    # banco do health check (#67) não moveu a conta porque o custo nunca foi o
+    # volume de query: era o pool.
+    #
+    # minimum-idle: 0 é o que corrige. Sem piso de conexões ociosas, o pool
+    # esvazia depois de idle-timeout sem tráfego e o banco fica LIVRE para
+    # suspender. As conexões voltam a ser abertas sob demanda, ao custo do cold
+    # start do Neon, que o próprio histórico mede em 300–500 ms.
+    #
+    # Os valores são fixos, sem variável de ambiente, de propósito: é a mesma
+    # razão do cookie.secure logo acima. Uma variável ausente ou mal digitada
+    # cairia no default do Hikari e ressuscitaria a conta silenciosamente, sem
+    # nada no código parecer errado.
+    hikari:
+      # O TETO fica no default do Spring Boot, de propósito: ele nunca foi o
+      # problema — conexão que não é aberta não custa nada. Baixá-lo teria um
+      # efeito colateral real: o IpeaService faz fan-out de 8 threads e conta com
+      # este número (ver FAN_OUT_THREADS), então um teto de 5 poria três threads
+      # em fila esperando conexão a cada varredura do IPEA.
+      maximum-pool-size: 10
+      # O número que importa. Qualquer valor acima de 0 mantém o banco acordado.
+      minimum-idle: 0
+      # 1 minuto sem uso e a conexão é devolvida. Precisa ser confortavelmente
+      # menor que os 5 minutos de ociosidade do Neon, senão o pool solta a última
+      # conexão tarde demais e a janela de suspensão nunca abre.
+      idle-timeout: 60000
+      # Desligado (é o default do Hikari, explícito aqui como trava). Keepalive
+      # é um ping periódico na conexão ociosa: ligá-lo desfaz tudo que está
+      # acima, porque o ping conta como atividade para o Neon.
+      keepalive-time: 0
+
   jpa:
     hibernate:
       # validate (nunca update) em produção: o Hibernate não deve alterar o schema
